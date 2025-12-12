@@ -1,0 +1,54 @@
+:root {
+  /* Colors - Warm Orange Theme */
+  --color-primary: #FF6B35;
+  /* Warm Orange */
+  --color-primary-rgb: 255, 107, 53;
+  /* Aggiunto per rgba() */
+  --color-primary-hover: #FF8555;
+  --color-primary-dark: #E55A2B;
+
+  --color-background: #0A0A0A;
+  --color-surface: #1A1A1A;
+  --color-surface-hover: #1E1E1E;
+
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #A1A1A1;
+  --color-text-muted: #525252;
+
+  --color-border: #2A2A2A;
+  --color-error: #FF4444;
+  --color-success: #00CC66;
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  /* Aggiunto */
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+
+  /* Color RGB variables for opacity */
+  --color-primary-rgb: 255, 107, 53;
+  --color-success-rgb: 0, 204, 102;
+  --color-error-rgb: 255, 68, 68;
+}
+
+@media (prefers-color-scheme: light) {
+  /* Enforce Dark Mode for this app regardless of system preference as per requirements ("OBBLIGATORIO") */
+}

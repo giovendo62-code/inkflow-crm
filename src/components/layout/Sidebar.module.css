@@ -1,0 +1,108 @@
+.sidebar {
+    width: 260px;
+    background-color: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-lg);
+    flex-shrink: 0;
+}
+
+.logo h2 {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: var(--color-text-primary);
+}
+
+.sidebar[data-light-mode="true"] .logo h2 {
+    color: #1A1A1A;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-2xl);
+    padding-left: var(--spacing-sm);
+    letter-spacing: -0.5px;
+}
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    flex: 1;
+}
+
+.link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.link:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-primary);
+}
+
+.link.active {
+    background: var(--color-primary);
+    color: white;
+}
+
+/* Light mode overrides */
+.sidebar[data-light-mode="true"] .link {
+    color: #666666;
+}
+
+.sidebar[data-light-mode="true"] .link:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #1A1A1A;
+}
+
+.sidebar[data-light-mode="true"] .link.active {
+    background: var(--color-primary);
+    color: white;
+}
+
+.active:hover {
+    background-color: rgba(255, 0, 255, 0.15);
+}
+
+.footer {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--spacing-lg);
+    margin-top: auto;
+}
+
+.studio {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.studioIcon {
+    width: 24px;
+    height: 24px;
+    background: var(--color-surface-hover);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+    }
+}
