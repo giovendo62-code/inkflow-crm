@@ -164,9 +164,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 // Tenta il salvataggio su Cloud (Supabase)
                 try {
                     await storage.saveUser(newUser);
-                } catch (err) {
-                    console.error("Supabase Save Failed, fallback to LocalStorage", err);
-                    alert("⚠️ Attenzione: Impossibile salvare sul Cloud (Chiavi errate?). L'account sarà salvato solo LOCALE su questo dispositivo.");
+                } catch (err: any) {
+                    console.error("Supabase Save Failed", err);
+                    alert("⚠️ ERRORE SUPABASE: " + (err.message || JSON.stringify(err)) + "\n\nDettagli: " + (err.details || 'N/A') + "\nHint: " + (err.hint || 'N/A'));
                 }
 
                 // AUTO-LOGIN IMMEDIATO (Funziona sempre, anche offline)
