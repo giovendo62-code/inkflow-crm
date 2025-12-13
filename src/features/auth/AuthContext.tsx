@@ -180,8 +180,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         }
                     });
 
+
                     // 2. CREA L'UTENTE COLLEGATO AL TENANT
                     await storage.saveUser(newUser);
+
+                    alert("🎉 Registrazione completata con successo! Benvenuto in InkFlow.");
 
                 } catch (err: any) {
                     console.error("Supabase Save Failed (Tenant or User)", err);
