@@ -146,60 +146,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // MOCK REGISTER
         setError(null);
         try {
-            if (_role === 'MANAGER') {
-                const newTenantId = uuidv4();
-                const newUser: User = {
-                    id: uuidv4(),
-                    tenantId: newTenantId,
-                    email,
-                    name,
-                    role: 'MANAGER',
-                    avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.replace(' ', '')}`,
-                    profile: {
-                        bio: 'Studio Manager',
-                        color: '#FF6B35'
-                    }
-                };
-
-                // Tenta il salvataggio su Cloud (Supabase)
-                try {
-                    // 1. CREA IL TENANT (STUDIO) PRIMA DELL'UTENTE
-                    // Obbligatorio per soddisfare Foreign Key Constraint su Supabase
-                    const studioName = `Studio di ${name}`;
-                    console.log(`Creating Tenant first: ${newTenantId} - ${studioName}`);
-
-                    await storage.saveTenant({
-                        id: newTenantId,
-                        name: studioName,
-                        logo: '',
-                        theme: {
-                            primaryColor: '#7C3AED',
-                            sidebarStyle: 'dark',
-                            menuPosition: 'left',
-                            colorMode: 'dark'
-                        }
-                    });
-
-
-                    // 2. CREA L'UTENTE COLLEGATO AL TENANT
-                    await storage.saveUser(newUser);
-
-                    alert("🎉 Registrazione completata con successo! Benvenuto in InkFlow.");
-
-                } catch (err: any) {
-                    console.error("Supabase Save Failed (Tenant or User)", err);
-                    alert("⚠️ ERRORE SUPABASE: " + (err.message || JSON.stringify(err)) + "\n\nTuttavia, l'accesso LOCALE verrà consentito.");
-                }
-
-                // AUTO-LOGIN IMMEDIATO (Funziona sempre, anche offline)
-                setUser(newUser);
-                localStorage.setItem('inkflow_session', JSON.stringify(newUser));
-
-                console.log('✅ Nuovo Manager registrato e loggato automaticamente:', newUser);
-            } else {
-                throw new Error("Solo i Manager possono registrarsi pubblicamente. Contatta il tuo studio per gli altri ruoli.");
+            if (_role !== 'MANAGER') {
+                throw new Error("Solo i Manager possono registrarsi pubblicamente.");
             }
+
+            const newTenantId = uuidv4();
+            const newUser: User = {
+                id: uuidv4(),
+                tenantId: newTenantId,
+                email,
+                name,
+                role: 'MANAGER',
+                avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.replace(' ', '')}`,
+                profile: {
+                    bio: 'Studio Manager',
+                    color: '#FF6B35'
+                }
+            };
+
+            // Tenta il salvataggio su Cloud (Supabase)
+            try {
+                // 1. CREA IL TENANT (STUDIO) PRIMA DELL'UTENTE
+                // Obbligatorio per soddisfare Foreign Key Constraint su Supabase
+                const studioName = `Studio di ${name}`;
+                console.log(`Creating Tenant first: ${newTenantId} - ${studioName}`);
+
+                await storage.saveTenant({
+                    id: newTenantId,
+                    name: studioName,
+                    logo: '',
+                    theme: {
+                        primaryColor: '#7C3AED',
+                        sidebarStyle: 'dark',
+                        menuPosition: 'left',
+                        colorMode: 'dark'
+                    }
+                });
+
+
+                // 2. CREA L'UTENTE COLLEGATO AL TENANT
+                await storage.saveUser(newUser);
+
+                alert("🎉 Registrazione completata! Benvenuto.");
+
+            } catch (err: any) {
+                console.error("Supabase Save Failed (Tenant or User)", err);
+                alert("⚠️ ERRORE SUPABASE: " + (err.message || JSON.stringify(err)) + "\n\nAccesso LOCALE attivato.");
+            }
+
+            // AUTO-LOGIN IMMEDIATO (Funziona sempre, anche offline)
+            setUser(newUser);
+            localStorage.setItem('inkflow_session', JSON.stringify(newUser));
+
         } catch (e: any) {
+            console.error("CRITICAL REGISTER ERROR", e);
+            alert("❌ ERRORE CRITICO REGISTRAZIONE: " + e.message);
             setError(e.message);
         }
     };
