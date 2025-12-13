@@ -70,6 +70,12 @@ export interface Client {
   };
   preferredStyle?: TattooStyle; // Main preferred style
   inBroadcast?: boolean; // WhatsApp broadcast list
+
+  // Flat address fields (for backward compatibility)
+  street?: string;
+  city?: string;
+  zip?: string;
+
   consents?: {
     privacy: boolean;
     informedConsent: boolean;
@@ -77,9 +83,9 @@ export interface Client {
     informedConsentDate?: string;
   };
   notes?: string;
-  privacyPolicyAccepted: boolean;
+  privacyPolicyAccepted?: boolean;
   privacyPolicyDate?: string;
-  informedConsentAccepted: boolean;
+  informedConsentAccepted?: boolean;
   informedConsentDate?: string;
   attachments?: string[]; // URLs of uploaded images/documents
   createdAt: string;
@@ -213,4 +219,11 @@ export interface ChatMessage {
   message: string;
   timestamp: string;
   read: boolean;
+
+  // Additional fields for UI
+  senderName?: string;
+  content?: string; // Alias for message
+  type?: 'info' | 'warning' | 'message' | 'chat';
+  senderAvatar?: string;
 }
+
