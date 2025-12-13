@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { type Student, type Course } from '../../types';
+import { storage } from '../../lib/storage';
+import { useAuth } from '../auth/AuthContext';
 import classes from '../crm/ClientListPage.module.css';
 
 interface AddStudentModalProps {
@@ -11,6 +13,8 @@ interface AddStudentModalProps {
 }
 
 export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStudentModalProps) {
+    const { user } = useAuth();
+    const [createdCredentials, setCreatedCredentials] = useState<{ email: string, password: string } | null>(null);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -29,7 +33,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!formData.courseId) {
@@ -37,9 +41,14 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
             return;
         }
 
+        if (!user?.tenantId) {
+            alert('Errore: Tenant ID non trovato');
+            return;
+        }
+
         const newStudent: Student = {
             id: `student-${Date.now()}`,
-            tenantId: 'studio-1',
+            tenantId: user.tenantId,
             courseId: formData.courseId,
             firstName: formData.firstName,
             lastName: formData.lastName,
@@ -58,16 +67,27 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
             updatedAt: new Date().toISOString()
         };
 
-        const students = JSON.parse(localStorage.getItem('inkflow_students') || '[]');
-        students.push(newStudent);
-        localStorage.setItem('inkflow_students', JSON.stringify(students));
+        try {
+            await storage.saveStudent(newStudent);
+            onSuccess();
+            // Don't close immediately, show credentials
+            // onClose(); 
+            // resetForm(); // Don't reset form yet, maybe just clear some sensitive fields if needed, but here we want to show success UI overlay
 
-        onSuccess();
-        onClose();
-        resetForm();
+            // Set credentials to show overlay
+            setCreatedCredentials({
+                email: newStudent.email,
+                password: "password123" // Same mock password
+            });
+
+        } catch (error) {
+            console.error("Failed to save student:", error);
+            alert("Errore salvataggio corsista");
+        }
     };
 
     const resetForm = () => {
+        setCreatedCredentials(null);
         setFormData({
             firstName: '',
             lastName: '',
@@ -374,6 +394,54 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                         </button>
                     </div>
                 </form>
+
+                {createdCredentials && (
+                    <div style={{
+                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'var(--color-surface)',
+                        padding: '2rem',
+                        borderRadius: 'var(--radius-lg)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 20
+                    }}>
+                        <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(66, 133, 244, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                            <div style={{ color: '#4285F4' }}>🎓</div>
+                        </div>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', textAlign: 'center' }}>Studente Iscritto!</h3>
+                        <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', marginBottom: '2rem', maxWidth: '400px' }}>
+                            Condividi queste credenziali provvisorie con lo studente per permettergli di accedere all'Academy.
+                        </p>
+
+                        <div style={{ background: 'var(--color-surface-hover)', padding: '1.5rem', borderRadius: 'var(--radius-md)', width: '100%', maxWidth: '400px', marginBottom: '2rem', border: '1px solid var(--color-border)' }}>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>EMAIL</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <code style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{createdCredentials.email}</code>
+                                </div>
+                            </div>
+                            <div>
+                                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>PASSWORD PROVVISORIA</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <code style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{createdCredentials.password}</code>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                onClose();
+                                resetForm();
+                            }}
+                            className={classes.primaryButton}
+                            style={{
+                                width: '100%', maxWidth: '400px',
+                                background: '#4285F4', color: 'white', border: 'none', padding: '1rem', borderRadius: 'var(--radius-md)', fontWeight: 'bold', cursor: 'pointer'
+                            }}
+                        >
+                            Chiudi
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

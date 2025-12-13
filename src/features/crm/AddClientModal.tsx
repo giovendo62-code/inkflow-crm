@@ -5,6 +5,7 @@ import { storage } from '../../lib/storage';
 import { type Client, type TattooStyle } from '../../types';
 import classes from './ClientListPage.module.css';
 import loginClasses from '../auth/LoginPage.module.css';
+import { useAuth } from '../auth/AuthContext';
 
 interface AddClientModalProps {
     isOpen: boolean;
@@ -13,6 +14,7 @@ interface AddClientModalProps {
 }
 
 export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalProps) {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         firstName: '',
@@ -51,14 +53,19 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
         'ALTRO'
     ];
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!user?.tenantId) {
+            alert('Errore: Nessun studio attivo identificato.');
+            return;
+        }
 
         setLoading(true);
 
         const newClient: Client = {
             id: uuidv4(),
-            tenantId: 'studio-1',
+            tenantId: user.tenantId,
             firstName: formData.firstName,
             lastName: formData.lastName,
             email: formData.email,
@@ -96,13 +103,16 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
             informedConsentDate: formData.informedConsentAccepted ? new Date().toISOString() : undefined
         };
 
-        storage.saveClient(newClient);
-
-        setTimeout(() => {
-            setLoading(false);
+        try {
+            await storage.saveClient(newClient);
             onSuccess();
             onClose();
-        }, 500);
+        } catch (error) {
+            console.error('Failed to save client:', error);
+            alert('Errore durante il salvataggio. Riprova.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const toggleStyle = (style: TattooStyle) => {

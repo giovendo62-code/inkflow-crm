@@ -12,22 +12,32 @@ export function AttendancePage() {
     const [attendances, setAttendances] = useState<Attendance[]>([]);
 
     useEffect(() => {
-        if (user) {
-            const students = storage.getStudents();
-            const myStudent = students.find(s => s.email === user.email);
+        const loadAttendanceData = async () => {
+            if (user) {
+                try {
+                    const [students, courses, allAttendances] = await Promise.all([
+                        storage.getStudents(),
+                        storage.getCourses(),
+                        storage.getAttendances()
+                    ]);
 
-            if (myStudent) {
-                setStudent(myStudent);
+                    const myStudent = students.find(s => s.email === user.email);
 
-                const courses = storage.getCourses();
-                const myCourse = courses.find(c => c.id === myStudent.courseId);
-                setCourse(myCourse || null);
+                    if (myStudent) {
+                        setStudent(myStudent);
 
-                const allAttendances = storage.getAttendances();
-                const myAttendances = allAttendances.filter(a => a.studentId === myStudent.id);
-                setAttendances(myAttendances);
+                        const myCourse = courses.find(c => c.id === myStudent.courseId);
+                        setCourse(myCourse || null);
+
+                        const myAttendances = allAttendances.filter(a => a.studentId === myStudent.id);
+                        setAttendances(myAttendances);
+                    }
+                } catch (error) {
+                    console.error("Failed to load attendance data:", error);
+                }
             }
-        }
+        };
+        loadAttendanceData();
     }, [user]);
 
     if (!student || !course) {

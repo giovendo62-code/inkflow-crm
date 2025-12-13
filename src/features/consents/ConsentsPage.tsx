@@ -13,7 +13,11 @@ export function ConsentsPage() {
     const [isSigning, setIsSigning] = useState(false);
 
     useEffect(() => {
-        setClients(storage.getClients());
+        const loadClients = async () => {
+            const allClients = await storage.getClients();
+            setClients(allClients);
+        };
+        loadClients();
     }, []);
 
     const filteredClients = clients.filter(c =>
@@ -31,7 +35,7 @@ export function ConsentsPage() {
         if (!selectedClient) return;
         setIsSigning(true);
 
-        setTimeout(() => {
+        setTimeout(async () => {
             const updatedClient = { ...selectedClient };
             const timestamp = new Date().toISOString();
             const atpCode = uuidv4().split('-')[0].toUpperCase(); // Short code
@@ -45,14 +49,20 @@ export function ConsentsPage() {
                 updatedClient.informedConsentDate = timestamp;
             }
 
-            storage.saveClient(updatedClient);
+            try {
+                await storage.saveClient(updatedClient);
 
-            // Refresh local list
-            setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+                // Refresh local list
+                setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
 
-            setIsSigning(false);
-            setShowSignModal(false);
-            setSelectedClient(null);
+                setIsSigning(false);
+                setShowSignModal(false);
+                setSelectedClient(null);
+            } catch (error) {
+                console.error("Failed to save consent:", error);
+                alert("Errore salvataggio consenso");
+                setIsSigning(false);
+            }
         }, 1500); // Simulate processing
     };
 

@@ -20,93 +20,157 @@ export function DashboardPage() {
     const [clients, setClients] = useState<Client[]>([]);
 
     // Manager Stats State
+    const [loading, setLoading] = useState(true);
+    // stats state for manager dashboard summary
+    const [stats, setStats] = useState({
+        todayAppointments: 0,
+        totalClients: 0,
+        monthlyEarnings: 0,
+        pendingDeposits: 0,
+    });
+
+    // Manager Charts State
     const [monthlyStats, setMonthlyStats] = useState<{ month: string, revenue: number, appointments: number }[]>([]);
     const [yearlyTotals, setYearlyTotals] = useState({ revenue: 0, appointments: 0, currentMonthRevenue: 0 });
-    const [styleStats, setStyleStats] = useState<{ name: string, value: number, color: string }[]>([]); // Added missing state
+    const [styleStats, setStyleStats] = useState<{ name: string, value: number, color: string }[]>([]);
 
     useEffect(() => {
-        if (!isManager && user) {
-            // Artist view: load today's appointments
-            const allAppointments = storage.getAppointments();
-            const allClients = storage.getClients();
-            setClients(allClients);
+        const loadDashboardData = async () => {
+            if (!user?.tenantId) return;
 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
+            try {
+                setLoading(true);
+                const [allAppointments, allClients] = await Promise.all([
+                    storage.getAppointments(user.tenantId),
+                    storage.getClients(user.tenantId)
+                ]);
 
-            const artistTodayAppointments = allAppointments.filter(apt => {
-                if (apt.artistId !== user.id) return false;
-                const aptDate = new Date(apt.startTime);
-                return aptDate >= today && aptDate < tomorrow;
-            }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+                setClients(allClients); // Update clients state for getClientName
 
-            setTodayAppointments(artistTodayAppointments);
-        } else if (isManager) {
-            // Manager Logic
-            const appts = storage.getAppointments();
-            const allClients = storage.getClients();
+                // Filter for today
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
 
-            // Initialize months
-            const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-            const currentYear = new Date().getFullYear();
-            const currentMonthIdx = new Date().getMonth();
+                const todayApts = allAppointments.filter(apt => {
+                    const aptDate = new Date(apt.startTime);
+                    aptDate.setHours(0, 0, 0, 0);
+                    return aptDate.getTime() === today.getTime();
+                });
 
-            const stats = months.map((m, idx) => ({ month: m, revenue: 0, appointments: 0 }));
+                // Calculate stats based on role
+                if (user?.role === 'ARTIST') {
+                    // Artist sees only their own appointments
+                    const myApts = todayApts.filter(a => a.artistId === user.id);
+                    setTodayAppointments(myApts);
 
-            let yRev = 0;
-            let yApts = 0;
-            let mRev = 0;
+                    // Monthly earnings (completed only)
+                    const currentMonth = today.getMonth();
+                    const monthlyEarnings = allAppointments
+                        .filter(a =>
+                            a.artistId === user.id &&
+                            a.status === 'COMPLETED' &&
+                            new Date(a.startTime).getMonth() === currentMonth
+                        )
+                        .reduce((sum, a) => sum + (a.financials?.priceQuote || 0), 0);
 
-            appts.forEach(a => {
-                if (a.status !== 'CANCELLED') {
-                    const d = new Date(a.startTime);
-                    if (d.getFullYear() === currentYear) {
-                        const mIdx = d.getMonth();
-                        const price = a.financials?.priceQuote || 0;
+                    setStats({
+                        todayAppointments: myApts.length,
+                        totalClients: 0, // Not relevant for artist dashboard summary usually, or filtered
+                        monthlyEarnings: monthlyEarnings,
+                        pendingDeposits: 0
+                    });
 
-                        stats[mIdx].revenue += price;
-                        stats[mIdx].appointments += 1;
+                } else { // Manager role
+                    // Manager sees all
+                    setTodayAppointments(todayApts);
 
-                        yRev += price;
-                        yApts += 1;
+                    // Calculate totals
+                    const currentMonth = today.getMonth();
+                    const monthlyRevenue = allAppointments
+                        .filter(a =>
+                            a.status === 'COMPLETED' &&
+                            new Date(a.startTime).getMonth() === currentMonth
+                        )
+                        .reduce((sum, a) => sum + (a.financials?.priceQuote || 0), 0);
 
-                        if (mIdx === currentMonthIdx) {
-                            mRev += price;
+                    const pending = allAppointments
+                        .filter(a => !a.financials?.depositPaid && a.financials?.depositAmount)
+                        .reduce((sum, a) => sum + (a.financials?.depositAmount || 0), 0);
+
+                    setStats({
+                        todayAppointments: todayApts.length,
+                        totalClients: allClients.length,
+                        monthlyEarnings: monthlyRevenue,
+                        pendingDeposits: pending
+                    });
+
+                    // Manager specific stats (monthly, yearly, style) - Re-implementing the original manager logic here
+                    const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+                    const currentYear = new Date().getFullYear();
+                    const currentMonthIdx = new Date().getMonth();
+
+                    const statsArr = months.map((m, idx) => ({ month: m, revenue: 0, appointments: 0 }));
+
+                    let yRev = 0;
+                    let yApts = 0;
+                    let mRev = 0;
+
+                    allAppointments.forEach(a => {
+                        if (a.status !== 'CANCELLED') {
+                            const d = new Date(a.startTime);
+                            if (d.getFullYear() === currentYear) {
+                                const mIdx = d.getMonth();
+                                const price = a.financials?.priceQuote || 0;
+
+                                statsArr[mIdx].revenue += price;
+                                statsArr[mIdx].appointments += 1;
+
+                                yRev += price;
+                                yApts += 1;
+
+                                if (mIdx === currentMonthIdx) {
+                                    mRev += price;
+                                }
+                            }
                         }
+                    });
+
+                    setMonthlyStats(statsArr);
+                    setYearlyTotals({ revenue: yRev, appointments: yApts, currentMonthRevenue: mRev });
+
+                    // Calculate Style Stats based on Clients
+                    const styleCounts: Record<string, number> = {};
+                    allClients.forEach(c => {
+                        if (c.preferredStyle) {
+                            styleCounts[c.preferredStyle] = (styleCounts[c.preferredStyle] || 0) + 1;
+                        }
+                    });
+
+                    const COLORS = ['#FF6B35', '#00CC66', '#4285F4', '#FFBB28', '#FF8042'];
+                    const styleData = Object.entries(styleCounts)
+                        .map(([name, value], index) => ({
+                            name: name.replace('_', ' '),
+                            value,
+                            color: COLORS[index % COLORS.length]
+                        }))
+                        .sort((a, b) => b.value - a.value)
+                        .slice(0, 5);
+
+                    if (Object.keys(styleCounts).length === 0) {
+                        // Fallback if no data
+                        setStyleStats([{ name: 'No Data', value: 1, color: '#333' }]);
+                    } else {
+                        setStyleStats(styleData);
                     }
                 }
-            });
-
-            setMonthlyStats(stats);
-            setYearlyTotals({ revenue: yRev, appointments: yApts, currentMonthRevenue: mRev });
-
-            // Calculate Style Stats based on Clients
-            const styleCounts: Record<string, number> = {};
-            allClients.forEach(c => {
-                if (c.preferredStyle) {
-                    styleCounts[c.preferredStyle] = (styleCounts[c.preferredStyle] || 0) + 1;
-                }
-            });
-
-            const COLORS = ['#FF6B35', '#00CC66', '#4285F4', '#FFBB28', '#FF8042'];
-            const styleData = Object.entries(styleCounts)
-                .map(([name, value], index) => ({
-                    name: name.replace('_', ' '),
-                    value,
-                    color: COLORS[index % COLORS.length]
-                }))
-                .sort((a, b) => b.value - a.value)
-                .slice(0, 5);
-
-            if (Object.keys(styleCounts).length === 0) {
-                // Fallback if no data
-                setStyleStats([{ name: 'No Data', value: 1, color: '#333' }]);
-            } else {
-                setStyleStats(styleData);
+            } catch (error) {
+                console.error("Error loading dashboard:", error);
+            } finally {
+                setLoading(false);
             }
-        }
+        };
+
+        loadDashboardData();
     }, [user, isManager]);
 
     const getClientName = (clientId: string) => {

@@ -7,11 +7,13 @@ import { AddClientModal } from './AddClientModal';
 import { ImportCSVModal } from './ImportCSVModal';
 import { ClientDetailsModal } from './ClientDetailsModal';
 import { AVAILABLE_TATTOO_STYLES } from '../../lib/constants';
+import { useAuth } from '../auth/AuthContext';
 
 type SortField = 'name' | 'email' | 'createdAt' | 'preferredStyle';
 type SortOrder = 'asc' | 'desc';
 
 export function ClientListPage() {
+    const { user } = useAuth();
     const [clients, setClients] = useState<Client[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,20 +33,35 @@ export function ClientListPage() {
     const [sortField, setSortField] = useState<SortField>('createdAt');
     const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
-    const loadClients = () => {
-        setClients(storage.getClients());
+    const loadClients = async () => {
+        if (!user?.tenantId) return;
+        try {
+            const data = await storage.getClients(user.tenantId);
+            setClients(data);
+        } catch (error) {
+            console.error('Failed to load clients:', error);
+        }
     };
 
     useEffect(() => {
         loadClients();
-    }, []);
+    }, [user?.tenantId]);
 
-    const handleBroadcastToggle = (clientId: string, inBroadcast: boolean) => {
-        const updatedClients = clients.map(c =>
-            c.id === clientId ? { ...c, inBroadcast, updatedAt: new Date().toISOString() } : c
-        );
-        setClients(updatedClients);
-        localStorage.setItem('inkflow_clients', JSON.stringify(updatedClients));
+    const handleBroadcastToggle = async (clientId: string, inBroadcast: boolean) => {
+        const client = clients.find(c => c.id === clientId);
+        if (!client) return;
+
+        const updatedClient = { ...client, inBroadcast, updatedAt: new Date().toISOString() };
+
+        // Optimistic update
+        setClients(clients.map(c => c.id === clientId ? updatedClient : c));
+
+        try {
+            await storage.saveClient(updatedClient);
+        } catch (error) {
+            console.error('Failed to update client:', error);
+            // Revert on error if needed, or show toast
+        }
     };
 
     const handleViewClient = (client: Client) => {
@@ -52,12 +69,13 @@ export function ClientListPage() {
         setIsDetailsModalOpen(true);
     };
 
-    const handleSaveClient = (updatedClient: Client) => {
-        const updatedClients = clients.map(c =>
-            c.id === updatedClient.id ? updatedClient : c
-        );
-        setClients(updatedClients);
-        localStorage.setItem('inkflow_clients', JSON.stringify(updatedClients));
+    const handleSaveClient = async (updatedClient: Client) => {
+        try {
+            const savedClient = await storage.saveClient(updatedClient);
+            setClients(clients.map(c => c.id === savedClient.id ? savedClient : c));
+        } catch (error) {
+            console.error('Failed to save client:', error);
+        }
     };
 
     const handleSort = (field: SortField) => {

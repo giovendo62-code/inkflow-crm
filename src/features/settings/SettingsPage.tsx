@@ -2,96 +2,143 @@ import { useState, useEffect } from 'react';
 import { storage } from '../../lib/storage';
 import { type Tenant } from '../../types';
 import classes from '../crm/ClientListPage.module.css';
-import { Save, Palette, Layout } from 'lucide-react';
+import { Save, Palette, Layout, Plus, Building2 } from 'lucide-react';
 import QRCode from 'qrcode';
+import { useAuth } from '../auth/AuthContext';
+import { v4 as uuidv4 } from 'uuid';
 
 export function SettingsPage() {
+    const { user } = useAuth();
+    const [tenants, setTenants] = useState<Tenant[]>([]);
     const [tenant, setTenant] = useState<Tenant | null>(null);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'general' | 'appearance'>('general');
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+    const [isCreating, setIsCreating] = useState(false);
+    const [newTenantName, setNewTenantName] = useState('');
 
     useEffect(() => {
-        const tenants = storage.getTenants();
-        if (tenants.length > 0) {
-            const currentTenant = tenants[0];
-            // Initialize theme if not exists
-            if (!currentTenant.theme) {
-                currentTenant.theme = {
+        const loadSettings = async () => {
+            const allTenants = await storage.getTenants();
+            setTenants(allTenants);
+
+            if (allTenants.length > 0) {
+                // Default to first or user's tenant if possible
+                const currentTenant = allTenants.find(t => t.id === user?.tenantId) || allTenants[0];
+                selectTenant(currentTenant);
+            }
+        };
+        loadSettings();
+    }, [user?.tenantId]);
+
+    const selectTenant = (t: Tenant) => {
+        if (!t.theme) {
+            t.theme = {
+                primaryColor: '#FF6B35',
+                sidebarStyle: 'dark',
+                menuPosition: 'left',
+                colorMode: 'dark'
+            };
+        }
+        setTenant(t);
+        generateQR(t.id);
+    };
+
+    const generateQR = (tenantId: string) => {
+        const publicLink = `${window.location.origin}/register/${tenantId}`;
+        QRCode.toDataURL(publicLink, {
+            width: 256,
+            margin: 2,
+            color: {
+                dark: '#FF6B35',
+                light: '#FFFFFF'
+            }
+        }).then(url => {
+            setQrCodeUrl(url);
+        }).catch(err => console.error(err));
+    };
+
+    const handleCreateTenant = async () => {
+        if (!newTenantName.trim()) return;
+        setLoading(true);
+        try {
+            const newTenant: Tenant = {
+                id: `studio-${Date.now()}`,
+                name: newTenantName,
+                // createdAt removed as it's not in the type
+                theme: {
                     primaryColor: '#FF6B35',
                     sidebarStyle: 'dark',
                     menuPosition: 'left',
                     colorMode: 'dark'
-                };
-            }
-            setTenant(currentTenant);
-
-            // Generate QR Code
-            const publicLink = `${window.location.origin}/register/${currentTenant.id}`;
-            QRCode.toDataURL(publicLink, {
-                width: 256,
-                margin: 2,
-                color: {
-                    dark: '#FF6B35',
-                    light: '#FFFFFF'
                 }
-            }).then(url => {
-                setQrCodeUrl(url);
-            }).catch(err => console.error(err));
+            };
+            await storage.saveTenant(newTenant);
+            setTenants([...tenants, newTenant]);
+            selectTenant(newTenant);
+            setIsCreating(false);
+            setNewTenantName('');
+            alert('Nuovo studio creato! Ora puoi configurarlo.');
+        } catch (error) {
+            console.error(error);
+            alert('Errore creazione studio');
+        } finally {
+            setLoading(false);
         }
-    }, []);
+    };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!tenant) return;
         setLoading(true);
 
-        // Update CSS variables
-        if (tenant.theme?.primaryColor) {
-            document.documentElement.style.setProperty('--color-primary', tenant.theme.primaryColor);
-            // Calculate hover and dark variants
-            const r = parseInt(tenant.theme.primaryColor.slice(1, 3), 16);
-            const g = parseInt(tenant.theme.primaryColor.slice(3, 5), 16);
-            const b = parseInt(tenant.theme.primaryColor.slice(5, 7), 16);
+        try {
+            // Update CSS variables
+            if (tenant.theme?.primaryColor) {
+                document.documentElement.style.setProperty('--color-primary', tenant.theme.primaryColor);
+                // Calculate hover and dark variants
+                const r = parseInt(tenant.theme.primaryColor.slice(1, 3), 16);
+                const g = parseInt(tenant.theme.primaryColor.slice(3, 5), 16);
+                const b = parseInt(tenant.theme.primaryColor.slice(5, 7), 16);
 
-            const hoverColor = `rgb(${Math.min(r + 30, 255)}, ${Math.min(g + 30, 255)}, ${Math.min(b + 30, 255)})`;
-            const darkColor = `rgb(${Math.max(r - 30, 0)}, ${Math.max(g - 30, 0)}, ${Math.max(b - 30, 0)})`;
+                const hoverColor = `rgb(${Math.min(r + 30, 255)}, ${Math.min(g + 30, 255)}, ${Math.min(b + 30, 255)})`;
+                const darkColor = `rgb(${Math.max(r - 30, 0)}, ${Math.max(g - 30, 0)}, ${Math.max(b - 30, 0)})`;
 
-            document.documentElement.style.setProperty('--color-primary-hover', hoverColor);
-            document.documentElement.style.setProperty('--color-primary-dark', darkColor);
-        }
+                document.documentElement.style.setProperty('--color-primary-hover', hoverColor);
+                document.documentElement.style.setProperty('--color-primary-dark', darkColor);
+            }
 
-        // Apply color mode
-        if (tenant.theme?.colorMode === 'light') {
-            document.documentElement.style.setProperty('--color-background', '#F5F5F5');
-            document.documentElement.style.setProperty('--color-surface', '#FFFFFF');
-            document.documentElement.style.setProperty('--color-surface-hover', '#F0F0F0');
-            document.documentElement.style.setProperty('--color-text-primary', '#1A1A1A');
-            document.documentElement.style.setProperty('--color-text-secondary', '#666666');
-            document.documentElement.style.setProperty('--color-text-muted', '#999999');
-            document.documentElement.style.setProperty('--color-border', '#E0E0E0');
-        } else {
-            // Dark mode (default)
-            document.documentElement.style.setProperty('--color-background', '#0A0A0A');
-            document.documentElement.style.setProperty('--color-surface', '#1A1A1A');
-            document.documentElement.style.setProperty('--color-surface-hover', '#252525');
-            document.documentElement.style.setProperty('--color-text-primary', '#FFFFFF');
-            document.documentElement.style.setProperty('--color-text-secondary', '#A1A1A1');
-            document.documentElement.style.setProperty('--color-text-muted', '#666666');
-            document.documentElement.style.setProperty('--color-border', '#2A2A2A');
-        }
+            // Apply color mode
+            if (tenant.theme?.colorMode === 'light') {
+                document.documentElement.style.setProperty('--color-background', '#F5F5F5');
+                document.documentElement.style.setProperty('--color-surface', '#FFFFFF');
+                document.documentElement.style.setProperty('--color-surface-hover', '#F0F0F0');
+                document.documentElement.style.setProperty('--color-text-primary', '#1A1A1A');
+                document.documentElement.style.setProperty('--color-text-secondary', '#666666');
+                document.documentElement.style.setProperty('--color-text-muted', '#999999');
+                document.documentElement.style.setProperty('--color-border', '#E0E0E0');
+            } else {
+                // Dark mode (default)
+                document.documentElement.style.setProperty('--color-background', '#0A0A0A');
+                document.documentElement.style.setProperty('--color-surface', '#1A1A1A');
+                document.documentElement.style.setProperty('--color-surface-hover', '#252525');
+                document.documentElement.style.setProperty('--color-text-primary', '#FFFFFF');
+                document.documentElement.style.setProperty('--color-text-secondary', '#A1A1A1');
+                document.documentElement.style.setProperty('--color-text-muted', '#666666');
+                document.documentElement.style.setProperty('--color-border', '#2A2A2A');
+            }
 
-        // Persist to storage
-        const allTenants = storage.getTenants();
-        const index = allTenants.findIndex(t => t.id === tenant.id);
-        if (index >= 0) {
-            allTenants[index] = tenant;
-            localStorage.setItem('inkflow_tenants', JSON.stringify(allTenants));
-        }
+            // Persist to storage
+            await storage.saveTenant(tenant);
 
-        setTimeout(() => {
+            setTimeout(() => {
+                setLoading(false);
+                alert('Impostazioni salvate! Ricarica la pagina per vedere tutte le modifiche.');
+            }, 500);
+        } catch (error) {
+            console.error("Failed to save settings:", error);
             setLoading(false);
-            alert('Impostazioni salvate! Ricarica la pagina per vedere tutte le modifiche.');
-        }, 500);
+            alert("Errore salvataggio impostazioni");
+        }
     };
 
     if (!tenant) return <div>Loading...</div>;
@@ -119,6 +166,54 @@ export function SettingsPage() {
                     <span>{loading ? 'Salvataggio...' : 'Salva Modifiche'}</span>
                 </button>
             </div>
+
+            {/* Tenant Switcher / Creator */}
+            <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                <div style={{ padding: '0.75rem', background: 'var(--color-primary)', borderRadius: '50%', color: 'white' }}>
+                    <Building2 size={24} />
+                </div>
+                <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Studio Corrente</p>
+                    <select
+                        value={tenant.id}
+                        onChange={(e) => {
+                            const t = tenants.find(t => t.id === e.target.value);
+                            if (t) selectTenant(t);
+                        }}
+                        style={{
+                            fontSize: '1.2rem',
+                            fontWeight: 'bold',
+                            border: 'none',
+                            background: 'transparent',
+                            color: 'var(--color-text-primary)',
+                            cursor: 'pointer',
+                            outline: 'none',
+                            width: '100%'
+                        }}
+                    >
+                        {tenants.map(t => <option key={t.id} value={t.id} style={{ color: 'black' }}>{t.name}</option>)}
+                    </select>
+                </div>
+                <button onClick={() => setIsCreating(true)} style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center', fontWeight: '500' }}>
+                    <Plus size={16} /> Nuovo Studio
+                </button>
+            </div>
+
+            {isCreating && (
+                <div style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--color-surface-hover)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-primary)' }}>
+                    <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Crea Nuovo Studio</h3>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <input
+                            placeholder="Nome del nuovo studio..."
+                            value={newTenantName}
+                            onChange={(e) => setNewTenantName(e.target.value)}
+                            style={{ flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'var(--color-background)', color: 'var(--color-text-primary)' }}
+                        />
+                        <button onClick={handleCreateTenant} style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0 1.5rem', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontWeight: '600' }}>Crea Studio</button>
+                        <button onClick={() => setIsCreating(false)} style={{ background: 'transparent', border: '1px solid var(--color-border)', padding: '0 1.5rem', borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>Annulla</button>
+                    </div>
+                </div>
+            )}
 
             {/* Tabs */}
             <div style={{

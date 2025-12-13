@@ -20,10 +20,17 @@ export function PublicClientForm() {
     const [inputOtp, setInputOtp] = useState('');
 
     useEffect(() => {
-        // Load tenant info
-        const tenants = storage.getTenants();
-        const currentTenant = tenants.find(t => t.id === tenantId) || tenants[0];
-        setTenant(currentTenant);
+        const loadTenant = async () => {
+            try {
+                // Load tenant info
+                const tenants = await storage.getTenants();
+                const currentTenant = tenants.find(t => t.id === tenantId) || tenants[0];
+                setTenant(currentTenant);
+            } catch (error) {
+                console.error("Failed to load tenant:", error);
+            }
+        };
+        loadTenant();
     }, [tenantId]);
 
     const [formData, setFormData] = useState({
@@ -123,15 +130,21 @@ export function PublicClientForm() {
             inBroadcast: false
         };
 
-        storage.saveClient(newClient);
+        try {
+            await storage.saveClient(newClient);
 
-        // INVIO EMAIL BENVENUTO
-        await sendWelcomeEmail(newClient);
+            // INVIO EMAIL BENVENUTO
+            await sendWelcomeEmail(newClient);
 
-        setTimeout(() => {
+            setTimeout(() => {
+                setLoading(false);
+                setSuccess(true);
+            }, 500);
+        } catch (error) {
+            console.error("Registration failed:", error);
             setLoading(false);
-            setSuccess(true);
-        }, 500);
+            alert("Errore durante la registrazione. Riprova.");
+        }
     };
 
     const toggleStyle = (style: TattooStyle) => {

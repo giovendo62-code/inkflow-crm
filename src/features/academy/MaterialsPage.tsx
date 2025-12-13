@@ -13,29 +13,39 @@ export function MaterialsPage() {
     const [daysPresent, setDaysPresent] = useState(0);
 
     useEffect(() => {
-        if (user) {
-            const students = storage.getStudents();
-            const myStudent = students.find(s => s.email === user.email);
+        const loadMaterialData = async () => {
+            if (user) {
+                try {
+                    const [students, courses, attendances, allMaterials] = await Promise.all([
+                        storage.getStudents(),
+                        storage.getCourses(),
+                        storage.getAttendances(),
+                        storage.getMaterials()
+                    ]);
 
-            if (myStudent) {
-                setStudent(myStudent);
+                    const myStudent = students.find(s => s.email === user.email);
 
-                // Course
-                const courses = storage.getCourses();
-                const myCourse = courses.find(c => c.id === myStudent.courseId);
-                setCourse(myCourse || null);
+                    if (myStudent) {
+                        setStudent(myStudent);
 
-                // Attendances for unlock logic
-                const attendances = storage.getAttendances();
-                const presentCount = attendances.filter(a => a.studentId === myStudent.id && a.present).length;
-                setDaysPresent(presentCount);
+                        // Course
+                        const myCourse = courses.find(c => c.id === myStudent.courseId);
+                        setCourse(myCourse || null);
 
-                // Materials
-                const allMaterials = storage.getMaterials();
-                const myMaterials = allMaterials.filter(m => m.studentId === myStudent.id);
-                setMaterials(myMaterials);
+                        // Attendances for unlock logic
+                        const presentCount = attendances.filter(a => a.studentId === myStudent.id && a.present).length;
+                        setDaysPresent(presentCount);
+
+                        // Materials
+                        const myMaterials = allMaterials.filter(m => m.studentId === myStudent.id);
+                        setMaterials(myMaterials);
+                    }
+                } catch (error) {
+                    console.error("Failed to load materials page data:", error);
+                }
             }
-        }
+        };
+        loadMaterialData();
     }, [user]);
 
     if (!student || !course) {

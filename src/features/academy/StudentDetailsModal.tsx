@@ -60,20 +60,21 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
             setFormData(student);
             setIsEditing(false);
 
-            // Load payments
-            const allPayments = storage.getCoursePayments();
-            const studentPayments = allPayments.filter(p => p.studentId === student.id);
-            setPayments(studentPayments);
-
-            // Load attendances
-            const allAttendances = storage.getAttendances();
-            const studentAttendances = allAttendances.filter(a => a.studentId === student.id);
-            setAttendances(studentAttendances);
-
-            // Load materials
-            const allMaterials = storage.getMaterials();
-            const studentMaterials = allMaterials.filter(m => m.studentId === student.id);
-            setMaterials(studentMaterials);
+            const loadDetails = async () => {
+                try {
+                    const [allPayments, allAttendances, allMaterials] = await Promise.all([
+                        storage.getCoursePayments(),
+                        storage.getAttendances(),
+                        storage.getMaterials()
+                    ]);
+                    setPayments(allPayments.filter(p => p.studentId === student.id));
+                    setAttendances(allAttendances.filter(a => a.studentId === student.id));
+                    setMaterials(allMaterials.filter(m => m.studentId === student.id));
+                } catch (e) {
+                    console.error("Error loading student details", e);
+                }
+            };
+            loadDetails();
         }
     }, [student]);
 
@@ -90,14 +91,14 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
         }
     };
 
-    const handleAddMaterial = () => {
+    const handleAddMaterial = async () => {
         if (!newMaterial.title || !newMaterial.url) {
             alert('Inserisci titolo e URL/File');
             return;
         }
 
         const material: TeachingMaterial = {
-            id: `mat - ${Date.now()} `,
+            id: `mat-${Date.now()}`,
             tenantId: 'studio-1',
             studentId: student.id,
             courseId: student.courseId,
@@ -109,26 +110,36 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
             createdAt: new Date().toISOString()
         };
 
-        storage.saveMaterial(material);
+        try {
+            await storage.saveMaterial(material);
 
-        // Refresh
-        const allMaterials = storage.getMaterials();
-        setMaterials(allMaterials.filter(m => m.studentId === student.id));
+            // Refresh
+            const allMaterials = await storage.getMaterials();
+            setMaterials(allMaterials.filter(m => m.studentId === student.id));
 
-        setNewMaterial({
-            title: '',
-            url: '',
-            type: 'PDF',
-            unlockThresholdDays: 0,
-            description: ''
-        });
-        setShowMaterialForm(false);
+            setNewMaterial({
+                title: '',
+                url: '',
+                type: 'PDF',
+                unlockThresholdDays: 0,
+                description: ''
+            });
+            setShowMaterialForm(false);
+        } catch (error) {
+            console.error(error);
+            alert("Errore salvataggio materiale");
+        }
     };
 
-    const handleDeleteMaterial = (id: string) => {
+    const handleDeleteMaterial = async (id: string) => {
         if (confirm('Eliminare questo materiale?')) {
-            storage.deleteMaterial(id);
-            setMaterials(materials.filter(m => m.id !== id));
+            try {
+                await storage.deleteMaterial(id);
+                setMaterials(materials.filter(m => m.id !== id));
+            } catch (error) {
+                console.error(error);
+                alert("Errore eliminazione materiale");
+            }
         }
     };
 
@@ -147,14 +158,14 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
         }
     };
 
-    const handleAddPayment = () => {
+    const handleAddPayment = async () => {
         if (!newPayment.amount || parseFloat(newPayment.amount) <= 0) {
             alert('Inserisci un importo valido');
             return;
         }
 
         const payment: CoursePayment = {
-            id: `payment - ${Date.now()} `,
+            id: `payment-${Date.now()}`,
             tenantId: 'studio-1',
             studentId: student.id,
             courseId: student.courseId,
@@ -165,41 +176,46 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
             createdAt: new Date().toISOString()
         };
 
-        storage.saveCoursePayment(payment);
+        try {
+            await storage.saveCoursePayment(payment);
 
-        // Update student total paid
-        const newTotalPaid = formData.totalPaid + payment.amount;
-        const updatedStudent = {
-            ...formData,
-            totalPaid: newTotalPaid,
-            updatedAt: new Date().toISOString()
-        };
+            // Update student total paid
+            const newTotalPaid = formData.totalPaid + payment.amount;
+            const updatedStudent = {
+                ...formData,
+                totalPaid: newTotalPaid,
+                updatedAt: new Date().toISOString()
+            };
 
-        setFormData(updatedStudent);
-        onSave(updatedStudent);
+            setFormData(updatedStudent);
+            onSave(updatedStudent);
 
-        // Refresh payments list
-        const allPayments = storage.getCoursePayments();
-        setPayments(allPayments.filter(p => p.studentId === student.id));
+            // Refresh payments list
+            const allPayments = await storage.getCoursePayments();
+            setPayments(allPayments.filter(p => p.studentId === student.id));
 
-        // Reset form
-        setNewPayment({
-            amount: '',
-            paymentDate: new Date().toISOString().split('T')[0],
-            paymentMethod: 'CASH',
-            notes: ''
-        });
-        setShowPaymentForm(false);
+            // Reset form
+            setNewPayment({
+                amount: '',
+                paymentDate: new Date().toISOString().split('T')[0],
+                paymentMethod: 'CASH',
+                notes: ''
+            });
+            setShowPaymentForm(false);
+        } catch (error) {
+            console.error(error);
+            alert("Errore salvataggio pagamento");
+        }
     };
 
-    const handleAddAttendance = () => {
+    const handleAddAttendance = async () => {
         if (newAttendance.hours <= 0) {
             alert('Inserisci un numero di ore valido');
             return;
         }
 
         const attendance: Attendance = {
-            id: `attendance - ${Date.now()} `,
+            id: `attendance-${Date.now()}`,
             tenantId: 'studio-1',
             studentId: student.id,
             courseId: student.courseId,
@@ -210,19 +226,24 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
             createdAt: new Date().toISOString()
         };
 
-        storage.saveAttendance(attendance);
+        try {
+            await storage.saveAttendance(attendance);
 
-        // Refresh list
-        const allAttendances = storage.getAttendances();
-        setAttendances(allAttendances.filter(a => a.studentId === student.id));
+            // Refresh list
+            const allAttendances = await storage.getAttendances();
+            setAttendances(allAttendances.filter(a => a.studentId === student.id));
 
-        setShowAttendanceForm(false);
-        setNewAttendance({
-            date: new Date().toISOString().split('T')[0],
-            hours: 4,
-            present: true,
-            notes: ''
-        });
+            setShowAttendanceForm(false);
+            setNewAttendance({
+                date: new Date().toISOString().split('T')[0],
+                hours: 4,
+                present: true,
+                notes: ''
+            });
+        } catch (error) {
+            console.error(error);
+            alert("Errore salvataggio presenza");
+        }
     };
 
     const remainingAmount = course ? course.price - formData.totalPaid : 0;
@@ -291,7 +312,7 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={(e) => {
+                                    onClick={async (e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
 
@@ -300,14 +321,19 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
                                         if (confirmed) {
                                             console.log('Eliminazione corsista:', student.id);
 
-                                            // Delete using storage helper
-                                            storage.deleteStudent(student.id);
+                                            try {
+                                                // Delete using storage helper
+                                                await storage.deleteStudent(student.id);
 
-                                            console.log('Chiudo modal e ricarico');
-                                            onClose();
+                                                console.log('Chiudo modal e ricarico');
+                                                onClose();
 
-                                            if (onDelete) {
-                                                onDelete(student.id);
+                                                if (onDelete) {
+                                                    onDelete(student.id);
+                                                }
+                                            } catch (error) {
+                                                console.error(error);
+                                                alert("Errore eliminazione studente");
                                             }
                                         }
                                     }}

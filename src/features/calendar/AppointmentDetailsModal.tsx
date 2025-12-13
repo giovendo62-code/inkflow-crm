@@ -16,6 +16,7 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
     const { user } = useAuth();
     const [clients, setClients] = useState<Client[]>([]);
     const [artists, setArtists] = useState<User[]>([]);
+    const [allUsers, setAllUsers] = useState<User[]>([]);
 
     // Form State
     const [title, setTitle] = useState('');
@@ -44,8 +45,14 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
 
     useEffect(() => {
         if (isOpen && appointment) {
-            setClients(storage.getClients());
-            setArtists(storage.getUsers().filter(u => u.role === 'ARTIST'));
+            const loadData = async () => {
+                const loadedClients = await storage.getClients();
+                const loadedUsers = await storage.getUsers();
+                setClients(loadedClients);
+                setAllUsers(loadedUsers);
+                setArtists(loadedUsers.filter(u => u.role === 'ARTIST'));
+            };
+            loadData();
 
             // Populate form with existing data
             setTitle(appointment.title);
@@ -86,7 +93,7 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
         setAttachments(prev => prev.filter((_, i) => i !== index));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!appointment) return;
@@ -114,33 +121,34 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
             attachments
         };
 
-        // Update in storage
-        const allAppointments = storage.getAppointments();
-        const index = allAppointments.findIndex(a => a.id === appointment.id);
-        if (index >= 0) {
-            allAppointments[index] = updatedAppointment;
-            localStorage.setItem('inkflow_appointments', JSON.stringify(allAppointments));
+        try {
+            await storage.saveAppointment(updatedAppointment);
+            onSave();
+            onClose();
+        } catch (error) {
+            console.error('Failed to update appointment:', error);
+            alert('Errore aggiornamento appuntamento');
         }
-
-        onSave();
-        onClose();
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (!appointment) return;
 
         if (window.confirm('Sei sicuro di voler eliminare questo appuntamento?')) {
-            const allAppointments = storage.getAppointments();
-            const filtered = allAppointments.filter(a => a.id !== appointment.id);
-            localStorage.setItem('inkflow_appointments', JSON.stringify(filtered));
-            onSave();
-            onClose();
+            try {
+                await storage.deleteAppointment(appointment.id);
+                onSave();
+                onClose();
+            } catch (error) {
+                console.error('Failed to delete appointment:', error);
+                alert('Errore eliminazione appuntamento');
+            }
         }
     };
 
     if (!isOpen || !appointment) return null;
 
-    const currentArtist = artists.find(a => a.id === artistId) || storage.getUsers().find(u => u.id === artistId);
+    const currentArtist = allUsers.find(a => a.id === artistId);
     const currentClient = clients.find(c => c.id === clientId);
 
     // Check if artist can edit this appointment

@@ -1,219 +1,458 @@
+import { supabase } from './supabase';
 import { type Appointment, type Client, type Tenant, type User, type ChatMessage, type Course, type Student, type Attendance, type CoursePayment, type TeachingMaterial } from '../types';
 
-const STORAGE_KEYS = {
-    TENANTS: 'inkflow_tenants',
-    USERS: 'inkflow_users',
-    CLIENTS: 'inkflow_clients',
-    APPOINTMENTS: 'inkflow_appointments',
-    MESSAGES: 'inkflow_messages',
-    COURSES: 'inkflow_courses',
-    STUDENTS: 'inkflow_students',
-    ATTENDANCES: 'inkflow_attendances',
-    COURSE_PAYMENTS: 'inkflow_course_payments',
-    MATERIALS: 'inkflow_materials',
-};
+// Data Mappers (DB <-> App)
+const mapClientFromDB = (data: any): Client => ({
+    id: data.id,
+    tenantId: data.tenant_id,
+    firstName: data.first_name,
+    lastName: data.last_name,
+    email: data.email,
+    phone: data.phone,
+    fiscalCode: data.fiscal_code,
+    birthDate: data.birth_date,
+    address: data.address, // JSONB
+    preferences: data.preferences || { styles: [] }, // JSONB
+    preferredStyle: data.preferred_style,
+    inBroadcast: data.in_broadcast,
+    consents: data.consents, // JSONB
+    // Map flattened fields if needed, or rely on address object
+    street: data.address?.street,
+    city: data.address?.city,
+    zip: data.address?.zip,
 
-// Seed Data
-const MOCK_TENANTS: Tenant[] = [
-    { id: 'studio-1', name: 'InkFlow Main Studio', logo: '/logo-mock.png' },
-];
+    privacyPolicyAccepted: data.consents?.privacy,
+    privacyPolicyDate: data.consents?.privacyDate,
+    informedConsentAccepted: data.consents?.informedConsent,
+    informedConsentDate: data.consents?.informedConsentDate,
 
-const MOCK_USERS: User[] = [
-    {
-        id: 'user-manager',
-        tenantId: 'studio-1',
-        email: 'manager@inkflow.com',
-        name: 'Marco Rossi',
-        role: 'MANAGER',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marco',
-        profile: {
-            bio: 'Studio Manager & Lead Artist',
-            color: '#FF6B35',
-            phone: '+39 333 1234567',
-            taxId: 'RSSMRC85M01H501U'
-        }
-    },
-    {
-        id: 'user-2',
-        tenantId: 'studio-1',
-        email: 'artist@inkflow.com', // Updated
-        name: 'Alex Bianchi',
-        role: 'ARTIST',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
-        profile: {
-            bio: 'Specializzato in Realistico e Micro-realistico',
-            color: '#00CC66',
-            phone: '+39 333 7654321',
-            taxId: 'BNCLXA90A01F205Z',
-            commissionRate: 50,
-            googleCalendarConnected: true,
-            googleCalendarId: 'alex@inkflow.com',
-            googleCalendarLastSync: new Date().toISOString()
-        }
-    },
-    {
-        id: 'user-student-1',
-        tenantId: 'studio-1',
-        email: 'student@inkflow.com',
-        name: 'Luca Neri',
-        role: 'STUDENT',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Luca',
-        profile: {
-            bio: 'Corsista Corso Base Tatuaggio',
-            color: '#4285F4',
-            phone: '+39 333 5551234'
-        }
-    }
-];
+    attachments: data.attachments,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
+});
 
-const MOCK_MESSAGES: ChatMessage[] = [
-    {
-        id: 'msg-1',
-        tenantId: 'studio-1',
-        senderId: 'user-manager',
-        receiverId: 'broadcast',
-        message: 'Benvenuti nel nuovo CRM! 🚀 Qui potrete leggere le comunicazioni importanti.',
-        timestamp: new Date(Date.now() - 86400000).toISOString(),
-        read: false
+const mapClientToDB = (client: Client) => ({
+    id: client.id,
+    tenant_id: client.tenantId || 'd290f1ee-6c54-4b01-90e6-d701748f0851', // Default if missing
+    first_name: client.firstName,
+    last_name: client.lastName,
+    email: client.email,
+    phone: client.phone,
+    fiscal_code: client.fiscalCode,
+    birth_date: client.birthDate,
+    address: client.address || {
+        street: client.street,
+        city: client.city,
+        zip: client.zip
     },
-];
+    preferences: client.preferences || { styles: [], notes: '' },
+    preferred_style: client.preferredStyle || null,
+    in_broadcast: client.inBroadcast || false,
+    consents: {
+        privacy: client.privacyPolicyAccepted || false,
+        informedConsent: client.informedConsentAccepted || false,
+        privacyDate: client.privacyPolicyDate || null,
+        informedConsentDate: client.informedConsentDate || null,
+        ...client.consents
+    },
+    attachments: client.attachments || [],
+    updated_at: new Date().toISOString()
+});
+
+const mapAppointmentFromDB = (data: any): Appointment => ({
+    id: data.id,
+    tenantId: data.tenant_id,
+    clientId: data.client_id,
+    artistId: data.artist_id,
+    title: data.title,
+    description: data.description,
+    startTime: data.start_time,
+    endTime: data.end_time,
+    serviceType: data.service_type,
+    tattooStyle: data.tattoo_style,
+    status: data.status,
+    financials: data.financials || { depositPaid: false },
+    reminders: data.reminders,
+    notes: data.notes,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
+});
+
+const mapAppointmentToDB = (apt: Appointment) => ({
+    id: apt.id,
+    tenant_id: apt.tenantId,
+    client_id: apt.clientId,
+    artist_id: apt.artistId,
+    title: apt.title,
+    description: apt.description,
+    start_time: apt.startTime,
+    end_time: apt.endTime,
+    service_type: apt.serviceType,
+    tattoo_style: apt.tattooStyle,
+    status: apt.status,
+    financials: apt.financials,
+    reminders: apt.reminders,
+    notes: apt.notes,
+    updated_at: new Date().toISOString()
+});
+
+const mapCourseFromDB = (data: any): Course => ({
+    id: data.id,
+    tenantId: data.tenant_id,
+    name: data.name,
+    description: data.description,
+    startDate: data.start_date,
+    endDate: data.end_date,
+    totalHours: data.total_hours,
+    totalLessons: data.total_lessons,
+    schedule: data.schedule,
+    program: data.program,
+    price: data.price,
+    attachments: data.attachments,
+    instructorId: 'user-manager', // Default or fetch
+    status: 'ACTIVE', // Default or fetch
+    createdAt: data.created_at,
+    updatedAt: data.created_at
+});
+
+const mapCourseToDB = (course: Course) => ({
+    id: course.id,
+    tenant_id: course.tenantId,
+    name: course.name,
+    description: course.description,
+    start_date: course.startDate,
+    end_date: course.endDate,
+    total_hours: course.totalHours,
+    total_lessons: course.totalLessons,
+    schedule: course.schedule,
+    program: course.program,
+    price: course.price,
+    attachments: course.attachments
+});
+
+const mapStudentFromDB = (data: any): Student => ({
+    id: data.id,
+    tenantId: data.tenant_id,
+    courseId: data.course_id,
+    firstName: data.first_name,
+    lastName: data.last_name,
+    email: data.email,
+    phone: data.phone,
+    totalPaid: data.total_paid,
+    enrollmentDate: data.created_at, // Use created_at as enrollment
+    status: 'ACTIVE',
+    createdAt: data.created_at,
+    updatedAt: data.created_at
+});
+
+const mapStudentToDB = (student: Student) => ({
+    id: student.id,
+    tenant_id: student.tenantId,
+    course_id: student.courseId,
+    first_name: student.firstName,
+    last_name: student.lastName,
+    email: student.email,
+    phone: student.phone,
+    total_paid: student.totalPaid
+});
+
+const mapMessageFromDB = (data: any): ChatMessage => ({
+    id: data.id,
+    tenantId: data.tenant_id,
+    senderId: data.sender_id,
+    receiverId: '',
+    message: data.content,
+    content: data.content,
+    timestamp: data.timestamp,
+    read: false,
+    senderName: data.sender_name,
+    senderAvatar: data.sender_avatar,
+    type: data.type as any
+});
+
+const mapMessageToDB = (msg: ChatMessage) => ({
+    id: msg.id,
+    tenant_id: msg.tenantId || 'd290f1ee-6c54-4b01-90e6-d701748f0851',
+    sender_id: msg.senderId,
+    sender_name: msg.senderName,
+    sender_avatar: msg.senderAvatar,
+    content: msg.content || msg.message,
+    timestamp: msg.timestamp,
+    type: msg.type || 'chat'
+});
 
 export const storage = {
-    getTenants: (): Tenant[] => {
-        const data = localStorage.getItem(STORAGE_KEYS.TENANTS);
-        return data ? JSON.parse(data) : MOCK_TENANTS;
-    },
-
-    getUsers: (): User[] => {
-        const data = localStorage.getItem(STORAGE_KEYS.USERS);
-        if (data) {
-            const parsed = JSON.parse(data);
-            if (parsed.length > 0) return parsed;
+    getTenants: async (): Promise<Tenant[]> => {
+        const { data, error } = await supabase.from('tenants').select('*');
+        if (error) {
+            console.error('Error fetching tenants:', error);
+            return [];
         }
-        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(MOCK_USERS));
-        return MOCK_USERS;
+        return data.map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            logo: t.logo,
+            theme: t.theme
+        }));
     },
 
-    getClients: (): Client[] => {
-        const data = localStorage.getItem(STORAGE_KEYS.CLIENTS);
-        return data ? JSON.parse(data) : [];
+    saveTenant: async (tenant: Tenant) => {
+        const dbTenant = {
+            id: tenant.id,
+            name: tenant.name,
+            logo: tenant.logo,
+            theme: tenant.theme
+        };
+        const { error } = await supabase.from('tenants').upsert(dbTenant);
+        if (error) throw error;
     },
 
-    getAppointments: (): Appointment[] => {
-        const data = localStorage.getItem(STORAGE_KEYS.APPOINTMENTS);
-        return data ? JSON.parse(data) : [];
+    getUsers: async (tenantId?: string): Promise<User[]> => {
+        let query = supabase.from('users').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+
+        const { data, error } = await query;
+        if (error) {
+            console.error('Error fetching users:', error);
+            return [];
+        }
+        return data.map((u: any) => ({
+            id: u.id,
+            tenantId: u.tenant_id,
+            email: u.email,
+            name: u.name,
+            role: u.role,
+            avatarUrl: u.avatar_url,
+            profile: u.profile
+        }));
     },
 
-    getMessages: (): ChatMessage[] => {
-        const data = localStorage.getItem(STORAGE_KEYS.MESSAGES);
-        return data ? JSON.parse(data) : MOCK_MESSAGES;
+    saveUser: async (user: User) => {
+        const dbUser = {
+            id: user.id,
+            tenant_id: user.tenantId,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            avatar_url: user.avatarUrl,
+            profile: user.profile
+        };
+        const { error } = await supabase.from('users').upsert(dbUser);
+        if (error) throw error;
     },
 
-    // Setters
-    saveClient: (client: Client) => {
-        const clients = storage.getClients();
-        const index = clients.findIndex(c => c.id === client.id);
-        if (index >= 0) clients[index] = client;
-        else clients.push(client);
-        localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+    deleteUser: async (userId: string) => {
+        const { error } = await supabase.from('users').delete().eq('id', userId);
+        if (error) throw error;
     },
 
-    saveAppointment: (apt: Appointment) => {
-        const appts = storage.getAppointments();
-        const index = appts.findIndex(a => a.id === apt.id);
-        if (index >= 0) appts[index] = apt;
-        else appts.push(apt);
-        localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(appts));
+    getClients: async (tenantId?: string): Promise<Client[]> => {
+        let query = supabase.from('clients').select('*').order('created_at', { ascending: false });
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data.map(mapClientFromDB);
     },
 
-    saveMessage: (msg: ChatMessage) => {
-        const messages = storage.getMessages();
-        messages.push(msg);
-        localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages));
+    getAppointments: async (tenantId?: string): Promise<Appointment[]> => {
+        let query = supabase.from('appointments').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data.map(mapAppointmentFromDB);
+    },
+
+    getMessages: async (tenantId?: string): Promise<ChatMessage[]> => {
+        let query = supabase.from('messages').select('*').order('timestamp', { ascending: true });
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+
+        const { data, error } = await query;
+        if (error) {
+            console.error('Error fetching messages:', error);
+            return [];
+        }
+        return data.map(mapMessageFromDB);
+    },
+
+    saveClient: async (client: Client) => {
+        const dbClient = mapClientToDB(client);
+        const { data, error } = await supabase.from('clients').upsert(dbClient).select();
+        if (error) throw error;
+        return mapClientFromDB(data[0]);
+    },
+
+    saveAppointment: async (apt: Appointment) => {
+        const dbApt = mapAppointmentToDB(apt);
+        const { data, error } = await supabase.from('appointments').upsert(dbApt).select();
+        if (error) throw error;
+        return mapAppointmentFromDB(data[0]);
+    },
+
+    deleteAppointment: async (appointmentId: string) => {
+        const { error } = await supabase.from('appointments').delete().eq('id', appointmentId);
+        if (error) throw error;
+    },
+
+    saveMessage: async (msg: ChatMessage) => {
+        const dbMsg = mapMessageToDB(msg);
+        const { error } = await supabase.from('messages').upsert(dbMsg);
+        if (error) throw error;
     },
 
     // Academy
-    getCourses: (): Course[] => {
-        const data = localStorage.getItem(STORAGE_KEYS.COURSES);
-        return data ? JSON.parse(data) : [];
+    getCourses: async (tenantId?: string): Promise<Course[]> => {
+        let query = supabase.from('courses').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data.map(mapCourseFromDB);
     },
 
-    saveCourse: (course: Course) => {
-        const courses = storage.getCourses();
-        const index = courses.findIndex(c => c.id === course.id);
-        if (index >= 0) courses[index] = course;
-        else courses.push(course);
-        localStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(courses));
+    saveCourse: async (course: Course) => {
+        const dbCourse = mapCourseToDB(course);
+        const { data, error } = await supabase.from('courses').upsert(dbCourse).select();
+        if (error) throw error;
+        return mapCourseFromDB(data[0]);
     },
 
-    getStudents: (): Student[] => {
-        const data = localStorage.getItem(STORAGE_KEYS.STUDENTS);
-        return data ? JSON.parse(data) : [];
+    getStudents: async (tenantId?: string): Promise<Student[]> => {
+        let query = supabase.from('students').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data.map(mapStudentFromDB);
     },
 
-    saveStudent: (student: Student) => {
-        const students = storage.getStudents();
-        const index = students.findIndex(s => s.id === student.id);
-        if (index >= 0) students[index] = student;
-        else students.push(student);
-        localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+    saveStudent: async (student: Student) => {
+        const dbStudent = mapStudentToDB(student);
+        const { data, error } = await supabase.from('students').upsert(dbStudent).select();
+        if (error) throw error;
+        return mapStudentFromDB(data[0]);
     },
 
-    deleteStudent: (studentId: string) => {
-        const students = storage.getStudents();
-        const updatedStudents = students.filter(s => s.id !== studentId);
-        localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(updatedStudents));
+    deleteStudent: async (studentId: string) => {
+        const { error } = await supabase.from('students').delete().eq('id', studentId);
+        if (error) throw error;
     },
 
-    getAttendances: (): Attendance[] => {
-        const data = localStorage.getItem(STORAGE_KEYS.ATTENDANCES);
-        return data ? JSON.parse(data) : [];
+    getAttendances: async (tenantId?: string): Promise<Attendance[]> => {
+        let query = supabase.from('attendances').select('*');
+        // If tenant-aware, enable this:
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        // Note: Attendances table previously didn't have explicit filtering in mock, 
+        // but now it should probably have it. Assuming the DB table has tenant_id.
+        // Based on map above, tenantId is hardcoded 'studio-1' in response, but let's check input params.
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data.map((a: any) => ({
+            id: a.id,
+            tenantId: a.tenant_id || 'd290f1ee-6c54-4b01-90e6-d701748f0851', // Use DB Val or Fallback
+            studentId: a.student_id,
+            courseId: a.course_id,
+            date: a.date,
+            hours: a.hours,
+            present: a.present,
+            notes: a.notes,
+            createdAt: a.created_at
+        }));
     },
 
-    saveAttendance: (attendance: Attendance) => {
-        const attendances = storage.getAttendances();
-        const index = attendances.findIndex(a => a.id === attendance.id);
-        if (index >= 0) attendances[index] = attendance;
-        else attendances.push(attendance);
-        localStorage.setItem(STORAGE_KEYS.ATTENDANCES, JSON.stringify(attendances));
+    saveAttendance: async (attendance: Attendance) => {
+        const dbAtt = {
+            id: attendance.id,
+            tenant_id: attendance.tenantId || 'd290f1ee-6c54-4b01-90e6-d701748f0851', // Ensure tenant_id is saved
+            student_id: attendance.studentId,
+            course_id: attendance.courseId,
+            date: attendance.date,
+            hours: attendance.hours,
+            present: attendance.present,
+            notes: attendance.notes
+        };
+        const { error } = await supabase.from('attendances').upsert(dbAtt);
+        if (error) throw error;
     },
 
-    getCoursePayments: (): CoursePayment[] => {
-        const data = localStorage.getItem(STORAGE_KEYS.COURSE_PAYMENTS);
-        return data ? JSON.parse(data) : [];
+    getCoursePayments: async (tenantId?: string): Promise<CoursePayment[]> => {
+        let query = supabase.from('course_payments').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId); // Assuming column exists
+        const { data, error } = await query;
+        if (error) throw error;
+        return data.map((p: any) => ({
+            id: p.id,
+            tenantId: p.tenant_id || 'd290f1ee-6c54-4b01-90e6-d701748f0851',
+            studentId: p.student_id,
+            courseId: p.course_id,
+            amount: p.amount,
+            paymentDate: p.payment_date,
+            paymentMethod: p.payment_method,
+            notes: p.notes,
+            createdAt: p.created_at
+        }));
     },
 
-    saveCoursePayment: (payment: CoursePayment) => {
-        const payments = storage.getCoursePayments();
-        payments.push(payment);
-        localStorage.setItem(STORAGE_KEYS.COURSE_PAYMENTS, JSON.stringify(payments));
+    saveCoursePayment: async (payment: CoursePayment) => {
+        const dbPay = {
+            id: payment.id,
+            tenant_id: payment.tenantId || 'd290f1ee-6c54-4b01-90e6-d701748f0851',
+            student_id: payment.studentId,
+            course_id: payment.courseId,
+            amount: payment.amount,
+            payment_date: payment.paymentDate,
+            payment_method: payment.paymentMethod,
+            notes: payment.notes
+        };
+        const { error } = await supabase.from('course_payments').upsert(dbPay);
+        if (error) throw error;
     },
 
-    getMaterials: (): TeachingMaterial[] => {
-        const data = localStorage.getItem(STORAGE_KEYS.MATERIALS);
-        return data ? JSON.parse(data) : [];
+    getMaterials: async (tenantId?: string): Promise<TeachingMaterial[]> => {
+        let query = supabase.from('teaching_materials').select('*');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data.map((m: any) => ({
+            id: m.id,
+            tenantId: m.tenant_id,
+            studentId: m.student_id,
+            courseId: m.course_id,
+            title: m.title,
+            description: m.description,
+            url: m.url,
+            type: m.type,
+            unlockThresholdDays: m.unlock_threshold_days,
+            createdAt: m.created_at
+        }));
     },
 
-    saveMaterial: (material: TeachingMaterial) => {
-        const materials = storage.getMaterials();
-        const index = materials.findIndex(m => m.id === material.id);
-        if (index >= 0) materials[index] = material;
-        else materials.push(material);
-        localStorage.setItem(STORAGE_KEYS.MATERIALS, JSON.stringify(materials));
+    saveMaterial: async (material: TeachingMaterial) => {
+        const dbMat = {
+            id: material.id,
+            tenant_id: material.tenantId,
+            student_id: material.studentId,
+            course_id: material.courseId,
+            title: material.title,
+            description: material.description,
+            url: material.url,
+            type: material.type,
+            unlock_threshold_days: material.unlockThresholdDays
+        };
+        const { error } = await supabase.from('teaching_materials').upsert(dbMat);
+        if (error) throw error;
     },
 
-    deleteMaterial: (materialId: string) => {
-        const materials = storage.getMaterials();
-        const updatedMaterials = materials.filter(m => m.id !== materialId);
-        localStorage.setItem(STORAGE_KEYS.MATERIALS, JSON.stringify(updatedMaterials));
+    deleteMaterial: async (materialId: string) => {
+        const { error } = await supabase.from('teaching_materials').delete().eq('id', materialId);
+        if (error) throw error;
     },
 
-    initialize: () => {
-        if (!localStorage.getItem(STORAGE_KEYS.TENANTS)) {
-            localStorage.setItem(STORAGE_KEYS.TENANTS, JSON.stringify(MOCK_TENANTS));
-        }
-        if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
-            localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(MOCK_USERS));
-        }
+    initialize: async () => {
+        // No local init needed anymore
     }
 };
+

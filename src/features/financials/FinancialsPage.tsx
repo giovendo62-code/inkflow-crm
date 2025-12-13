@@ -46,35 +46,46 @@ export function FinancialsPage() {
     };
 
     useEffect(() => {
-        const allAppointments = storage.getAppointments();
-        const allClients = storage.getClients();
-        const allUsers = storage.getUsers();
+        const loadFinancials = async () => {
+            if (!user?.tenantId) return;
+            try {
+                const [allAppointments, allClients, allUsers] = await Promise.all([
+                    storage.getAppointments(user.tenantId),
+                    storage.getClients(user.tenantId),
+                    storage.getUsers(user.tenantId)
+                ]);
 
-        setClients(allClients);
-        setUsers(allUsers);
+                setClients(allClients);
+                setUsers(allUsers);
 
-        // Filter appointments based on role
-        let filteredAppointments = allAppointments;
-        if (!isManager && user) {
-            filteredAppointments = allAppointments.filter(a => a.artistId === user.id);
-        }
+                // Filter appointments based on role
+                let filteredAppointments = allAppointments;
+                if (!isManager && user) {
+                    filteredAppointments = allAppointments.filter(a => a.artistId === user.id);
+                }
 
-        // Apply time period filter
-        const periodFilteredAppointments = filterByPeriod(filteredAppointments);
-        setAppointments(periodFilteredAppointments);
+                // Apply time period filter
+                const periodFilteredAppointments = filterByPeriod(filteredAppointments);
+                setAppointments(periodFilteredAppointments);
 
-        // Calculate totals
-        const completed = periodFilteredAppointments.filter(a => a.status === 'COMPLETED');
-        const earnings = completed.reduce((sum, a) => sum + (a.financials?.priceQuote || 0), 0);
-        setTotalEarnings(earnings);
+                // Calculate totals
+                const completed = periodFilteredAppointments.filter(a => a.status === 'COMPLETED');
+                const earnings = completed.reduce((sum, a) => sum + (a.financials?.priceQuote || 0), 0);
+                setTotalEarnings(earnings);
 
-        const pending = periodFilteredAppointments.reduce((sum, a) => {
-            if (!a.financials?.depositPaid && a.financials?.depositAmount) {
-                return sum + a.financials.depositAmount;
+                const pending = periodFilteredAppointments.reduce((sum, a) => {
+                    if (!a.financials?.depositPaid && a.financials?.depositAmount) {
+                        return sum + a.financials.depositAmount;
+                    }
+                    return sum;
+                }, 0);
+                setPendingDeposits(pending);
+            } catch (error) {
+                console.error("Error loading financials:", error);
             }
-            return sum;
-        }, 0);
-        setPendingDeposits(pending);
+        };
+
+        loadFinancials();
     }, [user, isManager, timePeriod]);
 
     // Helper to get client name
@@ -100,47 +111,53 @@ export function FinancialsPage() {
         }
     };
 
-    const handleClearFinancialData = () => {
+    const handleClearFinancialData = async () => {
         if (window.confirm('⚠️ ATTENZIONE: Questa azione cancellerà TUTTI i dati finanziari (preventivi e acconti) degli appuntamenti completati. Vuoi continuare?')) {
-            const allAppointments = storage.getAppointments();
-            const resetAppointments = allAppointments.map(apt => {
-                if (apt.status === 'COMPLETED') {
-                    return {
+            try {
+                const allAppointments = await storage.getAppointments();
+                const updates = allAppointments
+                    .filter(apt => apt.status === 'COMPLETED')
+                    .map(apt => ({
                         ...apt,
                         financials: {
                             priceQuote: 0,
                             depositAmount: 0,
                             depositPaid: false
                         }
-                    };
-                }
-                return apt;
-            });
-            localStorage.setItem('inkflow_appointments', JSON.stringify(resetAppointments));
-            window.location.reload();
+                    }));
+
+                await Promise.all(updates.map(apt => storage.saveAppointment(apt)));
+                window.location.reload();
+            } catch (error) {
+                console.error("Error clearing financial data:", error);
+                alert("Errore durante la cancellazione dei dati.");
+            }
         }
     };
 
-    const handleClearMyData = () => {
+    const handleClearMyData = async () => {
         if (!user) return;
 
         if (window.confirm('⚠️ ATTENZIONE: Questa azione cancellerà i TUOI dati finanziari (preventivi e acconti) dai tuoi appuntamenti completati. Vuoi continuare?')) {
-            const allAppointments = storage.getAppointments();
-            const resetAppointments = allAppointments.map(apt => {
-                if (apt.status === 'COMPLETED' && apt.artistId === user.id) {
-                    return {
+            try {
+                const allAppointments = await storage.getAppointments();
+                const updates = allAppointments
+                    .filter(apt => apt.status === 'COMPLETED' && apt.artistId === user.id)
+                    .map(apt => ({
                         ...apt,
                         financials: {
                             priceQuote: 0,
                             depositAmount: 0,
                             depositPaid: false
                         }
-                    };
-                }
-                return apt;
-            });
-            localStorage.setItem('inkflow_appointments', JSON.stringify(resetAppointments));
-            window.location.reload();
+                    }));
+
+                await Promise.all(updates.map(apt => storage.saveAppointment(apt)));
+                window.location.reload();
+            } catch (error) {
+                console.error("Error clearing my financial data:", error);
+                alert("Errore durante la cancellazione dei dati.");
+            }
         }
     };
 

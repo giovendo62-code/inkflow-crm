@@ -6,6 +6,7 @@ import { DashboardPage } from './features/dashboard/DashboardPage';
 import { CalendarPage } from './features/calendar/CalendarPage';
 import { ClientListPage } from './features/crm/ClientListPage';
 import { OperatorListPage } from './features/operators/OperatorListPage';
+import { OperatorDetailsPage } from './features/operators/OperatorDetailsPage';
 import { FinancialsPage } from './features/financials/FinancialsPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { ChatPage } from './features/chat/ChatPage';
@@ -15,6 +16,7 @@ import { AcademyPage } from './features/academy/AcademyPage';
 import { AttendancePage } from './features/academy/AttendancePage';
 import { MaterialsPage } from './features/academy/MaterialsPage';
 import { AppLayout } from './components/layout/AppLayout';
+import { RoleGuard } from './components/layout/RoleGuard';
 
 function App() {
   return (
@@ -25,18 +27,74 @@ function App() {
           <Route path="/register/:tenantId" element={<PublicClientForm />} />
 
           <Route element={<AppLayout />}>
+            {/* Shared Route (Dashboard handles internal logic) */}
             <Route path="/" element={<DashboardPage />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/clients" element={<ClientListPage />} />
-            <Route path="/artists" element={<OperatorListPage />} />
-            <Route path="/financials" element={<FinancialsPage />} />
-            <Route path="/promotions" element={<PromotionsPage />} />
-            <Route path="/academy" element={<AcademyPage />} />
-            <Route path="/attendance" element={<AttendancePage />} />
-            <Route path="/materials" element={<MaterialsPage />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/consents" element={<ConsentsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+
+            {/* Staff Routes (Manager & Artist) */}
+            <Route path="/calendar" element={
+              <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
+                <CalendarPage />
+              </RoleGuard>
+            } />
+            <Route path="/clients" element={
+              <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
+                <ClientListPage />
+              </RoleGuard>
+            } />
+            <Route path="/financials" element={
+              <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
+                <FinancialsPage />
+              </RoleGuard>
+            } />
+            <Route path="/chat" element={
+              <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
+                <ChatPage />
+              </RoleGuard>
+            } />
+            <Route path="/consents" element={
+              <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
+                <ConsentsPage />
+              </RoleGuard>
+            } />
+
+            {/* Manager Only Routes */}
+            <Route path="/artists" element={
+              <RoleGuard allowedRoles={['MANAGER']}>
+                <OperatorListPage />
+              </RoleGuard>
+            } />
+            <Route path="/artists/:id" element={
+              <RoleGuard allowedRoles={['MANAGER']}>
+                <OperatorDetailsPage />
+              </RoleGuard>
+            } />
+            <Route path="/promotions" element={
+              <RoleGuard allowedRoles={['MANAGER']}>
+                <PromotionsPage />
+              </RoleGuard>
+            } />
+            <Route path="/academy" element={
+              <RoleGuard allowedRoles={['MANAGER']}>
+                <AcademyPage />
+              </RoleGuard>
+            } />
+            <Route path="/settings" element={
+              <RoleGuard allowedRoles={['MANAGER']}>
+                <SettingsPage />
+              </RoleGuard>
+            } />
+
+            {/* Student Only Routes */}
+            <Route path="/attendance" element={
+              <RoleGuard allowedRoles={['STUDENT']}>
+                <AttendancePage />
+              </RoleGuard>
+            } />
+            <Route path="/materials" element={
+              <RoleGuard allowedRoles={['STUDENT']}>
+                <MaterialsPage />
+              </RoleGuard>
+            } />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { type Course } from '../../types';
+import { storage } from '../../lib/storage';
 import classes from '../crm/ClientListPage.module.css';
 
 interface AddCourseModalProps {
@@ -25,7 +26,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         const newCourse: Course = {
@@ -46,13 +47,15 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
             updatedAt: new Date().toISOString()
         };
 
-        const courses = JSON.parse(localStorage.getItem('inkflow_courses') || '[]');
-        courses.push(newCourse);
-        localStorage.setItem('inkflow_courses', JSON.stringify(courses));
-
-        onSuccess();
-        onClose();
-        resetForm();
+        try {
+            await storage.saveCourse(newCourse);
+            onSuccess();
+            onClose();
+            resetForm();
+        } catch (error) {
+            console.error("Failed to save course:", error);
+            alert("Errore salvataggio corso");
+        }
     };
 
     const resetForm = () => {

@@ -43,8 +43,14 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
 
     useEffect(() => {
         if (isOpen) {
-            setClients(storage.getClients());
-            setArtists(storage.getUsers().filter(u => u.role === 'ARTIST'));
+            const loadData = async () => {
+                const loadedClients = await storage.getClients();
+                const loadedUsers = await storage.getUsers();
+                setClients(loadedClients);
+                setArtists(loadedUsers.filter(u => u.role === 'ARTIST'));
+            };
+            loadData();
+
             if (initialDate) {
                 setDate(initialDate.toISOString().split('T')[0]);
                 setStartTime(initialDate.toTimeString().slice(0, 5));
@@ -69,15 +75,20 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
         setAttachments(prev => prev.filter((_, i) => i !== index));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         const startDateTime = new Date(`${date}T${startTime}`);
         const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
 
+        if (!user?.tenantId) {
+            alert('Errore: Nessun studio attivo identificato.');
+            return;
+        }
+
         const newAppointment: Appointment = {
             id: uuidv4(),
-            tenantId: user?.tenantId || 'studio-1', // Fallback
+            tenantId: user.tenantId,
             clientId,
             artistId: user?.role === 'MANAGER' ? artistId : user!.id,
             title: title || 'Nuovo Appuntamento',
@@ -99,10 +110,15 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
             attachments
         };
 
-        storage.saveAppointment(newAppointment);
-        resetForm();
-        onSave();
-        onClose();
+        try {
+            await storage.saveAppointment(newAppointment);
+            resetForm();
+            onSave();
+            onClose();
+        } catch (error) {
+            console.error('Failed to save appointment:', error);
+            alert('Errore salvataggio appuntamento');
+        }
     };
 
     const resetForm = () => {

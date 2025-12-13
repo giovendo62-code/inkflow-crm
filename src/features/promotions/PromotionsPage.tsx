@@ -4,8 +4,10 @@ import { type Client, type TattooStyle } from '../../types';
 import { Filter, Send, Mail, MessageCircle, Check, X } from 'lucide-react';
 import classes from '../crm/ClientListPage.module.css';
 import { AVAILABLE_TATTOO_STYLES } from '../../lib/constants';
+import { useAuth } from '../auth/AuthContext';
 
 export function PromotionsPage() {
+    const { user } = useAuth();
     const [clients, setClients] = useState<Client[]>([]);
     const [selectedClients, setSelectedClients] = useState<string[]>([]);
     const [styleFilter, setStyleFilter] = useState<TattooStyle | 'all'>('all');
@@ -13,8 +15,13 @@ export function PromotionsPage() {
     const [messageTemplate, setMessageTemplate] = useState('');
 
     useEffect(() => {
-        setClients(storage.getClients());
-    }, []);
+        const loadClients = async () => {
+            if (!user?.tenantId) return;
+            const allClients = await storage.getClients(user.tenantId);
+            setClients(allClients);
+        };
+        loadClients();
+    }, [user?.tenantId]);
 
     const filteredClients = clients.filter(client => {
         if (broadcastOnly && !client.inBroadcast) return false;

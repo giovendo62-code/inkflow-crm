@@ -11,7 +11,7 @@ interface ReminderSettingsModalProps {
 }
 
 export function ReminderSettingsModal({ isOpen, onClose, appointment, onSave }: ReminderSettingsModalProps) {
-    const [reminders, setReminders] = useState({
+    const [reminders, setReminders] = useState<{ whatsapp: boolean; sms: boolean; email: boolean }>({
         whatsapp: appointment?.reminders?.whatsapp || false,
         sms: appointment?.reminders?.sms || false,
         email: appointment?.reminders?.email || true

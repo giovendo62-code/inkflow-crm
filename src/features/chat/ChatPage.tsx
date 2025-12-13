@@ -12,10 +12,14 @@ export function ChatPage() {
     const [isInfo, setIsInfo] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const loadMessages = () => {
-        const msgs = storage.getMessages();
-        // Sort by timestamp
-        setMessages(msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()));
+    const loadMessages = async () => {
+        try {
+            const msgs = await storage.getMessages();
+            // Sort by timestamp
+            setMessages(msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()));
+        } catch (error) {
+            console.error("Failed to load messages:", error);
+        }
     };
 
     useEffect(() => {
@@ -29,24 +33,33 @@ export function ChatPage() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleSend = (e: React.FormEvent) => {
+    const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newMessage.trim() || !user) return;
 
         const msg: ChatMessage = {
             id: uuidv4(),
+            tenantId: 'studio-1',
             senderId: user.id,
             senderName: user.name,
             senderAvatar: user.avatarUrl,
+            receiverId: '',
+            message: newMessage,
             content: newMessage,
+            read: false,
             timestamp: new Date().toISOString(),
             type: isInfo && user.role === 'MANAGER' ? 'info' : 'chat'
         };
 
-        storage.saveMessage(msg);
-        setNewMessage('');
-        setIsInfo(false);
-        loadMessages();
+        try {
+            await storage.saveMessage(msg);
+            setNewMessage('');
+            setIsInfo(false);
+            loadMessages();
+        } catch (error) {
+            console.error("Failed to send message:", error);
+            alert("Errore invio messaggio");
+        }
     };
 
     return (

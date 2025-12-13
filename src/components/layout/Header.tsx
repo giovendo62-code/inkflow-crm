@@ -10,10 +10,13 @@ export function Header() {
     const [tenant, setTenant] = useState<Tenant | null>(null);
 
     useEffect(() => {
-        const tenants = storage.getTenants();
-        if (tenants.length > 0) {
-            setTenant(tenants[0]);
-        }
+        const loadTenant = async () => {
+            const tenants = await storage.getTenants();
+            if (tenants.length > 0) {
+                setTenant(tenants[0]);
+            }
+        };
+        loadTenant();
     }, []);
 
     return (

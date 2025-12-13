@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { storage } from '../../lib/storage';
 import { type User, type UserRole } from '../../types';
 import { Plus, User as UserIcon, X, MessageCircle, Pencil, Trash2 } from 'lucide-react';
 import classes from '../crm/ClientListPage.module.css'; // Reusing styles
+import { useAuth } from '../auth/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 
 export function OperatorListPage() {
+    const navigate = useNavigate();
+    const { user } = useAuth(); // Get current user for tenantId
     const [users, setUsers] = useState<User[]>([]);
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [createdCredentials, setCreatedCredentials] = useState<{ email: string, password: string } | null>(null);
 
     const [formData, setFormData] = useState<Partial<User>>({
         role: 'ARTIST',
@@ -19,10 +24,20 @@ export function OperatorListPage() {
     });
 
     useEffect(() => {
-        // Mostra solo MANAGER e ARTIST, nascondi gli STUDENTI (che sono in Academy)
-        const staff = storage.getUsers().filter(u => u.role === 'MANAGER' || u.role === 'ARTIST');
-        setUsers(staff);
-    }, []);
+        const loadUsers = async () => {
+            if (!user?.tenantId) return;
+            try {
+                // Pass tenantId to filter users
+                const allUsers = await storage.getUsers(user.tenantId);
+                // Mostra solo MANAGER e ARTIST, nascondi gli STUDENTI (che sono in Academy)
+                const staff = allUsers.filter(u => u.role === 'MANAGER' || u.role === 'ARTIST');
+                setUsers(staff);
+            } catch (error) {
+                console.error("Failed to load users:", error);
+            }
+        };
+        loadUsers();
+    }, [user?.tenantId]);
 
     const handleOpenAddModal = () => {
         setEditMode(false);
@@ -31,6 +46,7 @@ export function OperatorListPage() {
             role: 'ARTIST',
             profile: { color: '#FF6B35', bio: '', taxId: '', address: '', commissionRate: 50, googleCalendarConnected: false }
         });
+        setCreatedCredentials(null);
         setIsModalOpen(true);
     };
 
@@ -47,34 +63,44 @@ export function OperatorListPage() {
         setIsModalOpen(true);
     };
 
-    const handleDeleteUser = (e: React.MouseEvent, userId: string) => {
+    const handleDeleteUser = async (e: React.MouseEvent, userId: string) => {
         e.stopPropagation();
         if (confirm('Sei sicuro di voler eliminare questo operatore?')) {
-            const updatedUsers = users.filter(u => u.id !== userId);
-            setUsers(updatedUsers);
-            localStorage.setItem('inkflow_users', JSON.stringify(updatedUsers));
+            try {
+                await storage.deleteUser(userId);
+                const updatedUsers = users.filter(u => u.id !== userId);
+                setUsers(updatedUsers);
+            } catch (error) {
+                console.error("Failed to delete user:", error);
+                alert("Errore durante l'eliminazione dell'operatore");
+            }
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        let updatedUsers = [...users];
+        if (!user?.tenantId) {
+            alert("Errore: Tenant ID non trovato. Riprova a fare login.");
+            return;
+        }
+
+        // Prepare new or updated user object
+        let userToSave: User;
 
         if (editMode && currentUserId) {
-            // Update existing
-            updatedUsers = updatedUsers.map(u =>
-                u.id === currentUserId ? {
-                    ...u,
-                    ...formData,
-                    profile: { ...u.profile, ...formData.profile }
-                } as User : u
-            );
+            const existingUser = users.find(u => u.id === currentUserId);
+            if (!existingUser) return;
+
+            userToSave = {
+                ...existingUser,
+                ...formData,
+                profile: { ...existingUser.profile, ...formData.profile }
+            } as User;
         } else {
-            // Create new
-            const newUser: User = {
+            userToSave = {
                 id: uuidv4(),
-                tenantId: 'studio-1', // Mock
+                tenantId: user.tenantId, // Use current user's tenantId
                 email: formData.email || '',
                 name: formData.name || '',
                 role: formData.role as UserRole,
@@ -84,12 +110,27 @@ export function OperatorListPage() {
                     color: formData.profile?.color || '#333'
                 }
             } as User;
-            updatedUsers.push(newUser);
         }
 
-        setUsers(updatedUsers);
-        localStorage.setItem('inkflow_users', JSON.stringify(updatedUsers));
-        setIsModalOpen(false);
+        try {
+            await storage.saveUser(userToSave);
+
+            // Reload users to be safe or update local state manually
+            if (editMode) {
+                setUsers(users.map(u => u.id === userToSave.id ? userToSave : u));
+                setIsModalOpen(false);
+            } else {
+                setUsers([...users, userToSave]);
+                // Show credentials for new user
+                setCreatedCredentials({
+                    email: userToSave.email,
+                    password: "password123" // In a real app this would be generated or handled differently
+                });
+            }
+        } catch (error) {
+            console.error("Failed to save user:", error);
+            alert("Errore salvataggio operatore");
+        }
     };
 
     return (
@@ -134,7 +175,15 @@ export function OperatorListPage() {
                                         </div>
                                     )}
                                 </td>
-                                <td style={{ fontWeight: '500' }}>{user.name}</td>
+                                <td
+                                    style={{ fontWeight: '500', cursor: 'pointer', color: 'var(--color-primary)' }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/artists/${user.id}`);
+                                    }}
+                                >
+                                    {user.name}
+                                </td>
                                 <td style={{ color: 'var(--color-text-secondary)' }}>{user.email}</td>
                                 <td>
                                     {user.profile?.phone ? (
@@ -409,6 +458,48 @@ export function OperatorListPage() {
                                     {editMode ? 'Salva Modifiche' : 'Crea Operatore'}
                                 </button>
                             </form>
+
+                            {createdCredentials && (
+                                <div style={{
+                                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                    background: 'var(--color-surface)',
+                                    padding: '2rem',
+                                    borderRadius: 'var(--radius-lg)',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                    zIndex: 10
+                                }}>
+                                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(0, 204, 102, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                                        <UserIcon size={32} color="#00CC66" />
+                                    </div>
+                                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', textAlign: 'center' }}>Operatore Creato!</h3>
+                                    <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', marginBottom: '2rem', maxWidth: '400px' }}>
+                                        Condividi queste credenziali provvisorie con l'operatore per permettergli di accedere.
+                                    </p>
+
+                                    <div style={{ background: 'var(--color-surface-hover)', padding: '1.5rem', borderRadius: 'var(--radius-md)', width: '100%', maxWidth: '400px', marginBottom: '2rem', border: '1px solid var(--color-border)' }}>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>EMAIL</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <code style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{createdCredentials.email}</code>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.25rem' }}>PASSWORD PROVVISORIA</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <code style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{createdCredentials.password}</code>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => setIsModalOpen(false)}
+                                        className={classes.primaryButton}
+                                        style={{ width: '100%', maxWidth: '400px' }}
+                                    >
+                                        Chiudi
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )

@@ -13,30 +13,39 @@ export function StudentDashboard() {
     const [payments, setPayments] = useState<CoursePayment[]>([]);
 
     useEffect(() => {
-        if (user) {
-            // Find student record for this user
-            const students = storage.getStudents();
-            const myStudent = students.find(s => s.email === user.email);
+        const loadStudentData = async () => {
+            if (user) {
+                try {
+                    // Find student record for this user
+                    const students = await storage.getStudents();
+                    const myStudent = students.find(s => s.email === user.email);
 
-            if (myStudent) {
-                setStudent(myStudent);
+                    if (myStudent) {
+                        setStudent(myStudent);
 
-                // Load course details
-                const courses = storage.getCourses();
-                const myCourse = courses.find(c => c.id === myStudent.courseId);
-                setCourse(myCourse || null);
+                        // Load details in parallel
+                        const [courses, allAttendances, allPayments] = await Promise.all([
+                            storage.getCourses(),
+                            storage.getAttendances(),
+                            storage.getCoursePayments()
+                        ]);
 
-                // Load attendances
-                const allAttendances = storage.getAttendances();
-                const myAttendances = allAttendances.filter(a => a.studentId === myStudent.id);
-                setAttendances(myAttendances);
+                        const myCourse = courses.find(c => c.id === myStudent.courseId);
+                        setCourse(myCourse || null);
 
-                // Load payments
-                const allPayments = storage.getCoursePayments();
-                const myPayments = allPayments.filter(p => p.studentId === myStudent.id);
-                setPayments(myPayments);
+                        const myAttendances = allAttendances.filter(a => a.studentId === myStudent.id);
+                        setAttendances(myAttendances);
+
+                        const myPayments = allPayments.filter(p => p.studentId === myStudent.id);
+                        setPayments(myPayments);
+                    }
+                } catch (error) {
+                    console.error("Error loading student dashboard:", error);
+                }
             }
-        }
+        };
+
+        loadStudentData();
     }, [user]);
 
     if (!student) {

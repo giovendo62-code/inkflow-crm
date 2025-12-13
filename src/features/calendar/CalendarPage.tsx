@@ -27,9 +27,10 @@ export function CalendarPage() {
     const { user } = useAuth();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [view, setView] = useState<View>(Views.MONTH);
+    const [allUsers, setAllUsers] = useState<User[]>([]); // New state for all users
     const [artists, setArtists] = useState<User[]>([]);
     const [selectedArtistId, setSelectedArtistId] = useState<string>('all');
-    const [artistViewFilter, setArtistViewFilter] = useState<'mine' | 'all'>('mine'); // For artists
+    const [artistViewFilter, setArtistViewFilter] = useState<'mine' | 'all'>('mine');
 
     // Modals State
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
@@ -38,14 +39,19 @@ export function CalendarPage() {
     const [selectedSlotDate, setSelectedSlotDate] = useState<Date | undefined>(undefined);
 
     useEffect(() => {
-        // Load artists for filter
-        const allUsers = storage.getUsers();
-        const artistUsers = allUsers.filter(u => u.role === 'ARTIST');
-        setArtists(artistUsers);
-    }, [user]);
+        // Load all users once
+        const loadUsers = async () => {
+            if (!user?.tenantId) return;
+            const users = await storage.getUsers(user.tenantId);
+            setAllUsers(users);
+            setArtists(users.filter(u => u.role === 'ARTIST'));
+        };
+        loadUsers();
+    }, [user]); // Reload if user changes (re-login)
 
-    const loadAppointments = () => {
-        const allAppointments = storage.getAppointments();
+    const loadAppointments = async () => {
+        if (!user?.tenantId) return;
+        const allAppointments = await storage.getAppointments(user.tenantId);
 
         if (user?.role === 'MANAGER') {
             if (selectedArtistId === 'all') {
@@ -58,9 +64,8 @@ export function CalendarPage() {
             if (artistViewFilter === 'mine') {
                 setAppointments(allAppointments.filter(a => a.artistId === user.id));
             } else if (artistViewFilter === 'all') {
-                setAppointments(allAppointments); // Show all
+                setAppointments(allAppointments);
             } else {
-                // Specific artist selected
                 setAppointments(allAppointments.filter(a => a.artistId === artistViewFilter));
             }
         }
@@ -82,14 +87,11 @@ export function CalendarPage() {
         resource: apt,
     }));
 
-    // Get artist color helper
+    // Get artist color helper (Synchronous from state)
     const getArtistColor = (artistId: string) => {
         if (user?.id === artistId) return user.profile?.color || '#FF6B35';
-        const artist = artists.find(a => a.id === artistId);
-        if (artist) return artist.profile?.color || '#FF6B35';
-        const allUsers = storage.getUsers();
-        const foundUser = allUsers.find(u => u.id === artistId);
-        return foundUser?.profile?.color || '#FF6B35';
+        const artist = allUsers.find(u => u.id === artistId);
+        return artist?.profile?.color || '#FF6B35';
     };
 
     const handleEventClick = (event: CustomEvent) => {
@@ -105,8 +107,8 @@ export function CalendarPage() {
         setNewAppointmentModalOpen(true);
     };
 
-    const handleAppointmentSaved = () => {
-        loadAppointments(); // Refresh calendar
+    const handleAppointmentSaved = async () => {
+        await loadAppointments();
     };
 
     return (

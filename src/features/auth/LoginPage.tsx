@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { User, Palette, GraduationCap, ArrowLeft, LogIn, UserPlus, RefreshCw } from 'lucide-react';
+import { User, ArrowLeft, LogIn, UserPlus, RefreshCw } from 'lucide-react';
 import classes from './LoginPage.module.css';
 import type { UserRole } from '../../types';
 
@@ -31,15 +31,17 @@ export function LoginPage() {
             role: 'MANAGER' as UserRole,
             icon: User,
             title: 'Manager Studio',
-            description: 'Gestione completa studio, operatori e report finanziari.',
+            description: 'Registra il tuo Studio e gestisci il team.',
             color: '#FF6B35',
             demoEmail: 'manager@inkflow.com'
         },
+        /*
+        // DISABILITATO: La registrazione di Artisti e Studenti avverrà tramite invito del Manager
         {
             role: 'ARTIST' as UserRole,
             icon: Palette,
             title: 'Tatuatore',
-            description: 'Gestisci i tuoi appuntamenti, clienti e portfolio.',
+            description: 'Accesso riservato allo staff dello studio.',
             color: '#00CC66',
             demoEmail: 'artist@inkflow.com'
         },
@@ -47,10 +49,11 @@ export function LoginPage() {
             role: 'STUDENT' as UserRole,
             icon: GraduationCap,
             title: 'Corsista Academy',
-            description: 'Accedi ai corsi, materiali didattici e presenze.',
+            description: 'Accesso all\'area formazione.',
             color: '#4285F4',
             demoEmail: 'student@inkflow.com'
         }
+        */
     ];
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -62,9 +65,31 @@ export function LoginPage() {
             if (authMode === 'LOGIN') {
                 // Se password vuota, tenta login demo locale se l'email matcha una demo
                 if (!password && ['manager@inkflow.com', 'artist@inkflow.com', 'student@inkflow.com'].includes(email)) {
-                    await login(email); // Mock login
+                    // SE l'utente ha cliccato "Staff o Studente" (che imposta ARTIST come default nascosto),
+                    // vogliamo permettere il login anche se è STUDENTE.
+                    // Quindi se selectedRole è 'ARTIST' ma l'email è student, rilassiamo il controllo.
+                    // Oppure più pulito: passiamo undefined come requiredRole per questi casi ibridi.
+
+                    let roleToCheck = selectedRole || undefined;
+
+                    // Hack per la UI "Staff/Studente" che usa 'ARTIST' come trigger visivo
+                    if (selectedRole === 'ARTIST' && email === 'student@inkflow.com') {
+                        roleToCheck = undefined; // Lascia che sia l'AuthContext a decidere in base all'email o al DB
+                    }
+                    // Idem se uno prova a loggarsi come manager da lì
+                    if (selectedRole === 'ARTIST' && email === 'manager@inkflow.com') {
+                        roleToCheck = undefined;
+                    }
+
+                    await login(email, undefined, roleToCheck);
                 } else {
-                    await login(email, password); // Real login
+                    // Login reale con password
+                    let roleToCheck = selectedRole || undefined;
+                    // Stessa logica per login reale: se il ruolo UI è un placeholder, non forzarlo strettamente
+                    if (selectedRole === 'ARTIST' && (email.includes('student') || email.includes('manager'))) {
+                        roleToCheck = undefined;
+                    }
+                    await login(email, password, roleToCheck);
                 }
             } else {
                 // Register
@@ -153,14 +178,55 @@ export function LoginPage() {
                             ))}
                         </div>
 
+                        {/* Login Staff Link */}
+                        <div style={{ marginTop: '2rem', textAlign: 'center', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
+                            <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>
+                                Fai parte dello staff o sei uno studente?
+                            </p>
+                            <button
+                                onClick={() => {
+                                    // Hack temporaneo per mostrare il form di login generico senza pre-selezionare un ruolo specifico
+                                    // O meglio, potremmo riabilitare la selezione ruolo ma solo in modalità LOGIN, non REGISTER.
+                                    // Per ora, semplifichiamo: permettiamo loro di scegliere il ruolo "fittizio" per accedere al form
+                                    // che poi convaliderà le credenziali reali.
+                                    // Qui sotto forziamo la visualizzazione di una modale o un cambio stato.
+                                    // Ma per semplicità, sblocchiamo le opzioni nascoste? No, meglio una UI dedicata.
+
+                                    // Soluzione rapida: Mostriamo il form di login generico (senza ruolo preselezionato graficamente ma logicamente serve).
+                                    // Creiamo un ruolo "fittizio" USER_GENERIC o usiamo uno dei ruoli esistenti solo per triggerare la UI di login.
+                                    // Usiamo null come placeholder per dire "Ruolo non specificato, determinalo dal login"
+                                    // Ma l'interfaccia UI attuale richiede un selectedRole per mostrare il form.
+                                    // MODIFICA CRITICA: Dobbiamo permettere di mostrare il form ANCHE SE selectedRole non combacia perfettamente con il ruolo dell'utente che sta loggando,
+                                    // oppure passare un parametro speciale.
+                                    // Per ora, usiamo 'ARTIST' come "visual trigger", ma nel submit del form DOBBIAMO ignorare questo ruolo forzato se l'utente si logga come STUDIO o MANAGER o STUDENT.
+
+                                    // Tuttavia, AuthContext.login ha un controllo: if (requiredRole && foundUser.role !== requiredRole)
+                                    // Questo controllo sta fallendo perché qui sotto impostiamo 'ARTIST', ma poi logghiamo come 'STUDENT'.
+
+                                    // SOLUZIONE: Invece di 'ARTIST', passiamo un valore che indichi "Staff Generico" o modifichiamo handleSubmit per NON passare il ruolo se siamo in questo flusso.
+                                    // Purtroppo TypeScript vuole UserRole.
+
+                                    // Approccio Migliore: Lasciamo 'ARTIST' qui per far aprire il form, MA Modifichiamo handleSubmit per capire che non deve forzare il ruolo.
+
+                                    handleRoleSelect('ARTIST', '');
+                                    setAuthMode('LOGIN');
+                                    setAuthMode('LOGIN');
+                                }}
+                                className={classes.secondaryButton}
+                                style={{ margin: '0 auto' }}
+                            >
+                                Accedi come Staff o Studente
+                            </button>
+                        </div>
+
                         {/* Emergency Reset Button */}
-                        <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+                        <div style={{ marginTop: '3rem', textAlign: 'center' }}>
                             <button
                                 onClick={handleResetData}
                                 className={classes.secondaryButton}
-                                style={{ margin: '0 auto', fontSize: '0.8rem', opacity: 0.6 }}
+                                style={{ margin: '0 auto', fontSize: '0.7rem', opacity: 0.4 }}
                             >
-                                <RefreshCw size={14} /> Reset Dati (Se bloccato)
+                                <RefreshCw size={12} /> Reset App
                             </button>
                         </div>
                     </>
@@ -168,20 +234,32 @@ export function LoginPage() {
                     // STEP 2: FORM AUTH (Login/Register)
                     <div className={classes.formContainer}>
                         {/* Indicatore Ruolo Scelto */}
-                        <div style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            background: `${roleOptions.find(r => r.role === selectedRole)?.color}15`,
-                            padding: '12px', borderRadius: '8px', marginBottom: '20px'
-                        }}>
-                            {React.createElement(roleOptions.find(r => r.role === selectedRole)!.icon, {
-                                size: 24,
-                                color: roleOptions.find(r => r.role === selectedRole)?.color
-                            })}
-                            <span style={{ fontWeight: 600, color: roleOptions.find(r => r.role === selectedRole)?.color }}>
-                                {roleOptions.find(r => r.role === selectedRole)?.title}
-                            </span>
-                            <button onClick={() => setSelectedRole(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}>Cambia</button>
-                        </div>
+                        {roleOptions.find(r => r.role === selectedRole) ? (
+                            <div style={{
+                                display: 'flex', alignItems: 'center', gap: '10px',
+                                background: `${roleOptions.find(r => r.role === selectedRole)?.color}15`,
+                                padding: '12px', borderRadius: '8px', marginBottom: '20px'
+                            }}>
+                                {React.createElement(roleOptions.find(r => r.role === selectedRole)!.icon, {
+                                    size: 24,
+                                    color: roleOptions.find(r => r.role === selectedRole)?.color
+                                })}
+                                <span style={{ fontWeight: 600, color: roleOptions.find(r => r.role === selectedRole)?.color }}>
+                                    {roleOptions.find(r => r.role === selectedRole)?.title}
+                                </span>
+                                <button onClick={() => setSelectedRole(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}>Cambia</button>
+                            </div>
+                        ) : (
+                            // Fallback per ruoli nascosti (es. ARTIST/STUDENT che non sono in roleOptions visuali)
+                            <div style={{
+                                display: 'flex', alignItems: 'center', gap: '10px',
+                                background: 'rgba(0,0,0,0.05)',
+                                padding: '12px', borderRadius: '8px', marginBottom: '20px'
+                            }}>
+                                <span style={{ fontWeight: 600 }}>Login Staff/Studenti</span>
+                                <button onClick={() => setSelectedRole(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}>Cambia</button>
+                            </div>
+                        )}
 
                         {/* Tabs Login/Register */}
                         <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', marginBottom: '20px' }}>

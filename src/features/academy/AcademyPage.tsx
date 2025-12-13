@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { storage } from '../../lib/storage';
 import { type Course, type Student } from '../../types';
 import { GraduationCap, Plus, Users, Calendar, Euro, BookOpen } from 'lucide-react';
@@ -6,8 +6,10 @@ import classes from '../crm/ClientListPage.module.css';
 import { AddCourseModal } from './AddCourseModal';
 import { AddStudentModal } from './AddStudentModal';
 import { StudentDetailsModal } from './StudentDetailsModal';
+import { useAuth } from '../auth/AuthContext';
 
 export function AcademyPage() {
+    const { user } = useAuth();
     const [courses, setCourses] = useState<Course[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
     const [selectedCourse, setSelectedCourse] = useState<string | 'all'>('all');
@@ -18,14 +20,23 @@ export function AcademyPage() {
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
-    const loadData = () => {
-        setCourses(storage.getCourses());
-        setStudents(storage.getStudents());
-    };
+    const loadData = useCallback(async () => {
+        if (!user?.tenantId) return;
+        try {
+            const [allCourses, allStudents] = await Promise.all([
+                storage.getCourses(user.tenantId),
+                storage.getStudents(user.tenantId)
+            ]);
+            setCourses(allCourses);
+            setStudents(allStudents);
+        } catch (error) {
+            console.error("Failed to load academy data:", error);
+        }
+    }, [user?.tenantId]);
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [loadData]);
 
     const filteredStudents = selectedCourse === 'all'
         ? students
@@ -45,9 +56,14 @@ export function AcademyPage() {
         setIsDetailsModalOpen(true);
     };
 
-    const handleSaveStudent = (updatedStudent: Student) => {
-        storage.saveStudent(updatedStudent);
-        loadData();
+    const handleSaveStudent = async (updatedStudent: Student) => {
+        try {
+            await storage.saveStudent(updatedStudent);
+            loadData();
+        } catch (error) {
+            console.error("Failed to save student:", error);
+            alert("Errore salvataggio studente");
+        }
     };
 
     return (
@@ -164,7 +180,6 @@ export function AcademyPage() {
                                     border: '2px solid var(--color-border)',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s',
-                                    ':hover': { borderColor: 'var(--color-primary)' }
                                 }}
                             >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>

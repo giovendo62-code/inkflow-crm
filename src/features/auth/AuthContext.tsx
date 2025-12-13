@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { type User } from '../../types';
 import { storage } from '../../lib/storage';
 // import { supabase } from '../../lib/supabase'; // DISABILITATO PER DEBUG
@@ -7,7 +8,7 @@ import { storage } from '../../lib/storage';
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
-    login: (email: string, password?: string) => Promise<void>;
+    login: (email: string, password?: string, requiredRole?: string) => Promise<void>;
     register: (email: string, password: string, name: string, role: string) => Promise<void>;
     logout: () => void;
     loading: boolean;
@@ -41,33 +42,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         initAuth();
     }, []);
 
-    const login = async (email: string, password?: string) => {
+    const login = async (email: string, password?: string, requiredRole?: string) => {
         setError(null);
         try {
-            // SOLO MOCK LOGIN PER ORA
-            console.log('⚠️ Usando Mock Login locale (DEBUG MODE)');
-            const users = storage.getUsers();
+            console.log('⚠️ Usando Mock Login locale (Supabase Backed)');
+            const users = await storage.getUsers();
             const normalizedEmail = email.trim().toLowerCase();
             const foundUser = users.find(u => u.email.toLowerCase() === normalizedEmail);
 
             if (foundUser) {
+                if (requiredRole && foundUser.role !== requiredRole) {
+                    throw new Error(`Login fallito: Questo account è di tipo ${foundUser.role}, ma hai selezionato ${requiredRole}.`);
+                }
+
                 setUser(foundUser);
                 localStorage.setItem('inkflow_session', JSON.stringify(foundUser));
             } else {
                 // AUTO-HEALING: Se l'utente manager demo è sparito, ricrealo al volo
                 if (email === 'manager@inkflow.com') {
+                    if (requiredRole && requiredRole !== 'MANAGER') {
+                        throw new Error(`Login fallito: Account Manager non valido per ruolo ${requiredRole}.`);
+                    }
                     const newManager = {
-                        id: 'user-manager',
-                        tenantId: 'studio-1',
+                        id: uuidv4(), // WAS: 'user-manager' causing UUID syntax error in DB
+                        tenantId: 'd290f1ee-6c54-4b01-90e6-d701748f0851',
                         email: 'manager@inkflow.com',
                         name: 'Marco Rossi',
                         role: 'MANAGER',
                         avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marco',
                         profile: { bio: 'Manager', color: '#FF6B35' }
                     } as User;
-                    const currentUsers = storage.getUsers();
-                    currentUsers.push(newManager);
-                    localStorage.setItem('inkflow_users', JSON.stringify(currentUsers));
+
+                    await storage.saveUser(newManager);
 
                     setUser(newManager);
                     localStorage.setItem('inkflow_session', JSON.stringify(newManager));
@@ -77,9 +83,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 // AUTO-HEALING ARTISTA
                 if (email === 'artist@inkflow.com') {
+                    if (requiredRole && requiredRole !== 'ARTIST') {
+                        throw new Error(`Login fallito: Account Artista non valido per ruolo ${requiredRole}.`);
+                    }
                     const newArtist = {
-                        id: 'user-artist',
-                        tenantId: 'studio-1',
+                        id: uuidv4(),
+                        tenantId: 'd290f1ee-6c54-4b01-90e6-d701748f0851',
                         email: 'artist@inkflow.com',
                         name: 'Alex Bianchi',
                         role: 'ARTIST',
@@ -90,16 +99,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             commissionRate: 50
                         }
                     } as User;
-                    const currentUsers = storage.getUsers();
-                    // Evita duplicati se c'è già ma con ID diverso per qualche motivo strano
-                    const others = currentUsers.filter(u => u.email !== 'artist@inkflow.com');
-                    others.push(newArtist);
 
-                    localStorage.setItem('inkflow_users', JSON.stringify(others));
+                    await storage.saveUser(newArtist);
 
                     setUser(newArtist);
                     localStorage.setItem('inkflow_session', JSON.stringify(newArtist));
                     console.log('✅ Utente Artista ricreato e loggato.');
+                    return;
+                }
+
+                // AUTO-HEALING STUDENTE (PER TEST)
+                if (email === 'student@inkflow.com') {
+                    if (requiredRole && requiredRole !== 'STUDENT') {
+                        throw new Error(`Login fallito: Account Studente non valido per ruolo ${requiredRole}.`);
+                    }
+                    const newStudent = {
+                        id: uuidv4(),
+                        tenantId: 'd290f1ee-6c54-4b01-90e6-d701748f0851',
+                        email: 'student@inkflow.com',
+                        name: 'Luca Verdi',
+                        role: 'STUDENT',
+                        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Luca',
+                        profile: {
+                            bio: 'Corsista Base',
+                            color: '#4285F4'
+                        }
+                    } as User;
+
+                    await storage.saveUser(newStudent);
+
+                    setUser(newStudent);
+                    localStorage.setItem('inkflow_session', JSON.stringify(newStudent));
+                    console.log('✅ Utente Studente ricreato e loggato.');
                     return;
                 }
 
@@ -111,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const register = async (email: string, password: string, name: string, role: string) => {
+    const register = async (email: string, password: string, name: string, _role: string) => {
         // MOCK REGISTER
         setError(null);
         try {

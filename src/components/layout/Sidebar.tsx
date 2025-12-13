@@ -25,27 +25,30 @@ export function Sidebar() {
     const [tenant, setTenant] = useState<Tenant | null>(null);
 
     useEffect(() => {
-        const tenants = storage.getTenants();
-        if (tenants.length > 0) {
-            const currentTenant = tenants[0];
-            setTenant(currentTenant);
+        const loadTenant = async () => {
+            const tenants = await storage.getTenants();
+            if (tenants.length > 0) {
+                const currentTenant = tenants[0];
+                setTenant(currentTenant);
 
-            // Apply theme if exists
-            if (currentTenant.theme?.primaryColor) {
-                document.documentElement.style.setProperty('--color-primary', currentTenant.theme.primaryColor);
-            }
+                // Apply theme if exists
+                if (currentTenant.theme?.primaryColor) {
+                    document.documentElement.style.setProperty('--color-primary', currentTenant.theme.primaryColor);
+                }
 
-            // Apply color mode
-            if (currentTenant.theme?.colorMode === 'light') {
-                document.documentElement.style.setProperty('--color-background', '#F5F5F5');
-                document.documentElement.style.setProperty('--color-surface', '#FFFFFF');
-                document.documentElement.style.setProperty('--color-surface-hover', '#F0F0F0');
-                document.documentElement.style.setProperty('--color-text-primary', '#1A1A1A');
-                document.documentElement.style.setProperty('--color-text-secondary', '#666666');
-                document.documentElement.style.setProperty('--color-text-muted', '#999999');
-                document.documentElement.style.setProperty('--color-border', '#E0E0E0');
+                // Apply color mode
+                if (currentTenant.theme?.colorMode === 'light') {
+                    document.documentElement.style.setProperty('--color-background', '#F5F5F5');
+                    document.documentElement.style.setProperty('--color-surface', '#FFFFFF');
+                    document.documentElement.style.setProperty('--color-surface-hover', '#F0F0F0');
+                    document.documentElement.style.setProperty('--color-text-primary', '#1A1A1A');
+                    document.documentElement.style.setProperty('--color-text-secondary', '#666666');
+                    document.documentElement.style.setProperty('--color-text-muted', '#999999');
+                    document.documentElement.style.setProperty('--color-border', '#E0E0E0');
+                }
             }
-        }
+        };
+        loadTenant();
     }, []);
 
     // Menu items for Students
