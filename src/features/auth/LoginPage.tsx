@@ -139,6 +139,29 @@ export function LoginPage() {
                             border: '4px solid #fff'
                         }}
                     />
+
+                    {/* BUTTON DI EMERGENZA PER DEBUG REGISTRAZIONE */}
+                    <button
+                        onClick={async () => {
+                            const fakeEmail = 'test' + Date.now() + '@debug.com';
+                            if (confirm('Tentare registrazione DEBUG con ' + fakeEmail + '?')) {
+                                try {
+                                    await register(fakeEmail, 'password123', 'Debug User', 'MANAGER');
+                                    alert('Registrazione Debug Terminata');
+                                } catch (e: any) {
+                                    alert('Debug Error: ' + e.message);
+                                }
+                            }
+                        }}
+                        style={{
+                            position: 'fixed', top: 10, left: 10,
+                            zIndex: 99999, background: 'red', color: 'white',
+                            padding: '20px', fontSize: '20px', fontWeight: 'bold'
+                        }}
+                    >
+                        🚨 FORCE REGISTER
+                    </button>
+
                     <p className={classes.subtitle}>
                         {selectedRole
                             ? (authMode === 'LOGIN' ? 'Accedi al tuo spazio' : 'Crea il tuo profilo')
