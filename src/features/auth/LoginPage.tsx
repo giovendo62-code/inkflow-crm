@@ -335,7 +335,7 @@ export function LoginPage() {
 
                             {error && <div className={classes.error}>{error}</div>}
 
-                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px', position: 'relative', zIndex: 100 }}>
                                 <button
                                     type="button"
                                     onClick={() => setSelectedRole(null)}
@@ -343,7 +343,13 @@ export function LoginPage() {
                                 >
                                     <ArrowLeft size={18} /> Indietro
                                 </button>
-                                <button type="submit" className={classes.primaryButton} disabled={isLoading}>
+                                <button
+                                    type="button" /* Changed to button to avoid double submit if form works, we handle click manually */
+                                    onClick={(e) => handleSubmit(e as any)}
+                                    className={classes.primaryButton}
+                                    disabled={isLoading}
+                                    style={{ cursor: 'pointer', zIndex: 101, position: 'relative' }} /* Force clickable */
+                                >
                                     {isLoading ? 'Attendere...' : (authMode === 'LOGIN' ?
                                         <><LogIn size={18} /> Accedi</> :
                                         <><UserPlus size={18} /> Crea Account</>
