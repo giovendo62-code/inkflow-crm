@@ -163,10 +163,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 // Tenta il salvataggio su Cloud (Supabase)
                 try {
+                    // 1. CREA IL TENANT (STUDIO) PRIMA DELL'UTENTE
+                    // Obbligatorio per soddisfare Foreign Key Constraint su Supabase
+                    const studioName = `Studio di ${name}`;
+                    console.log(`Creating Tenant first: ${newTenantId} - ${studioName}`);
+
+                    await storage.saveTenant({
+                        id: newTenantId,
+                        name: studioName,
+                        logo: '',
+                        theme: {
+                            primaryColor: '#7C3AED',
+                            sidebarStyle: 'dark',
+                            menuPosition: 'left',
+                            colorMode: 'dark'
+                        }
+                    });
+
+                    // 2. CREA L'UTENTE COLLEGATO AL TENANT
                     await storage.saveUser(newUser);
+
                 } catch (err: any) {
-                    console.error("Supabase Save Failed", err);
-                    alert("⚠️ ERRORE SUPABASE: " + (err.message || JSON.stringify(err)) + "\n\nDettagli: " + (err.details || 'N/A') + "\nHint: " + (err.hint || 'N/A'));
+                    console.error("Supabase Save Failed (Tenant or User)", err);
+                    alert("⚠️ ERRORE SUPABASE: " + (err.message || JSON.stringify(err)) + "\n\nTuttavia, l'accesso LOCALE verrà consentito.");
                 }
 
                 // AUTO-LOGIN IMMEDIATO (Funziona sempre, anche offline)
