@@ -146,9 +146,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // MOCK REGISTER
         setError(null);
         try {
-            // Fake register in localStorage
-            // ...
-            alert("Registrazione temporaneamente disabilitata per debug");
+            if (_role === 'MANAGER') {
+                const newTenantId = uuidv4();
+                const newUser: User = {
+                    id: uuidv4(),
+                    tenantId: newTenantId,
+                    email,
+                    name,
+                    role: 'MANAGER',
+                    avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.replace(' ', '')}`,
+                    profile: {
+                        bio: 'Studio Manager',
+                        color: '#FF6B35'
+                    }
+                };
+
+                await storage.saveUser(newUser);
+                setUser(newUser);
+                localStorage.setItem('inkflow_session', JSON.stringify(newUser));
+                console.log('✅ Nuovo Manager registrato:', newUser);
+            } else {
+                throw new Error("Solo i Manager possono registrarsi pubblicamente. Contatta il tuo studio per gli altri ruoli.");
+            }
         } catch (e: any) {
             setError(e.message);
         }
