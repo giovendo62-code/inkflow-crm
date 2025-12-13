@@ -204,3 +204,13 @@ export interface CoursePayment {
   notes?: string;
   createdAt: string;
 }
+
+export interface ChatMessage {
+  id: string;
+  tenantId: string;
+  senderId: string;
+  receiverId: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+}

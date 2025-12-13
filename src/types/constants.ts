@@ -1,4 +1,4 @@
-import { TattooStyle } from './index';
+import type { TattooStyle } from './index';
 
 export const TATTOO_STYLES: TattooStyle[] = [
     'REALISTICO',

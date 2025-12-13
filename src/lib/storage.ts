@@ -69,12 +69,12 @@ const MOCK_USERS: User[] = [
 const MOCK_MESSAGES: ChatMessage[] = [
     {
         id: 'msg-1',
+        tenantId: 'studio-1',
         senderId: 'user-manager',
-        senderName: 'Marco Rossi',
-        senderAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marco',
-        content: 'Benvenuti nel nuovo CRM! 🚀 Qui potrete leggere le comunicazioni importanti.',
+        receiverId: 'broadcast',
+        message: 'Benvenuti nel nuovo CRM! 🚀 Qui potrete leggere le comunicazioni importanti.',
         timestamp: new Date(Date.now() - 86400000).toISOString(),
-        type: 'info'
+        read: false
     },
 ];
 
