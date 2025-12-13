@@ -1,6 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { type User } from '../../types';
+
+// Helper per UUID sicuro che funziona ovunque senza dipendenze esterne
+const uuidv4 = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    // Fallback per browser vecchissimi o contesti strani
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+};
 import { storage } from '../../lib/storage';
 // import { supabase } from '../../lib/supabase'; // DISABILITATO PER DEBUG
 // import { syncFromCloud } from '../../lib/sync'; // DISABILITATO PER DEBUG
