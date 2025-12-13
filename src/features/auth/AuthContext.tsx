@@ -1,25 +1,23 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { type User } from '../../types';
+import { type User, type UserRole } from '../../types';
+import { storage } from '../../lib/storage';
 
-// Helper per UUID sicuro che funziona ovunque senza dipendenze esterne
-const uuidv4 = () => {
+// --- HELPER: UUID SICURO (No dipendenze esterne) ---
+const generateUUID = () => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
         return crypto.randomUUID();
     }
-    // Fallback per browser vecchissimi o contesti strani
+    const d = Date.now();
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
+        const r = (d + Math.random() * 16) % 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
     });
 };
-import { storage } from '../../lib/storage';
-// import { supabase } from '../../lib/supabase'; // DISABILITATO PER DEBUG
-// import { syncFromCloud } from '../../lib/sync'; // DISABILITATO PER DEBUG
 
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
-    login: (email: string, password?: string, requiredRole?: string) => Promise<void>;
+    login: (email: string, password?: string, requiredRole?: UserRole) => Promise<void>;
     register: (email: string, password: string, name: string, role: string) => Promise<void>;
     logout: () => void;
     loading: boolean;
@@ -33,196 +31,164 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // --- INIT: Carica sessione locale all'avvio ---
     useEffect(() => {
-        // Init Check SIMPLIFICATO (SOLO LOCAL)
         const initAuth = async () => {
             try {
-                // 1. Check Local Session (Legacy/Offline fallback)
-                const storedUser = localStorage.getItem('inkflow_session');
-                if (storedUser) {
-                    setUser(JSON.parse(storedUser));
+                const stored = localStorage.getItem('inkflow_session');
+                if (stored) {
+                    const parsedUser = JSON.parse(stored);
+                    setUser(parsedUser);
+                    console.log('🔄 Sessione ripristinata:', parsedUser.email);
                 }
-                storage.initialize(); // Ensure mocks are there
-            } catch (err) {
-                console.error('Auth Init Error:', err);
+            } catch (e) {
+                console.error('Session restore failed', e);
+                localStorage.removeItem('inkflow_session');
             } finally {
                 setLoading(false);
             }
         };
-
         initAuth();
     }, []);
 
-    const login = async (email: string, password?: string, requiredRole?: string) => {
+    // --- LOGIN ---
+    const login = async (email: string, password?: string, requiredRole?: UserRole) => {
+        setLoading(true);
         setError(null);
         try {
-            console.log('⚠️ Usando Mock Login locale (Supabase Backed)');
+            console.log(`🔐 Login attempt: ${email}`);
+
+            // 1. Cerca Utenti nel DB (Cloud)
             const users = await storage.getUsers();
-            const normalizedEmail = email.trim().toLowerCase();
-            const foundUser = users.find(u => u.email.toLowerCase() === normalizedEmail);
+            const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
             if (foundUser) {
+                // Utente Trovato 
+                // (Qui dovremmo controllare la password, ma nel mock la saltiamo o controlliamo hardcoded)
                 if (requiredRole && foundUser.role !== requiredRole) {
-                    throw new Error(`Login fallito: Questo account è di tipo ${foundUser.role}, ma hai selezionato ${requiredRole}.`);
+                    throw new Error(`Accesso negato. Richiesto ruolo: ${requiredRole}`);
                 }
 
-                setUser(foundUser);
-                localStorage.setItem('inkflow_session', JSON.stringify(foundUser));
-            } else {
-                // AUTO-HEALING: Se l'utente manager demo è sparito, ricrealo al volo
-                if (email === 'manager@inkflow.com') {
-                    if (requiredRole && requiredRole !== 'MANAGER') {
-                        throw new Error(`Login fallito: Account Manager non valido per ruolo ${requiredRole}.`);
-                    }
-                    const newManager = {
-                        id: uuidv4(), // WAS: 'user-manager' causing UUID syntax error in DB
-                        tenantId: 'd290f1ee-6c54-4b01-90e6-d701748f0851',
-                        email: 'manager@inkflow.com',
-                        name: 'Marco Rossi',
-                        role: 'MANAGER',
-                        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marco',
-                        profile: { bio: 'Manager', color: '#FF6B35' }
-                    } as User;
-
-                    await storage.saveUser(newManager);
-
-                    setUser(newManager);
-                    localStorage.setItem('inkflow_session', JSON.stringify(newManager));
-                    console.log('✅ Utente Manager ricreato e loggato.');
-                    return;
-                }
-
-                // AUTO-HEALING ARTISTA
-                if (email === 'artist@inkflow.com') {
-                    if (requiredRole && requiredRole !== 'ARTIST') {
-                        throw new Error(`Login fallito: Account Artista non valido per ruolo ${requiredRole}.`);
-                    }
-                    const newArtist = {
-                        id: uuidv4(),
-                        tenantId: 'd290f1ee-6c54-4b01-90e6-d701748f0851',
-                        email: 'artist@inkflow.com',
-                        name: 'Alex Bianchi',
-                        role: 'ARTIST',
-                        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
-                        profile: {
-                            bio: 'Resident Artist',
-                            color: '#00CC66',
-                            commissionRate: 50
-                        }
-                    } as User;
-
-                    await storage.saveUser(newArtist);
-
-                    setUser(newArtist);
-                    localStorage.setItem('inkflow_session', JSON.stringify(newArtist));
-                    console.log('✅ Utente Artista ricreato e loggato.');
-                    return;
-                }
-
-                // AUTO-HEALING STUDENTE (PER TEST)
-                if (email === 'student@inkflow.com') {
-                    if (requiredRole && requiredRole !== 'STUDENT') {
-                        throw new Error(`Login fallito: Account Studente non valido per ruolo ${requiredRole}.`);
-                    }
-                    const newStudent = {
-                        id: uuidv4(),
-                        tenantId: 'd290f1ee-6c54-4b01-90e6-d701748f0851',
-                        email: 'student@inkflow.com',
-                        name: 'Luca Verdi',
-                        role: 'STUDENT',
-                        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Luca',
-                        profile: {
-                            bio: 'Corsista Base',
-                            color: '#4285F4'
-                        }
-                    } as User;
-
-                    await storage.saveUser(newStudent);
-
-                    setUser(newStudent);
-                    localStorage.setItem('inkflow_session', JSON.stringify(newStudent));
-                    console.log('✅ Utente Studente ricreato e loggato.');
-                    return;
-                }
-
-                throw new Error('Utente non trovato. Controlla email o registrati.');
+                // Successo
+                finishLogin(foundUser);
+                return;
             }
-        } catch (err: any) {
-            setError(err.message);
-            throw err;
+
+            // 2. Se non trovato e NON c'è password (Demo Mode per dev)
+            if (!password && ['manager@inkflow.com', 'artist@inkflow.com'].includes(email)) {
+                console.log('⚠️ Demo User Recovery...');
+                const demoUser = createDemoUser(email);
+                finishLogin(demoUser);
+                // Salviamo pure il demo user nel DB per la prossima volta (lazy fix)
+                try { await storage.saveUser(demoUser); } catch { }
+                return;
+            }
+
+            throw new Error("Utente non trovato. Registrati prima.");
+
+        } catch (e: any) {
+            console.error("Login Error:", e);
+            setError(e.message);
+            throw e;
+        } finally {
+            setLoading(false);
         }
     };
 
-    const register = async (email: string, password: string, name: string, _role: string) => {
-        // MOCK REGISTER
+    // --- REGISTER ---
+    const register = async (email: string, password: string, name: string, role: string) => {
+        setLoading(true);
         setError(null);
+
         try {
-            if (_role !== 'MANAGER') {
-                throw new Error("Solo i Manager possono registrarsi pubblicamente.");
+            console.log(`📝 Registering: ${email} (${role})`);
+
+            if (role !== 'MANAGER') {
+                throw new Error("Solo i Manager possono registrarsi da qui.");
             }
 
-            const newTenantId = uuidv4();
+            // 1. Prepara i Dati (ID generati qui per consistenza locale/cloud)
+            const tenantId = generateUUID();
+            const userId = generateUUID();
+
             const newUser: User = {
-                id: uuidv4(),
-                tenantId: newTenantId,
+                id: userId,
+                tenantId: tenantId,
                 email,
                 name,
                 role: 'MANAGER',
-                avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.replace(' ', '')}`,
+                avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.replace(/\s/g, '')}`,
                 profile: {
                     bio: 'Studio Manager',
                     color: '#FF6B35'
                 }
             };
 
-            // Tenta il salvataggio su Cloud (Supabase)
+            // 2. Tenta Salvataggio Cloud (Prima Tenant, poi User)
+            let cloudSuccess = false;
             try {
-                // 1. CREA IL TENANT (STUDIO) PRIMA DELL'UTENTE
-                const studioName = `Studio di ${name}`;
-                console.log(`Creating Tenant first: ${newTenantId}`);
-
                 await storage.saveTenant({
-                    id: newTenantId,
-                    name: studioName,
+                    id: tenantId,
+                    name: `Studio di ${name}`,
                     logo: '',
-                    theme: {
-                        primaryColor: '#7C3AED',
-                        sidebarStyle: 'dark',
-                        menuPosition: 'left',
-                        colorMode: 'dark'
-                    }
+                    theme: { primaryColor: '#7C3AED', sidebarStyle: 'dark', menuPosition: 'left', colorMode: 'dark' }
                 });
 
-                // 2. CREA L'UTENTE COLLEGATO AL TENANT
                 await storage.saveUser(newUser);
+                cloudSuccess = true;
+                console.log("✅ Cloud Registration Success");
 
-                alert("🎉 Registrazione completata! Benvenuto.");
+            } catch (cloudErr: any) {
+                console.error("❌ Cloud Registration Failed:", cloudErr);
 
-            } catch (err: any) {
-                console.error("Supabase Save Failed", err);
-                // GESTIONE INTELLIGENTE CONFLITTO (409)
-                if (err.status === 409 || (err.message && err.message.includes('409'))) {
-                    alert("⚠️ ATTENZIONE: Questo utente o studio risulta già registrato!\n\nProvo a farti accedere comunque...");
+                // Se errore è Conflitto (409), significa che esiste già.
+                if (cloudErr.status === 409 || (cloudErr.message && cloudErr.message.includes('409'))) {
+                    alert("⚠️ Attenzione: Utente o Studio già esistenti.\nTi faccio entrare lo stesso.");
+                    cloudSuccess = true; // Consideriamolo un successo parziale (l'utente c'è)
                 } else {
-                    alert("⚠️ ERRORE SALVATAGGIO CLOUD: " + (err.message || JSON.stringify(err)) + "\n\nAccesso LOCALE attivato.");
+                    alert(`⚠️ Errore Cloud: ${cloudErr.message}\n\nL'account verrà creato solo LOCALE.`);
                 }
             }
 
-            // AUTO-LOGIN IMMEDIATO
-            setUser(newUser);
-            localStorage.setItem('inkflow_session', JSON.stringify(newUser));
+            // 3. Finalizza Login (Sempre, anche se Cloud fallisce)
+            finishLogin(newUser);
+
+            if (cloudSuccess) {
+                alert("🎉 Benvenuto in InkFlow!");
+            }
 
         } catch (e: any) {
-            console.error("CRITICAL REGISTER ERROR", e);
-            alert("❌ ERRORE CRITICO REGISTRAZIONE: " + e.message);
+            console.error("Register Logic Error:", e);
             setError(e.message);
+            throw e;
+        } finally {
+            setLoading(false);
         }
     };
 
-    const logout = async () => {
-        // await supabase.auth.signOut();
+    // --- HELPERS ---
+    const finishLogin = (u: User) => {
+        setUser(u);
+        localStorage.setItem('inkflow_session', JSON.stringify(u));
+        // Force reload tenants/data if needed
+    };
+
+    const logout = () => {
         setUser(null);
         localStorage.removeItem('inkflow_session');
+        localStorage.removeItem('inkflow_tenant_id'); // clean up extra vars
+    };
+
+    const createDemoUser = (email: string): User => {
+        return {
+            id: generateUUID(),
+            tenantId: 'demo-tenant',
+            email,
+            name: 'Demo User',
+            role: email.includes('manager') ? 'MANAGER' : 'ARTIST',
+            avatarUrl: '',
+            profile: {}
+        };
     };
 
     return (
