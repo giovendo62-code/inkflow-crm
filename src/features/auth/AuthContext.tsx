@@ -162,9 +162,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 };
 
                 await storage.saveUser(newUser);
+
+                // AUTO-LOGIN IMMEDIATO
+                // Salviamo in localStorage per garantire l'accesso immediato anche se Supabase RLS blocca la lettura successiva
                 setUser(newUser);
                 localStorage.setItem('inkflow_session', JSON.stringify(newUser));
-                console.log('✅ Nuovo Manager registrato:', newUser);
+
+                console.log('✅ Nuovo Manager registrato e loggato automaticamente:', newUser);
             } else {
                 throw new Error("Solo i Manager possono registrarsi pubblicamente. Contatta il tuo studio per gli altri ruoli.");
             }
