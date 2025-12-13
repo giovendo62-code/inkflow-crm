@@ -187,7 +187,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: 'Demo User',
             role: email.includes('manager') ? 'MANAGER' : 'ARTIST',
             avatarUrl: '',
-            profile: {}
+            profile: {
+                color: '#888888'
+            }
         };
     };
 
