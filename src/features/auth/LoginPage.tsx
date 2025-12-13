@@ -58,6 +58,8 @@ export function LoginPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        alert("DEBUG: Bottone premuto! Inizio procedura...");
+        console.log("DEBUG: Submit started", { authMode, email, selectedRole });
         setError('');
         setIsLoading(true);
 
