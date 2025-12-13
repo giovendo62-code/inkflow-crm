@@ -351,6 +351,9 @@ export function LoginPage() {
                         </form>
                     </div>
                 )}
+                <div style={{ position: 'fixed', bottom: 5, right: 5, fontSize: '9px', opacity: 0.3, pointerEvents: 'none' }}>
+                    DB: {import.meta.env.VITE_SUPABASE_URL ? import.meta.env.VITE_SUPABASE_URL.substring(8, 20) + '...' : 'MISSING'}
+                </div>
             </div>
         </div>
     );
