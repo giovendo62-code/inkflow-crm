@@ -178,9 +178,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Tenta il salvataggio su Cloud (Supabase)
             try {
                 // 1. CREA IL TENANT (STUDIO) PRIMA DELL'UTENTE
-                // Obbligatorio per soddisfare Foreign Key Constraint su Supabase
                 const studioName = `Studio di ${name}`;
-                console.log(`Creating Tenant first: ${newTenantId} - ${studioName}`);
+                console.log(`Creating Tenant first: ${newTenantId}`);
 
                 await storage.saveTenant({
                     id: newTenantId,
@@ -194,18 +193,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     }
                 });
 
-
                 // 2. CREA L'UTENTE COLLEGATO AL TENANT
                 await storage.saveUser(newUser);
 
                 alert("🎉 Registrazione completata! Benvenuto.");
 
             } catch (err: any) {
-                console.error("Supabase Save Failed (Tenant or User)", err);
-                alert("⚠️ ERRORE SUPABASE: " + (err.message || JSON.stringify(err)) + "\n\nAccesso LOCALE attivato.");
+                console.error("Supabase Save Failed", err);
+                // GESTIONE INTELLIGENTE CONFLITTO (409)
+                if (err.status === 409 || (err.message && err.message.includes('409'))) {
+                    alert("⚠️ ATTENZIONE: Questo utente o studio risulta già registrato!\n\nProvo a farti accedere comunque...");
+                } else {
+                    alert("⚠️ ERRORE SALVATAGGIO CLOUD: " + (err.message || JSON.stringify(err)) + "\n\nAccesso LOCALE attivato.");
+                }
             }
 
-            // AUTO-LOGIN IMMEDIATO (Funziona sempre, anche offline)
+            // AUTO-LOGIN IMMEDIATO
             setUser(newUser);
             localStorage.setItem('inkflow_session', JSON.stringify(newUser));
 
