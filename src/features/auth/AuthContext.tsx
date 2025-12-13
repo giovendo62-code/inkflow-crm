@@ -161,10 +161,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     }
                 };
 
-                await storage.saveUser(newUser);
+                // Tenta il salvataggio su Cloud (Supabase)
+                try {
+                    await storage.saveUser(newUser);
+                } catch (err) {
+                    console.error("Supabase Save Failed, fallback to LocalStorage", err);
+                    alert("⚠️ Attenzione: Impossibile salvare sul Cloud (Chiavi errate?). L'account sarà salvato solo LOCALE su questo dispositivo.");
+                }
 
-                // AUTO-LOGIN IMMEDIATO
-                // Salviamo in localStorage per garantire l'accesso immediato anche se Supabase RLS blocca la lettura successiva
+                // AUTO-LOGIN IMMEDIATO (Funziona sempre, anche offline)
                 setUser(newUser);
                 localStorage.setItem('inkflow_session', JSON.stringify(newUser));
 
