@@ -29,6 +29,7 @@ export interface User {
     googleCalendarId?: string;
     googleCalendarConnected?: boolean;
     googleCalendarLastSync?: string;
+    password?: string; // Stored locally for custom auth flow (Temporary/Demo)
   };
 }
 
