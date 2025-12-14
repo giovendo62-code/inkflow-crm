@@ -26,7 +26,8 @@ const mapClientFromDB = (data: any): Client => ({
     informedConsentAccepted: data.consents?.informedConsent,
     informedConsentDate: data.consents?.informedConsentDate,
 
-    attachments: data.attachments,
+    // FALLBACK: Read from column OR from preferences JSON
+    attachments: data.attachments || data.preferences?.attachments || [],
     createdAt: data.created_at,
     updatedAt: data.updated_at
 });
@@ -45,7 +46,11 @@ const mapClientToDB = (client: Client) => ({
         city: client.city,
         zip: client.zip
     },
-    preferences: client.preferences || { styles: [], notes: '' },
+    // SAVE ATTACHMENTS INSIDE PREFERENCES TO BE SAFE
+    preferences: {
+        ...(client.preferences || { styles: [], notes: '' }),
+        attachments: client.attachments || []
+    },
     preferred_style: client.preferredStyle || null,
     in_broadcast: client.inBroadcast || false,
     consents: {
@@ -55,6 +60,7 @@ const mapClientToDB = (client: Client) => ({
         informedConsentDate: client.informedConsentDate || null,
         ...client.consents
     },
+    // We still try to save to column if it exists, but preferences is our Golden Copy
     attachments: client.attachments || [],
     updated_at: new Date().toISOString()
 });
