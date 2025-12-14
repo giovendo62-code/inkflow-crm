@@ -449,10 +449,10 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                                     fontSize: '0.9rem'
                                 }}>
                                     <Upload size={16} />
-                                    {uploading ? 'Caricamento...' : 'Carica Nuova Immagine'}
+                                    {uploading ? 'Caricamento...' : 'Carica Nuova Immagine/PDF'}
                                     <input
                                         type="file"
-                                        accept="image/*"
+                                        accept="image/*,application/pdf"
                                         style={{ display: 'none' }}
                                         disabled={uploading}
                                         onChange={async (e) => {
