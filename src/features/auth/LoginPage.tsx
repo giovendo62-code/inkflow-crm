@@ -267,7 +267,15 @@ export function LoginPage() {
                                     <div style={{ textAlign: 'right', marginTop: '6px' }}>
                                         <small
                                             style={{ color: '#666', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
-                                            onClick={() => alert("Per recuperare la password, contatta il supporto tecnico InkFlow o l'amministratore del tuo studio.")}
+                                            onClick={() => {
+                                                const emailReq = prompt("Inserisci la tua email di registrazione:");
+                                                if (emailReq) {
+                                                    const subject = encodeURIComponent("Richiesta Reset Password InkFlow");
+                                                    const body = encodeURIComponent(`Salve Assistenza,\n\nHo dimenticato la password per l'account associato all'email: ${emailReq}.\n\nChiedo gentilemte il reset della password.\n\nGrazie.`);
+                                                    // Apre il client di posta predefinito
+                                                    window.location.href = `mailto:support@inkflow.com?subject=${subject}&body=${body}`;
+                                                }
+                                            }}
                                         >
                                             Password dimenticata?
                                         </small>
