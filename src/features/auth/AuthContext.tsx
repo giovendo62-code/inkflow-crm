@@ -62,47 +62,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const users = await storage.getUsers();
             const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
-            if (foundUser) {
-                // Utente Trovato 
-                // (Qui dovremmo controllare la password, ma nel mock la saltiamo o controlliamo hardcoded)
-                if (requiredRole && foundUser.role !== requiredRole) {
-                    throw new Error(`Accesso negato. Richiesto ruolo: ${requiredRole}`);
-                }
+            // The original code had a `data` object which is not defined here.
+            // Assuming `foundUser` is the equivalent of `data.user` for the purpose of this edit.
+            // If `foundUser` is null, it means login failed.
+            if (!foundUser) throw new Error('Login failed: User not found.');
 
-                // --- Password Check STRICT ---
-                const storedPassword = (foundUser.profile as any)?.password;
+            // The original code had a `supabase` object which is not defined here.
+            // Assuming the profile fetch is now integrated with `storage.getUsers()`
+            // and `foundUser` already contains the full profile.
+            // If `foundUser` is present, we proceed with password check and role check.
 
-                // 1. Se non esiste password nel DB -> Errore (Configurazione incompleta)
-                if (!storedPassword) {
-                    throw new Error("Account non configurato (Password mancante). Contatta il Manager.");
-                }
+            // 2. Fetch Profile from 'users' table (This step is implicitly handled if `foundUser` is already a full User object)
+            // If `foundUser` is just basic user info and a separate profile fetch is needed,
+            // you would need to define `supabase` or a similar mechanism here.
+            // For now, we assume `foundUser` is the complete profile.
 
-                // 2. Se Password non valida o non fornita -> Errore
-                if (!password || storedPassword !== password) {
-                    throw new Error("Password non valida.");
-                }
-
-                // Successo
-                finishLogin(foundUser);
-                return;
+            // If profile is missing (e.g., foundUser is null or incomplete), fail.
+            if (!foundUser) { // This check is redundant due to the previous throw, but kept for clarity if logic changes.
+                console.error('Profile not found for user:', email);
+                throw new Error('User profile not found.');
             }
 
-            // 2. Se non trovato e NON c'è password (Demo Mode per dev)
-            if (!password && ['manager@inkflow.com', 'artist@inkflow.com'].includes(email)) {
-                console.log('⚠️ Demo User Recovery...');
-                const demoUser = createDemoUser(email);
-                finishLogin(demoUser);
-                // Salviamo pure il demo user nel DB per la prossima volta (lazy fix)
-                try { await storage.saveUser(demoUser); } catch { }
-                return;
+            // 3. Verify Password (if strictly enforcing stored password match)
+            const storedPassword = (foundUser.profile as any)?.password;
+
+            if (!storedPassword) {
+                throw new Error("Account not configured (Password missing). Contact Manager.");
             }
 
-            throw new Error("Utente non trovato. Registrati prima.");
+            if (!password || storedPassword !== password) {
+                throw new Error('Invalid password.');
+            }
 
-        } catch (e: any) {
-            console.error("Login Error:", e);
-            setError(e.message);
-            throw e;
+            // Role check
+            if (requiredRole && foundUser.role !== requiredRole) {
+                throw new Error(`Access denied. Required role: ${requiredRole}`);
+            }
+
+            // 4. Set Session
+            const userWithRole = {
+                ...foundUser,
+                isAuthenticated: true
+            };
+
+            setUser(userWithRole);
+            localStorage.setItem('inkflow_session', JSON.stringify(userWithRole));
+
+        } catch (error: any) {
+            console.error('Login error:', error);
+            // STRICT MODE: No fallback to local storage.
+            // If server login fails, we fail.
+            setError(error.message);
+            throw error;
         } finally {
             setLoading(false);
         }
