@@ -1,7 +1,7 @@
 import { useAuth } from '../../features/auth/AuthContext';
 import { storage } from '../../lib/storage';
 import { type Tenant } from '../../types';
-import { LogOut, Bell, Building2 } from 'lucide-react';
+import { LogOut, Bell, Building2, RotateCw } from 'lucide-react';
 import classes from './Header.module.css';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -92,6 +92,14 @@ export function Header() {
             </h2>
 
             <div className={classes.actions}>
+                <button
+                    className={classes.iconBtn}
+                    aria-label="Refresh App"
+                    onClick={() => window.location.reload()}
+                    title="Aggiorna App"
+                >
+                    <RotateCw size={20} />
+                </button>
                 <button
                     className={classes.iconBtn}
                     aria-label="Notifications"
