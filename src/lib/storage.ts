@@ -80,6 +80,7 @@ const mapAppointmentFromDB = (data: any): Appointment => ({
     financials: data.financials || { depositPaid: false },
     reminders: data.reminders,
     notes: data.notes,
+    attachments: data.attachments || [],
     createdAt: data.created_at,
     updatedAt: data.updated_at
 });
@@ -99,6 +100,7 @@ const mapAppointmentToDB = (apt: Appointment) => ({
     financials: apt.financials,
     reminders: apt.reminders,
     notes: apt.notes,
+    attachments: apt.attachments || [],
     updated_at: new Date().toISOString()
 });
 
