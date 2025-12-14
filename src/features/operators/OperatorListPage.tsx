@@ -127,9 +127,9 @@ export function OperatorListPage() {
                     password: "password123" // In a real app this would be generated or handled differently
                 });
             }
-        } catch (error) {
-            console.error("Failed to save user:", error);
-            alert("Errore salvataggio operatore");
+        } catch (error: any) {
+            console.error("Failed to save user (Detailed):", JSON.stringify(error, null, 2));
+            alert("Errore salvataggio operatore: " + (error.message || 'Errore sconosciuto'));
         }
     };
 
