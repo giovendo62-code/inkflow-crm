@@ -69,10 +69,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     throw new Error(`Accesso negato. Richiesto ruolo: ${requiredRole}`);
                 }
 
-                // --- Password Check MVP ---
-                // Se l'utente ha una password salvata nel profilo, confrontala.
+                // --- Password Check STRICT ---
                 const storedPassword = (foundUser.profile as any)?.password;
-                if (storedPassword && password && storedPassword !== password) {
+
+                // 1. Se non esiste password nel DB -> Errore (Configurazione incompleta)
+                if (!storedPassword) {
+                    throw new Error("Account non configurato (Password mancante). Contatta il Manager.");
+                }
+
+                // 2. Se Password non valida o non fornita -> Errore
+                if (!password || storedPassword !== password) {
                     throw new Error("Password non valida.");
                 }
 

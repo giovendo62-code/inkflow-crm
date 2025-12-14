@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { User, Palette, GraduationCap, ArrowLeft, LogIn, UserPlus } from 'lucide-react';
+import { User, Palette, GraduationCap, ArrowLeft, LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
 import classes from './LoginPage.module.css';
 import type { UserRole } from '../../types';
 
@@ -13,6 +13,7 @@ export function LoginPage() {
     // FORM INPUTS
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [name, setName] = useState('');
 
     // AUTH HOOKS
@@ -255,24 +256,55 @@ export function LoginPage() {
 
                             <div className={classes.group}>
                                 <label className={classes.label}>Password</label>
-                                <input
-                                    className={classes.input}
-                                    type="password"
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    required={authMode === 'REGISTER' || !['manager@inkflow.com'].includes(email)}
-                                />
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        className={classes.input}
+                                        type={showPassword ? "text" : "password"}
+                                        value={password}
+                                        onChange={e => setPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        style={{ paddingRight: '40px' }}
+                                        required={authMode === 'REGISTER' || !['manager@inkflow.com'].includes(email)}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        style={{
+                                            position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                                            background: 'none', border: 'none', cursor: 'pointer', color: '#666'
+                                        }}
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
                                 {authMode === 'LOGIN' && (
                                     <div style={{ textAlign: 'right', marginTop: '6px' }}>
                                         <small
                                             style={{ color: '#666', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
-                                            onClick={() => {
+                                            onClick={async () => {
                                                 const emailReq = prompt("Inserisci la tua email di registrazione:");
                                                 if (emailReq) {
+                                                    // HINT LOGIC FOR MANAGER
+                                                    if (selectedRole === 'MANAGER') {
+                                                        try {
+                                                            // Lazy import storage to avoid top-level issues if any
+                                                            const { storage } = await import('../../lib/storage');
+                                                            const users = await storage.getUsers();
+                                                            const found = users.find(u => u.email.toLowerCase() === emailReq.toLowerCase() && u.role === 'MANAGER');
+                                                            if (found && (found.profile as any).password) {
+                                                                const pass = (found.profile as any).password;
+                                                                if (pass.length > 2) {
+                                                                    const hint = pass.substring(0, 3) + "...";
+                                                                    alert(`Suggerimento Password: Inizia con "${hint}"`);
+                                                                    return;
+                                                                }
+                                                            }
+                                                        } catch (e) { console.error(e); }
+                                                    }
+
+                                                    // Fallback to Mailto
                                                     const subject = encodeURIComponent("Richiesta Reset Password InkFlow");
                                                     const body = encodeURIComponent(`Salve Assistenza,\n\nHo dimenticato la password per l'account associato all'email: ${emailReq}.\n\nChiedo gentilemte il reset della password.\n\nGrazie.`);
-                                                    // Apre il client di posta predefinito
                                                     window.location.href = `mailto:support@inkflow.com?subject=${subject}&body=${body}`;
                                                 }
                                             }}
