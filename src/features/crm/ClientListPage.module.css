@@ -68,6 +68,23 @@
     background-color: var(--color-surface-hover);
 }
 
+/* Generic Form Input (no icon padding) */
+.formInput {
+    width: 100%;
+    padding: var(--spacing-sm);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    transition: all 0.2s;
+}
+
+.formInput:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background-color: var(--color-surface-hover);
+}
+
 .tableWrapper {
     background-color: var(--color-surface);
     border-radius: var(--radius-lg);
@@ -149,6 +166,19 @@
     display: block;
 }
 
+/* Form Grids - Mobile First (1 column default) */
+.formGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.threeColGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
 @media (max-width: 768px) {
     .mobileOnly {
         display: block !important;
@@ -172,5 +202,15 @@
     .container {
         padding-bottom: 80px;
         /* Space for mobile nav */
+    }
+}
+
+@media (min-width: 769px) {
+    .formGrid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .threeColGrid {
+        grid-template-columns: 1fr 1fr 1fr;
     }
 }

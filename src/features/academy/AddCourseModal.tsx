@@ -95,7 +95,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                 style={{
                     background: 'var(--color-surface)',
                     borderRadius: 'var(--radius-lg)',
-                    width: '90%',
+                    width: '100%',
                     maxWidth: '500px',
                     maxHeight: '90vh',
                     overflow: 'auto'
@@ -135,7 +135,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                         </label>
                         <input
                             type="text"
-                            className={classes.searchInput}
+                            className={classes.formInput}
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             placeholder="es. Corso Base Tatuaggio 2024"
@@ -148,7 +148,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                             Descrizione
                         </label>
                         <textarea
-                            className={classes.searchInput}
+                            className={classes.formInput}
                             rows={3}
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -156,14 +156,14 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                         />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className={classes.formGrid}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
                                 Data Inizio *
                             </label>
                             <input
                                 type="date"
-                                className={classes.searchInput}
+                                className={classes.formInput}
                                 value={formData.startDate}
                                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                                 required
@@ -176,7 +176,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                             </label>
                             <input
                                 type="date"
-                                className={classes.searchInput}
+                                className={classes.formInput}
                                 value={formData.endDate}
                                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                                 required
@@ -184,14 +184,14 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className={classes.formGrid}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
                                 Giorni di Corso *
                             </label>
                             <input
                                 type="number"
-                                className={classes.searchInput}
+                                className={classes.formInput}
                                 value={formData.totalHours}
                                 onChange={(e) => setFormData({ ...formData, totalHours: e.target.value })}
                                 placeholder="es. 5"
@@ -205,7 +205,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                             </label>
                             <input
                                 type="number"
-                                className={classes.searchInput}
+                                className={classes.formInput}
                                 value={formData.price}
                                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                                 placeholder="2500"
@@ -220,7 +220,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                         </label>
                         <input
                             type="text"
-                            className={classes.searchInput}
+                            className={classes.formInput}
                             value={formData.schedule}
                             onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
                             placeholder="es. Lunedì e Mercoledì 14:00-18:00"
@@ -233,7 +233,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                         </label>
                         <input
                             type="number"
-                            className={classes.searchInput}
+                            className={classes.formInput}
                             value={formData.maxStudents}
                             onChange={(e) => setFormData({ ...formData, maxStudents: e.target.value })}
                             placeholder="10"
@@ -245,7 +245,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                             Programma
                         </label>
                         <textarea
-                            className={classes.searchInput}
+                            className={classes.formInput}
                             rows={6}
                             value={formData.program}
                             onChange={(e) => setFormData({ ...formData, program: e.target.value })}

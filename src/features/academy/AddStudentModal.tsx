@@ -127,7 +127,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                 style={{
                     background: 'var(--color-surface)',
                     borderRadius: 'var(--radius-lg)',
-                    width: '90%',
+                    width: '100%',
                     maxWidth: '600px',
                     maxHeight: '90vh',
                     overflow: 'auto'
@@ -166,14 +166,14 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                         <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>
                             Informazioni Personali
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className={classes.formGrid}>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
                                     Nome *
                                 </label>
                                 <input
                                     type="text"
-                                    className={classes.searchInput}
+                                    className={classes.formInput}
                                     value={formData.firstName}
                                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                                     required
@@ -186,7 +186,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                                 </label>
                                 <input
                                     type="text"
-                                    className={classes.searchInput}
+                                    className={classes.formInput}
                                     value={formData.lastName}
                                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                                     required
@@ -199,7 +199,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                                 </label>
                                 <input
                                     type="email"
-                                    className={classes.searchInput}
+                                    className={classes.formInput}
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     required
@@ -212,7 +212,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                                 </label>
                                 <input
                                     type="tel"
-                                    className={classes.searchInput}
+                                    className={classes.formInput}
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                     required
@@ -225,7 +225,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                                 </label>
                                 <input
                                     type="text"
-                                    className={classes.searchInput}
+                                    className={classes.formInput}
                                     value={formData.fiscalCode}
                                     onChange={(e) => setFormData({ ...formData, fiscalCode: e.target.value })}
                                 />
@@ -237,7 +237,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                                 </label>
                                 <input
                                     type="date"
-                                    className={classes.searchInput}
+                                    className={classes.formInput}
                                     value={formData.birthDate}
                                     onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
                                 />
@@ -250,14 +250,14 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                         <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>
                             Indirizzo
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem' }}>
+                        <div className={classes.threeColGrid}>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
                                     Via
                                 </label>
                                 <input
                                     type="text"
-                                    className={classes.searchInput}
+                                    className={classes.formInput}
                                     value={formData.street}
                                     onChange={(e) => setFormData({ ...formData, street: e.target.value })}
                                 />
@@ -269,7 +269,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                                 </label>
                                 <input
                                     type="text"
-                                    className={classes.searchInput}
+                                    className={classes.formInput}
                                     value={formData.city}
                                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                                 />
@@ -281,7 +281,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                                 </label>
                                 <input
                                     type="text"
-                                    className={classes.searchInput}
+                                    className={classes.formInput}
                                     value={formData.zip}
                                     onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
                                 />
@@ -294,13 +294,13 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                         <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>
                             Informazioni Corso
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                        <div className={classes.threeColGrid}>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
                                     Corso *
                                 </label>
                                 <select
-                                    className={classes.searchInput}
+                                    className={classes.formInput}
                                     value={formData.courseId}
                                     onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
                                     required
@@ -320,7 +320,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                                 </label>
                                 <input
                                     type="date"
-                                    className={classes.searchInput}
+                                    className={classes.formInput}
                                     value={formData.enrollmentDate}
                                     onChange={(e) => setFormData({ ...formData, enrollmentDate: e.target.value })}
                                     required
@@ -333,7 +333,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                                 </label>
                                 <input
                                     type="number"
-                                    className={classes.searchInput}
+                                    className={classes.formInput}
                                     value={formData.totalPaid}
                                     onChange={(e) => setFormData({ ...formData, totalPaid: e.target.value })}
                                     placeholder="0"
