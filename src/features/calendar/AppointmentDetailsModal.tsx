@@ -528,7 +528,80 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                         </div>
                     )}
 
-                    {/* Reminders */}
+                    {/* WhatsApp Actions (Manual) */}
+                    {currentClient && (
+                        <div style={{
+                            padding: '1.5rem',
+                            backgroundColor: 'rgba(37, 211, 102, 0.05)',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid #25D366',
+                            marginBottom: '1rem'
+                        }}>
+                            <h4 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#128C7E' }}>
+                                <MessageCircle size={18} />
+                                Comunicazioni WhatsApp Rapide
+                            </h4>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const phone = currentClient.phone.replace(/[^0-9]/g, '');
+                                        const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
+
+                                        const dateObj = new Date(date);
+                                        const formattedDate = dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+
+                                        const text = `Ciao ${currentClient.firstName}! 👋\n\nTi confermo il tuo appuntamento per *${formattedDate}* alle ore *${startTime}* presso il nostro studio.\n\n📍 Indirizzo: Via Roma 123 (esempio)\n\nPer qualsiasi modifica contattaci pure. A presto!`;
+
+                                        window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
+                                    }}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        padding: '0.75rem',
+                                        backgroundColor: '#25D366',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: 'var(--radius-md)',
+                                        cursor: 'pointer',
+                                        fontWeight: '600'
+                                    }}
+                                >
+                                    <MessageCircle size={18} />
+                                    Invia Conferma
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const phone = currentClient.phone.replace(/[^0-9]/g, '');
+                                        const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
+
+                                        const dateObj = new Date(date);
+                                        const formattedDate = dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+
+                                        const text = `Ciao ${currentClient.firstName}! 👋\n\nQuesto è un promemoria per il tuo appuntamento tra una settimana: *${formattedDate}* alle ore *${startTime}*.\n\nCi confermi la tua presenza?\n\nGrazie!`;
+
+                                        window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
+                                    }}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        padding: '0.75rem',
+                                        backgroundColor: 'white',
+                                        color: '#25D366',
+                                        border: '1px solid #25D366',
+                                        borderRadius: 'var(--radius-md)',
+                                        cursor: 'pointer',
+                                        fontWeight: '600'
+                                    }}
+                                >
+                                    <Bell size={18} />
+                                    Invia Reminder (1 Settimana)
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <div style={{
                         padding: '1.5rem',
                         backgroundColor: 'var(--color-surface-hover)',
