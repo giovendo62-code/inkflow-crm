@@ -28,20 +28,37 @@ export const loadGoogleScript = (): Promise<void> => {
 // Initialize Token Client
 let tokenClient: any;
 
-export const initGoogleCalendar = async (callback: (response: any) => void) => {
-    await loadGoogleScript();
+export const initGoogleCalendar = async (callback: (response: any) => void): Promise<{ success: boolean; error?: string }> => {
+    console.log("Initializing Google Calendar Service...");
 
-    tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        callback: (resp: any) => {
-            if (resp.error) {
-                console.error("Google Auth Error:", resp);
-                return;
-            }
-            callback(resp);
-        },
-    });
+    // Check if Env var is effectively loaded
+    if (!CLIENT_ID || CLIENT_ID.length < 5) {
+        console.error("CRITICAL: VITE_GOOGLE_CLIENT_ID is missing or too short!");
+        return { success: false, error: "VITE_GOOGLE_CLIENT_ID mancante o non valido." };
+    }
+
+    try {
+        await loadGoogleScript();
+        console.log("Google Script Loaded. Initializing Token Client...");
+
+        tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            callback: (resp: any) => {
+                if (resp.error) {
+                    console.error("Google Auth Callback Error:", resp);
+                    alert("Errore Autenticazione Google: " + JSON.stringify(resp));
+                    return;
+                }
+                callback(resp);
+            },
+        });
+        console.log("Token Client Initialized Ready.");
+        return { success: true };
+    } catch (error: any) {
+        console.error("Failed to initialize Google Script:", error);
+        return { success: false, error: error.message || "Errore caricamento Script Google" };
+    }
 };
 
 // Trigger Login Popup

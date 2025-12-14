@@ -21,6 +21,7 @@ export function OperatorListPage() {
 
     // Google Calendar State
     const [googleCalendars, setGoogleCalendars] = useState<any[]>([]);
+    const [googleInitStatus, setGoogleInitStatus] = useState<{ status: 'idle' | 'loading' | 'success' | 'error'; message: string }>({ status: 'idle', message: '' });
 
     const [formData, setFormData] = useState<Partial<User>>({
         role: 'ARTIST',
@@ -39,23 +40,32 @@ export function OperatorListPage() {
 
     // Initialize Google Calendar
     useEffect(() => {
-        // Check for existing token
-        const existingToken = localStorage.getItem('google_access_token');
-        if (existingToken) {
-            fetchCalendars(existingToken);
-        }
+        const init = async () => {
+            setGoogleInitStatus({ status: 'loading', message: 'Inizializzazione Google...' });
 
-        initGoogleCalendar((response: any) => {
-            if (response.access_token) {
-                console.log("Google Auth Success, Access Token:", response.access_token);
-                // Save token temporarily (ideally this should be secure)
-                localStorage.setItem('google_access_token', response.access_token);
-
-                alert("Manager Autenticato! Ora caricherò la lista dei tuoi calendari.");
-                fetchCalendars(response.access_token);
-                // Do NOT auto-connect the artist profile here. The user must select a calendar from the list.
+            // Check for existing token
+            const existingToken = localStorage.getItem('google_access_token');
+            if (existingToken) {
+                fetchCalendars(existingToken);
             }
-        });
+
+            const result = await initGoogleCalendar((response: any) => {
+                if (response.access_token) {
+                    console.log("Google Auth Success, Access Token:", response.access_token);
+                    localStorage.setItem('google_access_token', response.access_token);
+                    alert("Manager Autenticato! Ora caricherò la lista dei tuoi calendari.");
+                    fetchCalendars(response.access_token);
+                    // Do NOT auto-connect the artist profile here. The user must select a calendar from the list.
+                }
+            });
+
+            if (result.success) {
+                setGoogleInitStatus({ status: 'success', message: 'Google Pronto' });
+            } else {
+                setGoogleInitStatus({ status: 'error', message: result.error || 'Errore sconosciuto' });
+            }
+        };
+        init();
     }, []);
 
     useEffect(() => {
@@ -529,11 +539,22 @@ export function OperatorListPage() {
                                                 onClick={() => loginToGoogleCalendar()}
                                                 style={{
                                                     width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                                    padding: '0.75rem', background: '#4285F4', color: 'white', borderRadius: '4px', fontWeight: '500', border: 'none', cursor: 'pointer'
+                                                    padding: '0.75rem', background: '#4285F4', color: 'white', borderRadius: '4px', fontWeight: '500', border: 'none', cursor: 'pointer',
+                                                    opacity: googleInitStatus.status === 'success' ? 1 : 0.6,
+                                                    pointerEvents: googleInitStatus.status === 'success' ? 'auto' : 'none'
                                                 }}>
                                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z" /></svg>
                                                 Fai Login Google (Manager)
                                             </button>
+                                            <p style={{
+                                                fontSize: '0.7rem',
+                                                marginTop: '5px',
+                                                textAlign: 'center',
+                                                color: googleInitStatus.status === 'error' ? 'red' :
+                                                    googleInitStatus.status === 'success' ? 'green' : 'gray'
+                                            }}>
+                                                Status: {googleInitStatus.message || googleInitStatus.status}
+                                            </p>
                                         </div>
                                     ) : (
                                         <div>
