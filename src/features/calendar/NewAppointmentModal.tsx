@@ -49,7 +49,7 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
                 const loadedClients = await storage.getClients(user.tenantId);
                 const loadedUsers = await storage.getUsers(user.tenantId);
                 setClients(loadedClients);
-                setArtists(loadedUsers.filter(u => u.role === 'ARTIST'));
+                setArtists(loadedUsers.filter(u => u.role === 'ARTIST' || u.role === 'MANAGER'));
             };
             loadData();
 
@@ -143,20 +143,33 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
             const targetArtist = artists.find(a => a.id == newAppointment.artistId);
             const targetCalendarId = targetArtist?.profile?.googleCalendarId || 'primary'; // Default to primary if not mapped
 
+            console.log("🔍 DEBUG SYNC GOOGLE:");
+            console.log("- Token Presente?", !!googleToken);
+            console.log("- Artista:", targetArtist?.name);
+            console.log("- Connesso a Google?", targetArtist?.profile?.googleCalendarConnected);
+            console.log("- Calendar ID:", targetCalendarId);
+
             if (googleToken && targetArtist?.profile?.googleCalendarConnected) { // Check if feature enabled for artist
                 try {
-                    await createGoogleCalendarEvent(googleToken, {
+                    console.log("🚀 Tentativo invio a Google Calendar...");
+                    const eventData = {
                         title: title || `Appuntamento: ${(clients.find(c => c.id === clientId)?.firstName || 'Cliente')}`,
                         description: `${notes}\n\nCliente: ${clients.find(c => c.id === clientId)?.phone}`,
                         startTime: startDateTime.toISOString(),
                         endTime: endDateTime.toISOString(),
                         calendarId: targetCalendarId
-                    });
-                    console.log(`Synced to Google Calendar (${targetCalendarId})!`);
+                    };
+                    console.log("📦 Dati Evento:", eventData);
+
+                    await createGoogleCalendarEvent(googleToken, eventData);
+                    console.log(`✅ SUCCESSO! Sincronizzato con Google Calendar (${targetCalendarId})!`);
+                    alert("✅ Appuntamento salvato e sincronizzato con Google Calendar!");
                 } catch (gError) {
-                    console.error("Google Calendar Sync Warning:", gError);
-                    alert("Sync Google Calendar fallito. Controlla il collegamento nelle impostazioni.");
+                    console.error("❌ ERRORE Google Calendar Sync:", gError);
+                    alert("⚠️ Appuntamento salvato nel CRM, ma ERRORE Sync Google: " + gError);
                 }
+            } else {
+                console.log("⚠️ SKIP SYNC: Token mancante o Artista non connesso.");
             }
 
             resetForm();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '../../lib/storage';
 import { type User, type UserRole } from '../../types';
@@ -38,8 +38,13 @@ export function OperatorListPage() {
         }
     };
 
+    const initialized = useRef(false);
+
     // Initialize Google Calendar
     useEffect(() => {
+        if (initialized.current) return;
+        initialized.current = true;
+
         const init = async () => {
             setGoogleInitStatus({ status: 'loading', message: 'Inizializzazione Google...' });
 
@@ -53,9 +58,8 @@ export function OperatorListPage() {
                 if (response.access_token) {
                     console.log("Google Auth Success, Access Token:", response.access_token);
                     localStorage.setItem('google_access_token', response.access_token);
-                    alert("Manager Autenticato! Ora caricherò la lista dei tuoi calendari.");
+                    setGoogleInitStatus({ status: 'success', message: 'Connesso!' });
                     fetchCalendars(response.access_token);
-                    // Do NOT auto-connect the artist profile here. The user must select a calendar from the list.
                 }
             });
 

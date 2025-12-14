@@ -111,8 +111,15 @@ export function CalendarPage() {
         await loadAppointments();
     };
 
+    const [date, setDate] = useState(new Date());
+
+    const onNavigate = (newDate: Date) => {
+        setDate(newDate);
+    };
+
     return (
         <div style={{ padding: '2rem', height: '100%' }}>
+            {/* ... header ... */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold' }}>Calendar</h1>
 
@@ -187,6 +194,8 @@ export function CalendarPage() {
                     style={{ height: '100%' }}
                     view={view}
                     onView={setView}
+                    date={date}
+                    onNavigate={onNavigate}
                     views={[Views.MONTH, Views.WEEK, Views.DAY]}
                     selectable
                     onSelectEvent={handleEventClick}
