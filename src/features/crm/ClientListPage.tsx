@@ -365,7 +365,8 @@ export function ClientListPage() {
                 </div>
             )}
 
-            <div className={classes.tableWrapper}>
+            {/* Desktop Table View */}
+            <div className={`${classes.tableWrapper} ${classes.desktopOnly}`}>
                 <table className={classes.table}>
                     <thead>
                         <tr>
@@ -432,6 +433,73 @@ export function ClientListPage() {
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className={classes.mobileOnly} style={{ paddingBottom: '5rem' }}>
+                {sortedClients.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {sortedClients.map(client => (
+                            <div
+                                key={client.id}
+                                style={{
+                                    background: 'var(--color-surface)',
+                                    padding: '1rem',
+                                    borderRadius: 'var(--radius-lg)',
+                                    border: '1px solid var(--color-border)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.75rem'
+                                }}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <div className={classes.avatar} style={{ width: 40, height: 40 }}>
+                                            <UserIcon size={20} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontWeight: '600', fontSize: '1rem' }}>{client.firstName} {client.lastName}</div>
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{client.email}</div>
+                                        </div>
+                                    </div>
+                                    {client.inBroadcast && (
+                                        <span style={{ color: '#25D366', fontSize: '1.2rem' }}>✓</span>
+                                    )}
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    {client.preferredStyle && (
+                                        <span className={classes.tag} style={{ background: 'rgba(66, 133, 244, 0.1)', color: '#4285F4' }}>
+                                            {client.preferredStyle}
+                                        </span>
+                                    )}
+                                    <span className={classes.tag}>{client.phone}</span>
+                                </div>
+
+                                <button
+                                    onClick={() => handleViewClient(client)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        background: 'var(--color-surface-hover)',
+                                        border: '1px solid var(--color-primary)',
+                                        color: 'var(--color-primary)',
+                                        borderRadius: 'var(--radius-md)',
+                                        fontWeight: '600',
+                                        marginTop: '0.5rem',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Modifica / Dettagli
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>
+                        Nessun cliente trovato.
+                    </div>
+                )}
             </div>
 
             <AddClientModal

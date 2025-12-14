@@ -166,7 +166,7 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                             <User size={18} />
                             Informazioni Personali
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className={classes.formGrid}>
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
                                     Nome
@@ -174,7 +174,7 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                                 {isEditing ? (
                                     <input
                                         type="text"
-                                        className={classes.searchInput}
+                                        className={classes.formInput}
                                         value={formData.firstName}
                                         onChange={(e) => handleChange('firstName', e.target.value)}
                                     />
@@ -189,7 +189,7 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                                 {isEditing ? (
                                     <input
                                         type="text"
-                                        className={classes.searchInput}
+                                        className={classes.formInput}
                                         value={formData.lastName}
                                         onChange={(e) => handleChange('lastName', e.target.value)}
                                     />
@@ -204,7 +204,7 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                                 {isEditing ? (
                                     <input
                                         type="text"
-                                        className={classes.searchInput}
+                                        className={classes.formInput}
                                         value={formData.fiscalCode}
                                         onChange={(e) => handleChange('fiscalCode', e.target.value)}
                                     />
@@ -219,7 +219,7 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                                 {isEditing ? (
                                     <input
                                         type="date"
-                                        className={classes.searchInput}
+                                        className={classes.formInput}
                                         value={formData.birthDate}
                                         onChange={(e) => handleChange('birthDate', e.target.value)}
                                     />
@@ -236,7 +236,7 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                             <Mail size={18} />
                             Contatti
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className={classes.formGrid}>
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
                                     <Mail size={14} style={{ display: 'inline', marginRight: '0.25rem' }} />
@@ -245,7 +245,7 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                                 {isEditing ? (
                                     <input
                                         type="email"
-                                        className={classes.searchInput}
+                                        className={classes.formInput}
                                         value={formData.email}
                                         onChange={(e) => handleChange('email', e.target.value)}
                                     />
@@ -261,7 +261,7 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                                 {isEditing ? (
                                     <input
                                         type="tel"
-                                        className={classes.searchInput}
+                                        className={classes.formInput}
                                         value={formData.phone}
                                         onChange={(e) => handleChange('phone', e.target.value)}
                                     />
@@ -278,7 +278,7 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                             <MapPin size={18} />
                             Indirizzo
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem' }}>
+                        <div className={classes.threeColGrid}>
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
                                     Via
@@ -286,7 +286,7 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                                 {isEditing ? (
                                     <input
                                         type="text"
-                                        className={classes.searchInput}
+                                        className={classes.formInput}
                                         value={formData.street}
                                         onChange={(e) => handleChange('street', e.target.value)}
                                     />
@@ -301,7 +301,7 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                                 {isEditing ? (
                                     <input
                                         type="text"
-                                        className={classes.searchInput}
+                                        className={classes.formInput}
                                         value={formData.city}
                                         onChange={(e) => handleChange('city', e.target.value)}
                                     />
@@ -316,7 +316,7 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                                 {isEditing ? (
                                     <input
                                         type="text"
-                                        className={classes.searchInput}
+                                        className={classes.formInput}
                                         value={formData.zip}
                                         onChange={(e) => handleChange('zip', e.target.value)}
                                     />
@@ -333,14 +333,14 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                             <FileText size={18} />
                             Preferenze Tatuaggi
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className={classes.formGrid}>
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
                                     Stile Preferito
                                 </label>
                                 {isEditing ? (
                                     <select
-                                        className={classes.searchInput}
+                                        className={classes.formInput}
                                         value={formData.preferredStyle || ''}
                                         onChange={(e) => handleChange('preferredStyle', e.target.value || undefined)}
                                     >
