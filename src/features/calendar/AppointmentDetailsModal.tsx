@@ -46,8 +46,9 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
     useEffect(() => {
         if (isOpen && appointment) {
             const loadData = async () => {
-                const loadedClients = await storage.getClients();
-                const loadedUsers = await storage.getUsers();
+                if (!user?.tenantId) return;
+                const loadedClients = await storage.getClients(user.tenantId);
+                const loadedUsers = await storage.getUsers(user.tenantId);
                 setClients(loadedClients);
                 setAllUsers(loadedUsers);
                 setArtists(loadedUsers.filter(u => u.role === 'ARTIST'));
