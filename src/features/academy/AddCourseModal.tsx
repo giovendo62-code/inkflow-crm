@@ -83,10 +83,11 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                 bottom: 0,
                 background: 'rgba(0, 0, 0, 0.7)',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 justifyContent: 'center',
                 zIndex: 1000,
-                padding: '1rem'
+                padding: '1rem',
+                paddingTop: '3rem'
             }}
             onClick={onClose}
         >
