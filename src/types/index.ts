@@ -4,6 +4,8 @@ export interface Tenant {
   id: string;
   name: string;
   logo?: string;
+  address?: string;
+  whatsapp?: string;
   theme?: {
     primaryColor: string;
     sidebarStyle: 'dark' | 'light' | 'colored';

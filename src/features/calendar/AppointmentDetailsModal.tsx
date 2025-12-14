@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { X, Calendar as CalendarIcon, Clock, MessageCircle, Bell, Mail, FileText, Upload, Image, Trash2, User as UserIcon } from 'lucide-react';
-import { type Appointment, type Client, type User, type TattooStyle } from '../../types';
+import { type Appointment, type Client, type User, type Tenant, type TattooStyle } from '../../types';
 import { storage } from '../../lib/storage';
 import { useAuth } from '../auth/AuthContext';
 import classes from '../crm/ClientListPage.module.css';
@@ -17,7 +18,7 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
     const [clients, setClients] = useState<Client[]>([]);
     const [artists, setArtists] = useState<User[]>([]);
     const [allUsers, setAllUsers] = useState<User[]>([]);
-    const [tenantName, setTenantName] = useState('');
+    const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
 
     // Form State
     const [title, setTitle] = useState('');
@@ -52,7 +53,7 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                 const loadedUsers = await storage.getUsers(user.tenantId);
                 const tenants = await storage.getTenants();
                 const myTenant = tenants.find(t => t.id === user.tenantId);
-                if (myTenant) setTenantName(myTenant.name);
+                if (myTenant) setCurrentTenant(myTenant);
 
                 setClients(loadedClients);
                 setAllUsers(loadedUsers);
@@ -172,7 +173,8 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                 width: '100%', maxWidth: '800px',
                 border: '1px solid var(--color-border)',
                 maxHeight: '95vh',
-                overflowY: 'auto'
+                overflowY: 'auto',
+                overflowX: 'hidden'
             }}>
                 {/* Header */}
                 <div style={{
@@ -230,7 +232,7 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                 <form onSubmit={handleSubmit} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
                     {/* Top Section: Basic Info */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div className={classes.formGrid}>
 
                         {/* Left Column */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -376,9 +378,9 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                     <div style={{ borderTop: '1px solid var(--color-border)', margin: '0.5rem 0' }}></div>
 
                     {/* Financials & Notes */}
-                    <div style={{ display: 'grid', gridTemplateColumns: canEdit ? '1fr 1fr' : '1fr', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
                         {canEdit && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: '1 1 300px' }}>
                                 <h4 style={{ fontSize: '1rem', fontWeight: 'bold' }}>Dettagli Finanziari</h4>
 
                                 <div className={classes.group}>
@@ -406,7 +408,7 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                                     </select>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div className={classes.formGrid}>
                                     <div className={classes.group}>
                                         <label className={classes.label}>Preventivo (€)</label>
                                         <input
@@ -442,7 +444,7 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                             </div>
                         )}
 
-                        <div className={classes.group} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <div className={classes.group} style={{ display: 'flex', flexDirection: 'column', flex: '1 1 300px' }}>
                             <label className={classes.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <FileText size={16} /> Note
                             </label>
@@ -547,17 +549,17 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                                 Comunicazioni WhatsApp Rapide
                             </h4>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div className={classes.formGrid}>
                                 <button
                                     type="button"
                                     onClick={() => {
                                         const phone = currentClient.phone.replace(/[^0-9]/g, '');
-                                        const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
+                                        const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone} ` : phone;
 
                                         const dateObj = new Date(date);
                                         const formattedDate = dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
-                                        const text = `Ciao ${currentClient.firstName}! 👋\n\nTi confermo il tuo appuntamento per *${formattedDate}* alle ore *${startTime}*.\n\n⚠️ *IMPORTANTE*: Rispondi a questo messaggio per confermare la ricezione.\n\nTi aspettiamo!\n\n📍 *${tenantName}*`;
+                                        const text = `Ciao ${currentClient.firstName}! 👋\n\nTi confermo il tuo appuntamento per *${formattedDate}* alle ore *${startTime}*.\n\n⚠️ *IMPORTANTE*: Rispondi a questo messaggio per confermare la ricezione.\n\nTi aspettiamo!\n\n—\n${currentTenant?.name || ''}\n📍 ${currentTenant?.address || ''}\n📲 ${currentTenant?.whatsapp || ''}`;
 
                                         window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
                                     }}
@@ -574,7 +576,7 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                                 >
                                     <MessageCircle size={18} />
                                     Invia Conferma
-                                </button>
+                                </button >
 
                                 <button
                                     type="button"
@@ -585,7 +587,7 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                                         const dateObj = new Date(date);
                                         const formattedDate = dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
-                                        const text = `Ciao ${currentClient.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${formattedDate}* alle ore *${startTime}*.\n\n⚠️ *IMPORTANTE*: Per favore rispondi a questo messaggio per confermare. La mancata conferma potrebbe comportare la cancellazione dell'appuntamento.\n\nTi aspettiamo!\n\n📍 *${tenantName}*`;
+                                        const text = `Ciao ${currentClient.firstName}, ti scriviamo per ricordarti il tuo appuntamento presso il nostro studio.\n📅 Data: ${formattedDate}\n⏰ Orario: ${startTime}\n${notes ? `\n${notes}` : ''}\n\n❗ Questo messaggio richiede una conferma. Ti chiediamo di rispondere per confermare la tua presenza.\nIn assenza di risposta, l’appuntamento potrebbe essere cancellato per permettere ad altri clienti di prenotarsi.\n\n—\n${currentTenant?.name || 'InkFlow Studio'}\n📍 ${currentTenant?.address || ''}\n📲 ${currentTenant?.whatsapp || ''}`;
 
                                         window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
                                     }}
@@ -603,8 +605,8 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                                     <Bell size={18} />
                                     Invia Reminder (1 Settimana)
                                 </button>
-                            </div>
-                        </div>
+                            </div >
+                        </div >
                     )}
 
                     <div style={{
@@ -704,8 +706,8 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                             </button>
                         )}
                     </div>
-                </form>
-            </div>
-        </div>
+                </form >
+            </div >
+        </div >
     );
 }

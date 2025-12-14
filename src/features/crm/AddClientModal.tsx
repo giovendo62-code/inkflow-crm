@@ -180,7 +180,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
                     <div>
                         <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-primary)' }}>Dati Anagrafici</h3>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                        <div className={classes.formGrid} style={{ marginBottom: '1rem' }}>
                             <div className={loginClasses.group}>
                                 <label className={loginClasses.label}>Nome *</label>
                                 <input required className={loginClasses.input}
@@ -201,7 +201,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
                                 onChange={e => setFormData({ ...formData, fiscalCode: e.target.value.toUpperCase() })} />
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className={classes.formGrid}>
                             <div className={loginClasses.group}>
                                 <label className={loginClasses.label}>Data di Nascita</label>
                                 <input type="date" className={loginClasses.input}
@@ -225,7 +225,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
                                 value={formData.street} onChange={e => setFormData({ ...formData, street: e.target.value })} />
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                        <div className={classes.formGrid} style={{ marginBottom: '1rem' }}>
                             <div className={loginClasses.group}>
                                 <label className={loginClasses.label}>Città</label>
                                 <input className={loginClasses.input} placeholder="Milano"

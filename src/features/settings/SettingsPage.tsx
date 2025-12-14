@@ -395,6 +395,28 @@ export function SettingsPage() {
                         </div>
 
                         <div className={classes.group}>
+                            <label className={classes.label} style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>Indirizzo</label>
+                            <input
+                                className={classes.searchInput}
+                                style={{ width: '100%', padding: '0.75rem' }}
+                                value={tenant.address || ''}
+                                onChange={e => setTenant({ ...tenant, address: e.target.value })}
+                                placeholder="Via Roma 123, Milano"
+                            />
+                        </div>
+
+                        <div className={classes.group}>
+                            <label className={classes.label} style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>WhatsApp</label>
+                            <input
+                                className={classes.searchInput}
+                                style={{ width: '100%', padding: '0.75rem' }}
+                                value={tenant.whatsapp || ''}
+                                onChange={e => setTenant({ ...tenant, whatsapp: e.target.value })}
+                                placeholder="+39 333 1234567"
+                            />
+                        </div>
+
+                        <div className={classes.group}>
                             <label className={classes.label} style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>Logo Studio</label>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

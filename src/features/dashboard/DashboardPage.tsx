@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { storage } from '../../lib/storage';
-import { type Appointment, type Client, type TattooStyle } from '../../types';
+import { type Appointment, type Client, type TattooStyle, type Tenant } from '../../types';
 import { Calendar as CalendarIcon, User as UserIcon, MessageCircle, Bell } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { StudentDashboard } from '../academy/StudentDashboard';
@@ -37,7 +37,7 @@ export function DashboardPage() {
     const [yearlyTotals, setYearlyTotals] = useState({ revenue: 0, appointments: 0, currentMonthRevenue: 0 });
     const [styleStats, setStyleStats] = useState<{ name: string, value: number, color: string }[]>([]);
 
-    const [tenantName, setTenantName] = useState('InkFlow Studio');
+    const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
 
     useEffect(() => {
         const loadDashboardData = async () => {
@@ -49,7 +49,7 @@ export function DashboardPage() {
                 // Load Tenant Info
                 const tenants = await storage.getTenants();
                 const myTenant = tenants.find(t => t.id === user.tenantId) || tenants[0];
-                if (myTenant) setTenantName(myTenant.name);
+                if (myTenant) setCurrentTenant(myTenant);
 
                 const [allAppointments, allClients] = await Promise.all([
                     storage.getAppointments(user.tenantId),
@@ -237,7 +237,7 @@ export function DashboardPage() {
         return (
             <div>
                 <h1 style={{ fontSize: '1.75rem', marginBottom: '0.5rem', lineHeight: '1.2' }}>
-                    Benvenuto a {tenantName},<br />
+                    Benvenuto a {currentTenant?.name || 'InkFlow Studio'},<br />
                     <span style={{ color: 'var(--color-primary)' }}>{user?.name}</span>
                 </h1>
                 <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>
@@ -451,7 +451,7 @@ export function DashboardPage() {
                                                     onClick={() => {
                                                         const phone = client.phone.replace(/[^0-9]/g, '');
                                                         const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
-                                                        const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\n⚠️ *IMPORTANTE*: Per favore rispondi a questo messaggio per confermare. La mancata conferma potrebbe comportare la cancellazione dell'appuntamento.\n\nTi aspettiamo!\n\n📍 *${tenantName}*`;
+                                                        const text = `Ciao ${client.firstName}, ti scriviamo per ricordarti il tuo appuntamento presso il nostro studio.\n📅 Data: ${dateStr}\n⏰ Orario: ${timeStr}\n${apt.notes ? `\n${apt.notes}` : ''}\n\n❗ Questo messaggio richiede una conferma. Ti chiediamo di rispondere per confermare la tua presenza.\nIn assenza di risposta, l’appuntamento potrebbe essere cancellato per permettere ad altri clienti di prenotarsi.\n\n—\n${currentTenant?.name || 'InkFlow Studio'}\n📍 ${currentTenant?.address || ''}\n📲 ${currentTenant?.whatsapp || ''}`;
                                                         window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
                                                     }}
                                                     style={{
@@ -508,7 +508,7 @@ export function DashboardPage() {
                                                     onClick={() => {
                                                         const phone = client.phone.replace(/[^0-9]/g, '');
                                                         const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
-                                                        const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\n⚠️ *IMPORTANTE*: Per favore rispondi a questo messaggio per confermare. La mancata conferma potrebbe comportare la cancellazione dell'appuntamento.\n\nTi aspettiamo!\n\n📍 *${tenantName}*`;
+                                                        const text = `Ciao ${client.firstName}, ti scriviamo per ricordarti il tuo appuntamento presso il nostro studio.\n📅 Data: ${dateStr}\n⏰ Orario: ${timeStr}\n${apt.notes ? `\n${apt.notes}` : ''}\n\n❗ Questo messaggio richiede una conferma. Ti chiediamo di rispondere per confermare la tua presenza.\nIn assenza di risposta, l’appuntamento potrebbe essere cancellato per permettere ad altri clienti di prenotarsi.\n\n—\n${currentTenant?.name || 'InkFlow Studio'}\n📍 ${currentTenant?.address || ''}\n📲 ${currentTenant?.whatsapp || ''}`;
                                                         window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
                                                     }}
                                                     style={{
@@ -550,7 +550,7 @@ export function DashboardPage() {
     return (
         <div>
             <h1 style={{ fontSize: '1.75rem', marginBottom: '0.5rem', lineHeight: '1.2' }}>
-                Benvenuto a {tenantName},<br />
+                Benvenuto a {currentTenant?.name || 'InkFlow Studio'},<br />
                 <span style={{ color: 'var(--color-primary)' }}>{user?.name}</span>
             </h1>
             <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>
@@ -668,7 +668,7 @@ export function DashboardPage() {
                                                 onClick={() => {
                                                     const phone = client.phone.replace(/[^0-9]/g, '');
                                                     const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
-                                                    const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\nCi confermi la tua presenza? Grazie!`;
+                                                    const text = `Ciao ${client.firstName}, ti scriviamo per ricordarti il tuo appuntamento presso il nostro studio.\n📅 Data: ${dateStr}\n⏰ Orario: ${timeStr}\n${apt.notes ? `\n${apt.notes}` : ''}\n\n❗ Questo messaggio richiede una conferma. Ti chiediamo di rispondere per confermare la tua presenza.\nIn assenza di risposta, l’appuntamento potrebbe essere cancellato per permettere ad altri clienti di prenotarsi.\n\n—\n${currentTenant?.name || 'InkFlow Studio'}\n📍 ${currentTenant?.address || ''}\n📲 ${currentTenant?.whatsapp || ''}`;
                                                     window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
                                                 }}
                                                 style={{
@@ -726,7 +726,7 @@ export function DashboardPage() {
                                                 onClick={() => {
                                                     const phone = client.phone.replace(/[^0-9]/g, '');
                                                     const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
-                                                    const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\nCi confermi la tua presenza? Grazie!`;
+                                                    const text = `Ciao ${client.firstName}, ti scriviamo per ricordarti il tuo appuntamento presso il nostro studio.\n📅 Data: ${dateStr}\n⏰ Orario: ${timeStr}\n${apt.notes ? `\n${apt.notes}` : ''}\n\n❗ Questo messaggio richiede una conferma. Ti chiediamo di rispondere per confermare la tua presenza.\nIn assenza di risposta, l’appuntamento potrebbe essere cancellato per permettere ad altri clienti di prenotarsi.\n\n—\n${currentTenant?.name || 'InkFlow Studio'}\n📍 ${currentTenant?.address || ''}\n📲 ${currentTenant?.whatsapp || ''}`;
                                                     window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
                                                 }}
                                                 style={{

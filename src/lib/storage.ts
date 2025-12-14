@@ -205,6 +205,8 @@ export const storage = {
             id: t.id,
             name: t.name,
             logo: t.logo,
+            address: t.theme?.studioAddress,
+            whatsapp: t.theme?.studioWhatsapp,
             theme: t.theme
         }));
     },
@@ -214,7 +216,12 @@ export const storage = {
             id: tenant.id,
             name: tenant.name,
             logo: tenant.logo,
-            theme: tenant.theme
+            // Save extra fields directly into the theme JSONB column
+            theme: {
+                ...tenant.theme,
+                studioAddress: tenant.address,
+                studioWhatsapp: tenant.whatsapp
+            }
         };
         const { error } = await supabase.from('tenants').upsert(dbTenant);
         if (error) throw error;

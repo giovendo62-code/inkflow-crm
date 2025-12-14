@@ -120,7 +120,7 @@ export function CalendarPage() {
     return (
         <div style={{ padding: '2rem', height: '100%' }}>
             {/* ... header ... */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold' }}>Calendar</h1>
 
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -170,17 +170,12 @@ export function CalendarPage() {
                             setSelectedSlotDate(new Date());
                             setNewAppointmentModalOpen(true);
                         }}
-                        style={{
-                            padding: '0.75rem 1.5rem',
-                            backgroundColor: 'var(--color-primary)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: 'var(--radius-md)',
-                            fontWeight: '600',
-                            cursor: 'pointer'
-                        }}
+                        className="add-appt-btn"
                     >
-                        + New Appointment
+                        <span className="desktop-text">+ New Appointment</span>
+                        <span className="mobile-text">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5v14" /></svg>
+                        </span>
                     </button>
                 </div>
             </div>

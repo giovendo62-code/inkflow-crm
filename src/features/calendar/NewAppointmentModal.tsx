@@ -207,7 +207,8 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
                 width: '100%', maxWidth: '800px', // Wider modal for more content
                 border: '1px solid var(--color-border)',
                 maxHeight: '95vh',
-                overflowY: 'auto'
+                overflowY: 'auto',
+                overflowX: 'hidden'
             }}>
                 <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Nuovo Appuntamento</h2>
@@ -217,7 +218,7 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
                 <form onSubmit={handleSubmit} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
                     {/* Top Section: Basic Info */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div className={classes.formGrid}>
 
                         {/* Left Column: Who & What */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -343,10 +344,10 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
                     <div style={{ borderTop: '1px solid var(--color-border)', margin: '0.5rem 0' }}></div>
 
                     {/* Middle Section: Financials & Notes */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
 
                         {/* Financials */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: '1 1 300px' }}>
                             <h4 style={{ fontSize: '1rem', fontWeight: 'bold' }}>Dettagli Finanziari</h4>
 
                             <div className={classes.group}>
@@ -374,7 +375,7 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
                                 </select>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div className={classes.formGrid}>
                                 <div className={classes.group}>
                                     <label className={classes.label}>Preventivo (€)</label>
                                     <input
@@ -403,7 +404,7 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
                         </div>
 
                         {/* Notes */}
-                        <div className={classes.group} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <div className={classes.group} style={{ display: 'flex', flexDirection: 'column', flex: '1 1 300px' }}>
                             <label className={classes.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <FileText size={16} /> Note Aggiuntive
                             </label>
