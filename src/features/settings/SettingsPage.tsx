@@ -13,6 +13,7 @@ export function SettingsPage() {
     const [activeTab, setActiveTab] = useState<'general' | 'appearance'>('general');
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
     const [showFullQR, setShowFullQR] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     // Manager Profile State
     const [managerForm, setManagerForm] = useState({
@@ -461,12 +462,26 @@ export function SettingsPage() {
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                 <input
                                     className={classes.searchInput}
-                                    style={{ width: '100%', padding: '0.75rem' }}
+                                    style={{ width: '100%', padding: '0.75rem', cursor: 'pointer' }}
                                     value={publicLink}
                                     readOnly
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(publicLink);
+                                        setCopied(true);
+                                        setTimeout(() => setCopied(false), 2000);
+                                    }}
+                                    title="Clicca per copiare"
                                 />
-                                <button className={classes.actionBtn} onClick={() => navigator.clipboard.writeText(publicLink)}>
-                                    Copia
+                                <button
+                                    className={classes.actionBtn}
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(publicLink);
+                                        setCopied(true);
+                                        setTimeout(() => setCopied(false), 2000);
+                                    }}
+                                    style={{ minWidth: '100px', background: copied ? 'var(--color-success)' : undefined }}
+                                >
+                                    {copied ? 'Copiato!' : 'Copia'}
                                 </button>
                             </div>
                         </div>
