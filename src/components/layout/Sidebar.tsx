@@ -28,7 +28,8 @@ export function Sidebar() {
         const loadTenant = async () => {
             const tenants = await storage.getTenants();
             if (tenants.length > 0) {
-                const currentTenant = tenants[0];
+                // Find user's tenant or fallback to first
+                const currentTenant = tenants.find(t => t.id === user?.tenantId) || tenants[0];
                 setTenant(currentTenant);
 
                 // Apply theme if exists
@@ -49,7 +50,7 @@ export function Sidebar() {
             }
         };
         loadTenant();
-    }, []);
+    }, [user]); // Re-run if user changes
 
     // Menu items for Students
     const studentNavItems = [

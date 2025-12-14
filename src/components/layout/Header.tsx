@@ -13,11 +13,12 @@ export function Header() {
         const loadTenant = async () => {
             const tenants = await storage.getTenants();
             if (tenants.length > 0) {
-                setTenant(tenants[0]);
+                const currentTenant = tenants.find(t => t.id === user?.tenantId) || tenants[0];
+                setTenant(currentTenant);
             }
         };
         loadTenant();
-    }, []);
+    }, [user]);
 
     return (
         <header className={classes.header}>
