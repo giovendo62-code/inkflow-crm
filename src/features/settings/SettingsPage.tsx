@@ -5,7 +5,6 @@ import classes from '../crm/ClientListPage.module.css';
 import { Save, Palette, Layout, Plus, Building2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useAuth } from '../auth/AuthContext';
-import { v4 as uuidv4 } from 'uuid';
 
 export function SettingsPage() {
     const { user } = useAuth();
@@ -16,6 +15,7 @@ export function SettingsPage() {
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
     const [isCreating, setIsCreating] = useState(false);
     const [newTenantName, setNewTenantName] = useState('');
+    const [showFullQR, setShowFullQR] = useState(false);
 
     useEffect(() => {
         const loadSettings = async () => {
@@ -65,7 +65,6 @@ export function SettingsPage() {
             const newTenant: Tenant = {
                 id: `studio-${Date.now()}`,
                 name: newTenantName,
-                // createdAt removed as it's not in the type
                 theme: {
                     primaryColor: '#FF6B35',
                     sidebarStyle: 'dark',
@@ -95,7 +94,6 @@ export function SettingsPage() {
             // Update CSS variables
             if (tenant.theme?.primaryColor) {
                 document.documentElement.style.setProperty('--color-primary', tenant.theme.primaryColor);
-                // Calculate hover and dark variants
                 const r = parseInt(tenant.theme.primaryColor.slice(1, 3), 16);
                 const g = parseInt(tenant.theme.primaryColor.slice(3, 5), 16);
                 const b = parseInt(tenant.theme.primaryColor.slice(5, 7), 16);
@@ -107,7 +105,6 @@ export function SettingsPage() {
                 document.documentElement.style.setProperty('--color-primary-dark', darkColor);
             }
 
-            // Apply color mode
             if (tenant.theme?.colorMode === 'light') {
                 document.documentElement.style.setProperty('--color-background', '#F5F5F5');
                 document.documentElement.style.setProperty('--color-surface', '#FFFFFF');
@@ -117,7 +114,6 @@ export function SettingsPage() {
                 document.documentElement.style.setProperty('--color-text-muted', '#999999');
                 document.documentElement.style.setProperty('--color-border', '#E0E0E0');
             } else {
-                // Dark mode (default)
                 document.documentElement.style.setProperty('--color-background', '#0A0A0A');
                 document.documentElement.style.setProperty('--color-surface', '#1A1A1A');
                 document.documentElement.style.setProperty('--color-surface-hover', '#252525');
@@ -127,12 +123,11 @@ export function SettingsPage() {
                 document.documentElement.style.setProperty('--color-border', '#2A2A2A');
             }
 
-            // Persist to storage
             await storage.saveTenant(tenant);
 
             setTimeout(() => {
                 setLoading(false);
-                alert('Impostazioni salvate! Ricarica la pagina per vedere tutte le modifiche.');
+                alert('Impostazioni salvate!');
             }, 500);
         } catch (error) {
             console.error("Failed to save settings:", error);
@@ -145,7 +140,6 @@ export function SettingsPage() {
 
     const publicLink = `${window.location.origin}/register/${tenant.id}`;
 
-    // Predefined color palette
     const colorPresets = [
         { name: 'Arancio Caldo', color: '#FF6B35' },
         { name: 'Fucsia', color: '#FF00FF' },
@@ -159,6 +153,64 @@ export function SettingsPage() {
 
     return (
         <div className={classes.container}>
+            {/* Full Screen QR Overlay */}
+            {showFullQR && qrCodeUrl && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.95)',
+                        zIndex: 9999,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backdropFilter: 'blur(5px)'
+                    }}
+                    onClick={() => setShowFullQR(false)}
+                >
+                    <button
+                        style={{
+                            position: 'absolute',
+                            top: '20px',
+                            right: '20px',
+                            background: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            fontSize: '1.5rem',
+                            fontWeight: 'bold',
+                            color: 'black'
+                        }}
+                        onClick={() => setShowFullQR(false)}
+                    >
+                        ×
+                    </button>
+                    <img
+                        src={qrCodeUrl}
+                        alt="QR Code Fullscreen"
+                        style={{
+                            maxWidth: '90%',
+                            maxHeight: '80vh',
+                            borderRadius: '12px',
+                            boxShadow: '0 0 20px rgba(255,107,53, 0.5)'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                    <p style={{ marginTop: '1rem', color: 'white', fontSize: '1.1rem' }}>
+                        Tocca lo sfondo per chiudere
+                    </p>
+                </div>
+            )}
+
             <div className={classes.header}>
                 <h1 className={classes.title}>Impostazioni Studio</h1>
                 <button className={classes.addBtn} onClick={handleSave} disabled={loading}>
@@ -167,7 +219,6 @@ export function SettingsPage() {
                 </button>
             </div>
 
-            {/* Tenant Switcher / Creator */}
             <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
                 <div style={{ padding: '0.75rem', background: 'var(--color-primary)', borderRadius: '50%', color: 'white' }}>
                     <Building2 size={24} />
@@ -215,7 +266,6 @@ export function SettingsPage() {
                 </div>
             )}
 
-            {/* Tabs */}
             <div style={{
                 display: 'flex',
                 gap: '1rem',
@@ -260,7 +310,6 @@ export function SettingsPage() {
                 </button>
             </div>
 
-            {/* General Tab */}
             {activeTab === 'general' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
                     <div className={classes.tableWrapper} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -280,7 +329,6 @@ export function SettingsPage() {
                             <label className={classes.label} style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>Logo Studio</label>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {/* File Upload Button */}
                                 <div style={{
                                     border: '2px dashed var(--color-border)',
                                     borderRadius: 'var(--radius-md)',
@@ -304,13 +352,7 @@ export function SettingsPage() {
                                             }
                                         }}
                                         style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            width: '100%',
-                                            height: '100%',
-                                            opacity: 0,
-                                            cursor: 'pointer'
+                                            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer'
                                         }}
                                     />
                                     <div style={{ pointerEvents: 'none' }}>
@@ -319,8 +361,6 @@ export function SettingsPage() {
                                         <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>PNG, JPG, SVG (max 2MB)</p>
                                     </div>
                                 </div>
-
-                                {/* Or URL Input */}
                                 <div>
                                     <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem', textAlign: 'center' }}>- OPPURE -</p>
                                     <input
@@ -363,11 +403,10 @@ export function SettingsPage() {
                             </div>
                         </div>
 
-                        {/* QR Code */}
                         {qrCodeUrl && (
                             <div style={{
                                 marginTop: '2rem',
-                                padding: '1rem', // Reduced padding for mobile
+                                padding: '1rem',
                                 background: 'linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-hover) 100%)',
                                 borderRadius: 'var(--radius-lg)',
                                 border: '2px solid var(--color-border)',
@@ -380,10 +419,10 @@ export function SettingsPage() {
                                     Tocca per ingrandire
                                 </p>
                                 <div
-                                    onClick={() => window.open(qrCodeUrl, '_blank')}
+                                    onClick={() => setShowFullQR(true)}
                                     style={{
                                         display: 'inline-block',
-                                        padding: '1rem', // Reduced padding
+                                        padding: '1rem',
                                         background: 'white',
                                         borderRadius: 'var(--radius-md)',
                                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -414,262 +453,254 @@ export function SettingsPage() {
                         </div>
                     </div>
                 </div>
-            )
-            }
+            )}
 
-            {/* Appearance Tab */}
-            {
-                activeTab === 'appearance' && (
-                    <div>
-                        <div className={classes.tableWrapper} style={{ padding: '2rem', marginBottom: '2rem' }}>
-                            <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Palette size={20} />
-                                Colore Primario
-                            </h2>
-                            <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                                Scegli il colore principale dell'interfaccia (pulsanti, link, grafici)
-                            </p>
+            {activeTab === 'appearance' && (
+                <div>
+                    <div className={classes.tableWrapper} style={{ padding: '2rem', marginBottom: '2rem' }}>
+                        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Palette size={20} />
+                            Colore Primario
+                        </h2>
+                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                            Scegli il colore principale dell'interfaccia (pulsanti, link, grafici)
+                        </p>
 
-                            {/* Color Presets */}
-                            <div style={{ marginBottom: '2rem' }}>
-                                <label style={{ display: 'block', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '600' }}>
-                                    Palette Predefinite
-                                </label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
-                                    {colorPresets.map(preset => (
-                                        <button
-                                            key={preset.color}
-                                            onClick={() => setTenant({
-                                                ...tenant,
-                                                theme: { ...tenant.theme!, primaryColor: preset.color }
-                                            })}
-                                            style={{
-                                                padding: '1rem',
-                                                borderRadius: 'var(--radius-md)',
-                                                border: tenant.theme?.primaryColor === preset.color
-                                                    ? `2px solid ${preset.color}`
-                                                    : '1px solid var(--color-border)',
-                                                background: 'var(--color-surface-hover)',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                gap: '0.5rem'
-                                            }}
-                                        >
-                                            <div style={{
-                                                width: '40px',
-                                                height: '40px',
-                                                borderRadius: '50%',
-                                                backgroundColor: preset.color,
-                                                border: '2px solid rgba(255,255,255,0.2)'
-                                            }} />
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                                                {preset.name}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Custom Color Picker */}
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '600' }}>
-                                    Colore Personalizzato
-                                </label>
-                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                    <input
-                                        type="color"
-                                        value={tenant.theme?.primaryColor || '#FF6B35'}
-                                        onChange={e => setTenant({
-                                            ...tenant,
-                                            theme: { ...tenant.theme!, primaryColor: e.target.value }
-                                        })}
-                                        style={{
-                                            width: '80px',
-                                            height: '80px',
-                                            border: '2px solid var(--color-border)',
-                                            borderRadius: 'var(--radius-md)',
-                                            cursor: 'pointer'
-                                        }}
-                                    />
-                                    <div>
-                                        <p style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>Colore Selezionato</p>
-                                        <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: tenant.theme?.primaryColor }}>
-                                            {tenant.theme?.primaryColor}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Color Mode */}
-                        <div className={classes.tableWrapper} style={{ padding: '2rem', marginBottom: '2rem' }}>
-                            <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Modalità Colore</h2>
-                            <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                                Scegli tra tema scuro o chiaro per l'intera interfaccia
-                            </p>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-                                <button
-                                    onClick={() => setTenant({
-                                        ...tenant,
-                                        theme: { ...tenant.theme!, colorMode: 'dark' }
-                                    })}
-                                    style={{
-                                        padding: '2rem',
-                                        borderRadius: 'var(--radius-md)',
-                                        border: tenant.theme?.colorMode === 'dark'
-                                            ? '2px solid var(--color-primary)'
-                                            : '1px solid var(--color-border)',
-                                        background: tenant.theme?.colorMode === 'dark'
-                                            ? 'rgba(255, 107, 53, 0.1)'
-                                            : 'var(--color-surface-hover)',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        gap: '1rem'
-                                    }}
-                                >
-                                    <div style={{
-                                        width: '80px',
-                                        height: '80px',
-                                        borderRadius: 'var(--radius-md)',
-                                        background: 'linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%)',
-                                        border: '2px solid #2A2A2A',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '2rem'
-                                    }}>
-                                        🌙
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
-                                            Dark Mode
-                                        </div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                            Tema scuro (consigliato)
-                                        </div>
-                                    </div>
-                                </button>
-
-                                <button
-                                    onClick={() => setTenant({
-                                        ...tenant,
-                                        theme: { ...tenant.theme!, colorMode: 'light' }
-                                    })}
-                                    style={{
-                                        padding: '2rem',
-                                        borderRadius: 'var(--radius-md)',
-                                        border: tenant.theme?.colorMode === 'light'
-                                            ? '2px solid var(--color-primary)'
-                                            : '1px solid var(--color-border)',
-                                        background: tenant.theme?.colorMode === 'light'
-                                            ? 'rgba(255, 107, 53, 0.1)'
-                                            : 'var(--color-surface-hover)',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        gap: '1rem'
-                                    }}
-                                >
-                                    <div style={{
-                                        width: '80px',
-                                        height: '80px',
-                                        borderRadius: 'var(--radius-md)',
-                                        background: 'linear-gradient(135deg, #FFFFFF 0%, #F5F5F5 100%)',
-                                        border: '2px solid #E0E0E0',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '2rem'
-                                    }}>
-                                        ☀️
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
-                                            Light Mode
-                                        </div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                            Tema chiaro
-                                        </div>
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Sidebar Style */}
-                        <div className={classes.tableWrapper} style={{ padding: '2rem', marginBottom: '2rem' }}>
-                            <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Stile Menu Laterale</h2>
-                            <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                                Personalizza l'aspetto della barra laterale
-                            </p>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
-                                {[
-                                    { value: 'dark', label: 'Scuro', desc: 'Sfondo nero' },
-                                    { value: 'light', label: 'Chiaro', desc: 'Sfondo grigio' },
-                                    { value: 'colored', label: 'Colorato', desc: 'Colore primario' }
-                                ].map(option => (
+                        <div style={{ marginBottom: '2rem' }}>
+                            <label style={{ display: 'block', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '600' }}>
+                                Palette Predefinite
+                            </label>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
+                                {colorPresets.map(preset => (
                                     <button
-                                        key={option.value}
+                                        key={preset.color}
                                         onClick={() => setTenant({
                                             ...tenant,
-                                            theme: { ...tenant.theme!, sidebarStyle: option.value as any }
+                                            theme: { ...tenant.theme!, primaryColor: preset.color }
                                         })}
                                         style={{
-                                            padding: '1.5rem',
+                                            padding: '1rem',
                                             borderRadius: 'var(--radius-md)',
-                                            border: tenant.theme?.sidebarStyle === option.value
-                                                ? '2px solid var(--color-primary)'
+                                            border: tenant.theme?.primaryColor === preset.color
+                                                ? `2px solid ${preset.color}`
                                                 : '1px solid var(--color-border)',
                                             background: 'var(--color-surface-hover)',
                                             cursor: 'pointer',
-                                            textAlign: 'center'
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            gap: '0.5rem'
                                         }}
                                     >
-                                        <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
-                                            {option.label}
-                                        </div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                            {option.desc}
-                                        </div>
+                                        <div style={{
+                                            width: '40px',
+                                            height: '40px',
+                                            borderRadius: '50%',
+                                            backgroundColor: preset.color,
+                                            border: '2px solid rgba(255,255,255,0.2)'
+                                        }} />
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+                                            {preset.name}
+                                        </span>
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Preview */}
-                        <div className={classes.tableWrapper} style={{ padding: '2rem' }}>
-                            <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Anteprima</h2>
-                            <div style={{
-                                padding: '2rem',
-                                background: 'var(--color-background)',
-                                borderRadius: 'var(--radius-md)',
-                                border: '1px solid var(--color-border)'
-                            }}>
-                                <button style={{
-                                    padding: '0.75rem 1.5rem',
-                                    background: tenant.theme?.primaryColor,
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: 'var(--radius-md)',
-                                    fontWeight: '600',
-                                    cursor: 'pointer',
-                                    marginRight: '1rem'
-                                }}>
-                                    Pulsante Primario
-                                </button>
-                                <a href="#" style={{ color: tenant.theme?.primaryColor, textDecoration: 'underline' }}>
-                                    Link di esempio
-                                </a>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '600' }}>
+                                Colore Personalizzato
+                            </label>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                <input
+                                    type="color"
+                                    value={tenant.theme?.primaryColor || '#FF6B35'}
+                                    onChange={e => setTenant({
+                                        ...tenant,
+                                        theme: { ...tenant.theme!, primaryColor: e.target.value }
+                                    })}
+                                    style={{
+                                        width: '80px',
+                                        height: '80px',
+                                        border: '2px solid var(--color-border)',
+                                        borderRadius: 'var(--radius-md)',
+                                        cursor: 'pointer'
+                                    }}
+                                />
+                                <div>
+                                    <p style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>Colore Selezionato</p>
+                                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: tenant.theme?.primaryColor }}>
+                                        {tenant.theme?.primaryColor}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                )
+
+                    <div className={classes.tableWrapper} style={{ padding: '2rem', marginBottom: '2rem' }}>
+                        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Modalità Colore</h2>
+                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                            Scegli tra tema scuro o chiaro per l'intera interfaccia
+                        </p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+                            <button
+                                onClick={() => setTenant({
+                                    ...tenant,
+                                    theme: { ...tenant.theme!, colorMode: 'dark' }
+                                })}
+                                style={{
+                                    padding: '2rem',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: tenant.theme?.colorMode === 'dark'
+                                        ? '2px solid var(--color-primary)'
+                                        : '1px solid var(--color-border)',
+                                    background: tenant.theme?.colorMode === 'dark'
+                                        ? 'rgba(255, 107, 53, 0.1)'
+                                        : 'var(--color-surface-hover)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '1rem'
+                                }}
+                            >
+                                <div style={{
+                                    width: '80px',
+                                    height: '80px',
+                                    borderRadius: 'var(--radius-md)',
+                                    background: 'linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%)',
+                                    border: '2px solid #2A2A2A',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '2rem'
+                                }}>
+                                    🌙
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
+                                        Dark Mode
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                        Tema scuro (consigliato)
+                                    </div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => setTenant({
+                                    ...tenant,
+                                    theme: { ...tenant.theme!, colorMode: 'light' }
+                                })}
+                                style={{
+                                    padding: '2rem',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: tenant.theme?.colorMode === 'light'
+                                        ? '2px solid var(--color-primary)'
+                                        : '1px solid var(--color-border)',
+                                    background: tenant.theme?.colorMode === 'light'
+                                        ? 'rgba(255, 107, 53, 0.1)'
+                                        : 'var(--color-surface-hover)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '1rem'
+                                }}
+                            >
+                                <div style={{
+                                    width: '80px',
+                                    height: '80px',
+                                    borderRadius: 'var(--radius-md)',
+                                    background: 'linear-gradient(135deg, #FFFFFF 0%, #F5F5F5 100%)',
+                                    border: '2px solid #E0E0E0',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '2rem'
+                                }}>
+                                    ☀️
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
+                                        Light Mode
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                        Tema chiaro
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className={classes.tableWrapper} style={{ padding: '2rem', marginBottom: '2rem' }}>
+                        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Stile Menu Laterale</h2>
+                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                            Personalizza l'aspetto della barra laterale
+                        </p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                            {[
+                                { value: 'dark', label: 'Scuro', desc: 'Sfondo nero' },
+                                { value: 'light', label: 'Chiaro', desc: 'Sfondo grigio' },
+                                { value: 'colored', label: 'Colorato', desc: 'Colore primario' }
+                            ].map(option => (
+                                <button
+                                    key={option.value}
+                                    onClick={() => setTenant({
+                                        ...tenant,
+                                        theme: { ...tenant.theme!, sidebarStyle: option.value as any }
+                                    })}
+                                    style={{
+                                        padding: '1.5rem',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: tenant.theme?.sidebarStyle === option.value
+                                            ? '2px solid var(--color-primary)'
+                                            : '1px solid var(--color-border)',
+                                        background: 'var(--color-surface-hover)',
+                                        cursor: 'pointer',
+                                        textAlign: 'center'
+                                    }}
+                                >
+                                    <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
+                                        {option.label}
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                        {option.desc}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className={classes.tableWrapper} style={{ padding: '2rem' }}>
+                        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Anteprima</h2>
+                        <div style={{
+                            padding: '2rem',
+                            background: 'var(--color-background)',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid var(--color-border)'
+                        }}>
+                            <button style={{
+                                padding: '0.75rem 1.5rem',
+                                background: tenant.theme?.primaryColor,
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: 'var(--radius-md)',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                marginRight: '1rem'
+                            }}>
+                                Pulsante Primario
+                            </button>
+                            <a href="#" style={{ color: tenant.theme?.primaryColor, textDecoration: 'underline' }}>
+                                Link di esempio
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )
             }
         </div >
     );
