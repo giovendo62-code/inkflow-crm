@@ -6,6 +6,7 @@ import { Plus, User as UserIcon, X, MessageCircle, Pencil, Trash2 } from 'lucide
 import classes from '../crm/ClientListPage.module.css'; // Reusing styles
 import { useAuth } from '../auth/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
+import { initGoogleCalendar, loginToGoogleCalendar, listGoogleCalendars } from '../../lib/googleCalendar';
 
 export function OperatorListPage() {
     const navigate = useNavigate();
@@ -18,10 +19,44 @@ export function OperatorListPage() {
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [createdCredentials, setCreatedCredentials] = useState<{ email: string, password: string } | null>(null);
 
+    // Google Calendar State
+    const [googleCalendars, setGoogleCalendars] = useState<any[]>([]);
+
     const [formData, setFormData] = useState<Partial<User>>({
         role: 'ARTIST',
         profile: { color: '#FF6B35', bio: '', taxId: '', address: '', commissionRate: 50, googleCalendarConnected: false }
     });
+
+    const fetchCalendars = async (token: string) => {
+        try {
+            const data = await listGoogleCalendars(token);
+            setGoogleCalendars(data.items || []);
+        } catch (err) {
+            console.error("Failed to list calendars:", err);
+            // If token invalid, maybe clear it? For now just log.
+        }
+    };
+
+    // Initialize Google Calendar
+    useEffect(() => {
+        // Check for existing token
+        const existingToken = localStorage.getItem('google_access_token');
+        if (existingToken) {
+            fetchCalendars(existingToken);
+        }
+
+        initGoogleCalendar((response: any) => {
+            if (response.access_token) {
+                console.log("Google Auth Success, Access Token:", response.access_token);
+                // Save token temporarily (ideally this should be secure)
+                localStorage.setItem('google_access_token', response.access_token);
+
+                alert("Manager Autenticato! Ora caricherò la lista dei tuoi calendari.");
+                fetchCalendars(response.access_token);
+                // Do NOT auto-connect the artist profile here. The user must select a calendar from the list.
+            }
+        });
+    }, []);
 
     useEffect(() => {
         const loadUsers = async () => {
@@ -478,35 +513,66 @@ export function OperatorListPage() {
                                         onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, taxId: e.target.value } })} />
                                 </div>
 
-                                {/* Google Calendar Integration */}
+                                {/* Google Calendar Mapping (Manager Side) */}
                                 <div style={{ padding: '1rem', background: 'rgba(66, 133, 244, 0.1)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(66, 133, 244, 0.3)' }}>
                                     <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#4285F4', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2zm-7 5h5v5h-5v-5z"></path></svg>
-                                        Google Calendar Sync
+                                        Integrazione Google Calendar
                                     </h4>
 
-                                    {formData.profile?.googleCalendarConnected ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-success)', fontSize: '0.9rem' }}>
-                                                <span style={{ width: '10px', height: '10px', background: 'currentColor', borderRadius: '50%' }}></span>
-                                                Connesso
-                                            </div>
+                                    {!localStorage.getItem('google_access_token') ? (
+                                        <div style={{ textAlign: 'center' }}>
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
+                                                Per sincronizzare gli appuntamenti, connetti il <strong>Duo Account Manager</strong>.
+                                            </p>
                                             <button type="button"
-                                                onClick={() => setFormData({ ...formData, profile: { ...formData.profile!, googleCalendarConnected: false } })}
-                                                style={{ color: 'var(--color-error)', fontSize: '0.85rem', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                                Disconnetti
+                                                onClick={() => loginToGoogleCalendar()}
+                                                style={{
+                                                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                                    padding: '0.75rem', background: '#4285F4', color: 'white', borderRadius: '4px', fontWeight: '500', border: 'none', cursor: 'pointer'
+                                                }}>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z" /></svg>
+                                                Fai Login Google (Manager)
                                             </button>
                                         </div>
                                     ) : (
-                                        <button type="button"
-                                            onClick={() => setFormData({ ...formData, profile: { ...formData.profile!, googleCalendarConnected: true } })}
-                                            style={{
-                                                width: '100%',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                                padding: '0.75rem', background: '#4285F4', color: 'white', borderRadius: '4px', fontWeight: '500', border: 'none', cursor: 'pointer'
-                                            }}>
-                                            Connetti Account Google
-                                        </button>
+                                        <div>
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--color-success)', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                                                ✓ Manager Autenticato.
+                                            </p>
+                                            <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
+                                                Associa a un calendario specifico:
+                                            </label>
+                                            <select
+                                                style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', marginBottom: '0.5rem' }}
+                                                value={formData.profile?.googleCalendarId || ''}
+                                                onChange={e => {
+                                                    const calId = e.target.value;
+                                                    setFormData({
+                                                        ...formData,
+                                                        profile: {
+                                                            ...formData.profile!,
+                                                            googleCalendarId: calId,
+                                                            googleCalendarConnected: !!calId
+                                                        }
+                                                    });
+                                                }}
+                                            >
+                                                <option value="">-- Nessun Collegamento --</option>
+                                                {/* We need to populate this list dynamically */}
+                                                {googleCalendars.map(cal => (
+                                                    <option key={cal.id} value={cal.id}>{cal.summary}</option>
+                                                ))}
+                                            </select>
+                                            {formData.profile?.googleCalendarId && (
+                                                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                                    Gli appuntamenti per questo artista verranno salvati nel calendario selezionato.
+                                                </p>
+                                            )}
+                                            <button type="button" onClick={() => { localStorage.removeItem('google_access_token'); window.location.reload(); }} style={{ marginTop: '0.5rem', background: 'none', border: 'none', textDecoration: 'underline', fontSize: '0.75rem', color: 'gray', cursor: 'pointer' }}>
+                                                Logout Google
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
 

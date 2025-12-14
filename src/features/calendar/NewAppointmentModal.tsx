@@ -5,6 +5,7 @@ import { storage } from '../../lib/storage';
 import { useAuth } from '../auth/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import classes from '../crm/ClientListPage.module.css';
+import { createGoogleCalendarEvent } from '../../lib/googleCalendar';
 
 interface NewAppointmentModalProps {
     isOpen: boolean;
@@ -96,6 +97,8 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
         setAttachments(prev => prev.filter((_, i) => i !== index));
     };
 
+    // ... existing code ...
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -132,7 +135,30 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
         };
 
         try {
+            // 1. Save to Supabase
             await storage.saveAppointment(newAppointment);
+
+            // 2. Sync to Google Calendar
+            const googleToken = localStorage.getItem('google_access_token');
+            const targetArtist = artists.find(a => a.id == newAppointment.artistId);
+            const targetCalendarId = targetArtist?.profile?.googleCalendarId || 'primary'; // Default to primary if not mapped
+
+            if (googleToken && targetArtist?.profile?.googleCalendarConnected) { // Check if feature enabled for artist
+                try {
+                    await createGoogleCalendarEvent(googleToken, {
+                        title: title || `Appuntamento: ${(clients.find(c => c.id === clientId)?.firstName || 'Cliente')}`,
+                        description: `${notes}\n\nCliente: ${clients.find(c => c.id === clientId)?.phone}`,
+                        startTime: startDateTime.toISOString(),
+                        endTime: endDateTime.toISOString(),
+                        calendarId: targetCalendarId
+                    });
+                    console.log(`Synced to Google Calendar (${targetCalendarId})!`);
+                } catch (gError) {
+                    console.error("Google Calendar Sync Warning:", gError);
+                    alert("Sync Google Calendar fallito. Controlla il collegamento nelle impostazioni.");
+                }
+            }
+
             resetForm();
             onSave();
             onClose();

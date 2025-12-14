@@ -27,7 +27,7 @@ export interface User {
     address?: string;
     commissionRate?: number; // Percentage (0-100)
     color: string; // Calendar color
-    googleCalendarId?: string;
+    googleCalendarId?: string; // ID of the specific calendar (e.g., 'primary' or specific ID)
     googleCalendarConnected?: boolean;
     googleCalendarLastSync?: string;
     password?: string; // Stored locally for custom auth flow (Temporary/Demo)
