@@ -19,6 +19,7 @@ export interface User {
   name: string;
   role: UserRole;
   avatarUrl?: string; // Operator photo
+  createdAt?: string; // Registration date
   profile?: {
     bio?: string;
     taxId?: string; // Partita IVA
