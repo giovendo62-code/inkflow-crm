@@ -95,7 +95,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                     background: 'var(--color-surface)',
                     borderRadius: 'var(--radius-lg)',
                     width: '100%',
-                    maxWidth: '600px',
+                    maxWidth: '500px',
                     maxHeight: '90vh',
                     overflow: 'auto'
                 }}
@@ -186,14 +186,14 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
-                                Ore Totali *
+                                Giorni di Corso *
                             </label>
                             <input
                                 type="number"
                                 className={classes.searchInput}
                                 value={formData.totalHours}
                                 onChange={(e) => setFormData({ ...formData, totalHours: e.target.value })}
-                                placeholder="120"
+                                placeholder="es. 5"
                                 required
                             />
                         </div>
