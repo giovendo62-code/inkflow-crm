@@ -40,7 +40,7 @@ const mapClientToDB = (client: Client) => ({
     email: client.email,
     phone: client.phone,
     fiscal_code: client.fiscalCode,
-    birth_date: client.birthDate,
+    birth_date: client.birthDate ? client.birthDate : null, // Fix: Empty string -> NULL
     address: client.address || {
         street: client.street,
         city: client.city,
