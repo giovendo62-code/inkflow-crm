@@ -56,9 +56,9 @@ export function ChatPage() {
             setNewMessage('');
             setIsInfo(false);
             loadMessages();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to send message:", error);
-            alert("Errore invio messaggio");
+            alert("Errore invio messaggio: " + (error.message || JSON.stringify(error)));
         }
     };
 
