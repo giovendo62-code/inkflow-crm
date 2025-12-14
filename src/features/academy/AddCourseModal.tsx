@@ -95,7 +95,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                 style={{
                     background: 'var(--color-surface)',
                     borderRadius: 'var(--radius-lg)',
-                    width: '100%',
+                    width: '90%',
                     maxWidth: '500px',
                     maxHeight: '90vh',
                     overflow: 'auto'

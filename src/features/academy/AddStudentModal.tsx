@@ -127,7 +127,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                 style={{
                     background: 'var(--color-surface)',
                     borderRadius: 'var(--radius-lg)',
-                    width: '100%',
+                    width: '90%',
                     maxWidth: '600px',
                     maxHeight: '90vh',
                     overflow: 'auto'
