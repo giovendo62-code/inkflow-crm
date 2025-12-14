@@ -451,7 +451,7 @@ export function DashboardPage() {
                                                     onClick={() => {
                                                         const phone = client.phone.replace(/[^0-9]/g, '');
                                                         const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
-                                                        const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\nCi confermi la tua presenza? Grazie!`;
+                                                        const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\n⚠️ *IMPORTANTE*: Per favore rispondi a questo messaggio per confermare. La mancata conferma potrebbe comportare la cancellazione dell'appuntamento.\n\nTi aspettiamo!\n\n📍 *${tenantName}*`;
                                                         window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
                                                     }}
                                                     style={{
@@ -508,7 +508,7 @@ export function DashboardPage() {
                                                     onClick={() => {
                                                         const phone = client.phone.replace(/[^0-9]/g, '');
                                                         const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
-                                                        const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\nCi confermi la tua presenza? Grazie!`;
+                                                        const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\n⚠️ *IMPORTANTE*: Per favore rispondi a questo messaggio per confermare. La mancata conferma potrebbe comportare la cancellazione dell'appuntamento.\n\nTi aspettiamo!\n\n📍 *${tenantName}*`;
                                                         window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
                                                     }}
                                                     style={{

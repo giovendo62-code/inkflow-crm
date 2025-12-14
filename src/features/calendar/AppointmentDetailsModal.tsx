@@ -17,6 +17,7 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
     const [clients, setClients] = useState<Client[]>([]);
     const [artists, setArtists] = useState<User[]>([]);
     const [allUsers, setAllUsers] = useState<User[]>([]);
+    const [tenantName, setTenantName] = useState('');
 
     // Form State
     const [title, setTitle] = useState('');
@@ -49,6 +50,10 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                 if (!user?.tenantId) return;
                 const loadedClients = await storage.getClients(user.tenantId);
                 const loadedUsers = await storage.getUsers(user.tenantId);
+                const tenants = await storage.getTenants();
+                const myTenant = tenants.find(t => t.id === user.tenantId);
+                if (myTenant) setTenantName(myTenant.name);
+
                 setClients(loadedClients);
                 setAllUsers(loadedUsers);
                 setArtists(loadedUsers.filter(u => u.role === 'ARTIST'));
@@ -552,7 +557,7 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                                         const dateObj = new Date(date);
                                         const formattedDate = dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
-                                        const text = `Ciao ${currentClient.firstName}! 👋\n\nTi confermo il tuo appuntamento per *${formattedDate}* alle ore *${startTime}* presso il nostro studio.\n\n📍 Indirizzo: Via Roma 123 (esempio)\n\nPer qualsiasi modifica contattaci pure. A presto!`;
+                                        const text = `Ciao ${currentClient.firstName}! 👋\n\nTi confermo il tuo appuntamento per *${formattedDate}* alle ore *${startTime}*.\n\n⚠️ *IMPORTANTE*: Rispondi a questo messaggio per confermare la ricezione.\n\nTi aspettiamo!\n\n📍 *${tenantName}*`;
 
                                         window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
                                     }}
@@ -580,7 +585,7 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                                         const dateObj = new Date(date);
                                         const formattedDate = dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
-                                        const text = `Ciao ${currentClient.firstName}! 👋\n\nQuesto è un promemoria per il tuo appuntamento tra una settimana: *${formattedDate}* alle ore *${startTime}*.\n\nCi confermi la tua presenza?\n\nGrazie!`;
+                                        const text = `Ciao ${currentClient.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${formattedDate}* alle ore *${startTime}*.\n\n⚠️ *IMPORTANTE*: Per favore rispondi a questo messaggio per confermare. La mancata conferma potrebbe comportare la cancellazione dell'appuntamento.\n\nTi aspettiamo!\n\n📍 *${tenantName}*`;
 
                                         window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
                                     }}
