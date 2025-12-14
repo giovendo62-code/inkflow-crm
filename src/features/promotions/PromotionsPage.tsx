@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { storage } from '../../lib/storage';
 import { type Client, type TattooStyle } from '../../types';
-import { Filter, Send, Mail, MessageCircle, Check, X } from 'lucide-react';
+import { Filter, Send, Mail, MessageCircle, Check, X, Search, Smartphone } from 'lucide-react';
 import classes from '../crm/ClientListPage.module.css';
 import { AVAILABLE_TATTOO_STYLES } from '../../lib/constants';
 import { useAuth } from '../auth/AuthContext';
@@ -11,7 +11,8 @@ export function PromotionsPage() {
     const [clients, setClients] = useState<Client[]>([]);
     const [selectedClients, setSelectedClients] = useState<string[]>([]);
     const [styleFilter, setStyleFilter] = useState<TattooStyle | 'all'>('all');
-    const [broadcastOnly, setBroadcastOnly] = useState(true);
+    const [broadcastOnly, setBroadcastOnly] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const [messageTemplate, setMessageTemplate] = useState('');
 
     useEffect(() => {
@@ -24,8 +25,20 @@ export function PromotionsPage() {
     }, [user?.tenantId]);
 
     const filteredClients = clients.filter(client => {
+        // Filter by broadcast flag
         if (broadcastOnly && !client.inBroadcast) return false;
+
+        // Filter by style
         if (styleFilter !== 'all' && client.preferredStyle !== styleFilter) return false;
+
+        // Filter by search term
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+            const phone = client.phone.replace(/[^0-9]/g, '');
+            return fullName.includes(term) || phone.includes(term) || client.firstName.toLowerCase().includes(term) || client.lastName.toLowerCase().includes(term);
+        }
+
         return true;
     });
 
@@ -45,41 +58,18 @@ export function PromotionsPage() {
         setSelectedClients([]);
     };
 
-    const sendWhatsAppBulk = () => {
-        const selected = clients.filter(c => selectedClients.includes(c.id));
-
-        if (selected.length === 0) {
-            alert('Seleziona almeno un cliente');
-            return;
-        }
-
+    const handleSendWhatsApp = (client: Client) => {
         if (!messageTemplate.trim()) {
-            alert('Inserisci un messaggio');
+            alert('Inserisci prima un messaggio promozionale nel box sopra.');
             return;
         }
 
-        // Open WhatsApp for each selected client
-        selected.forEach((client, index) => {
-            setTimeout(() => {
-                const phone = client.phone.replace(/[^0-9]/g, '');
-                const message = encodeURIComponent(messageTemplate);
-                window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
-            }, index * 500); // Stagger by 500ms to avoid blocking
-        });
-    };
+        const phone = client.phone.replace(/[^0-9]/g, '');
+        // Default to Italian prefix if missing and looks like clear number
+        const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
 
-    const sendEmailBulk = () => {
-        const selected = clients.filter(c => selectedClients.includes(c.id));
-
-        if (selected.length === 0) {
-            alert('Seleziona almeno un cliente');
-            return;
-        }
-
-        const emails = selected.map(c => c.email).join(',');
-        const subject = encodeURIComponent('Promozione Speciale - InkFlow Tattoo Studio');
-        const body = encodeURIComponent(messageTemplate);
-        window.location.href = `mailto:${emails}?subject=${subject}&body=${body}`;
+        const message = encodeURIComponent(messageTemplate);
+        window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
     };
 
     return (
@@ -87,9 +77,17 @@ export function PromotionsPage() {
             <div className={classes.header}>
                 <h1 className={classes.title}>Promozioni</h1>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    {/* Bulk Actions removed as per user request for manual control, keeping Email for now or removing? User focused on WA. Keeping Email as backup. */}
                     <button
                         className={classes.addBtn}
-                        onClick={sendEmailBulk}
+                        onClick={() => {
+                            const selected = clients.filter(c => selectedClients.includes(c.id));
+                            if (selected.length === 0) return;
+                            const emails = selected.map(c => c.email).join(',');
+                            const subject = encodeURIComponent('Promozione Speciale');
+                            const body = encodeURIComponent(messageTemplate);
+                            window.location.href = `mailto:${emails}?subject=${subject}&body=${body}`;
+                        }}
                         disabled={selectedClients.length === 0}
                         style={{
                             background: selectedClients.length === 0 ? 'rgba(100, 100, 100, 0.2)' : 'rgba(66, 133, 244, 0.2)',
@@ -98,134 +96,8 @@ export function PromotionsPage() {
                         }}
                     >
                         <Mail size={20} />
-                        <span>Invia Email ({selectedClients.length})</span>
+                        <span>Email Multipla ({selectedClients.length})</span>
                     </button>
-                    <button
-                        className={classes.addBtn}
-                        onClick={sendWhatsAppBulk}
-                        disabled={selectedClients.length === 0}
-                        style={{
-                            background: selectedClients.length === 0 ? 'rgba(100, 100, 100, 0.2)' : 'rgba(37, 211, 102, 0.2)',
-                            border: `1px solid ${selectedClients.length === 0 ? '#666' : '#25D366'}`,
-                            cursor: selectedClients.length === 0 ? 'not-allowed' : 'pointer'
-                        }}
-                    >
-                        <MessageCircle size={20} />
-                        <span>Invia WhatsApp ({selectedClients.length})</span>
-                    </button>
-                </div>
-            </div>
-
-            {/* Filter Section */}
-            <div style={{
-                marginBottom: '1.5rem',
-                padding: '1.5rem',
-                background: 'var(--color-surface)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border)'
-            }}>
-                <h3 style={{
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    marginBottom: '1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                }}>
-                    <Filter size={18} />
-                    Filtri Clienti
-                </h3>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
-                            Filtra per Stile
-                        </label>
-                        <select
-                            className={classes.searchInput}
-                            value={styleFilter}
-                            onChange={(e) => setStyleFilter(e.target.value as any)}
-                        >
-                            <option value="all">Tutti gli stili</option>
-                            {AVAILABLE_TATTOO_STYLES.map((style: TattooStyle) => (
-                                <option key={style} value={style}>{style}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
-                            Opzioni
-                        </label>
-                        <label style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            padding: '0.6rem 1rem',
-                            background: 'var(--color-surface-hover)',
-                            borderRadius: 'var(--radius-md)',
-                            border: '1px solid var(--color-border)',
-                            cursor: 'pointer'
-                        }}>
-                            <input
-                                type="checkbox"
-                                checked={broadcastOnly}
-                                onChange={(e) => setBroadcastOnly(e.target.checked)}
-                                style={{ accentColor: '#25D366' }}
-                            />
-                            <span style={{ fontSize: '0.9rem' }}>Solo clienti in Broadcast</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingTop: '1rem',
-                    borderTop: '1px solid var(--color-border)'
-                }}>
-                    <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-                        {filteredClients.length} clienti corrispondenti
-                    </span>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                            onClick={selectAll}
-                            style={{
-                                padding: '0.5rem 1rem',
-                                borderRadius: 'var(--radius-md)',
-                                border: '1px solid var(--color-border)',
-                                background: 'transparent',
-                                color: 'var(--color-success)',
-                                cursor: 'pointer',
-                                fontSize: '0.85rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem'
-                            }}
-                        >
-                            <Check size={14} />
-                            Seleziona Tutti
-                        </button>
-                        <button
-                            onClick={deselectAll}
-                            style={{
-                                padding: '0.5rem 1rem',
-                                borderRadius: 'var(--radius-md)',
-                                border: '1px solid var(--color-border)',
-                                background: 'transparent',
-                                color: 'var(--color-error)',
-                                cursor: 'pointer',
-                                fontSize: '0.85rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem'
-                            }}
-                        >
-                            <X size={14} />
-                            Deseleziona Tutti
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -246,58 +118,131 @@ export function PromotionsPage() {
                     gap: '0.5rem'
                 }}>
                     <Send size={18} />
-                    Messaggio Promozionale
+                    1. Scrivi Messaggio Promozionale
                 </h3>
 
                 <textarea
-                    className={classes.searchInput}
+                    className={classes.formInput}
                     rows={6}
                     value={messageTemplate}
                     onChange={(e) => setMessageTemplate(e.target.value)}
-                    placeholder="Scrivi il tuo messaggio promozionale qui...
+                    placeholder="Scrivi qui il testo della promozione...
 
 Esempio:
-🎨 Ciao! Abbiamo una promozione speciale per te!
-Dal 15 al 31 gennaio: 20% di sconto su tutti i tatuaggi in stile geometrico!
-
-Prenota subito il tuo appuntamento! 📅
-
-InkFlow Tattoo Studio"
+Ciao! 🎨 Dal 15 al 30 del mese sconto del 20% sui tatuaggi Realistici! Rispondi a questo messaggio per prenotare."
                     style={{
                         width: '100%',
                         lineHeight: '1.6',
-                        resize: 'vertical'
+                        resize: 'vertical',
+                        marginBottom: '0.5rem'
                     }}
                 />
+            </div>
+
+            {/* Filter Section */}
+            <div style={{
+                marginBottom: '1.5rem',
+                padding: '1.5rem',
+                background: 'var(--color-surface)',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--color-border)'
+            }}>
+                <h3 style={{
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                }}>
+                    <Search size={18} />
+                    2. Cerca e Seleziona Clienti
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+
+                    {/* Search Input */}
+                    <div className={classes.search}>
+                        <Search className={classes.searchIcon} size={20} />
+                        <input
+                            type="text"
+                            className={classes.searchInput}
+                            placeholder="Cerca nome o telefono..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+
+                    <div>
+                        <select
+                            className={classes.formInput}
+                            value={styleFilter}
+                            onChange={(e) => setStyleFilter(e.target.value as any)}
+                        >
+                            <option value="all">Tutti gli stili</option>
+                            {AVAILABLE_TATTOO_STYLES.map((style: TattooStyle) => (
+                                <option key={style} value={style}>{style}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <label style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '0.6rem 1rem',
+                            background: 'var(--color-surface-hover)',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid var(--color-border)',
+                            cursor: 'pointer',
+                            width: '100%'
+                        }}>
+                            <input
+                                type="checkbox"
+                                checked={broadcastOnly}
+                                onChange={(e) => setBroadcastOnly(e.target.checked)}
+                                style={{ accentColor: '#25D366' }}
+                            />
+                            <span style={{ fontSize: '0.9rem' }}>Solo Broadcast</span>
+                        </label>
+                    </div>
+                </div>
 
                 <div style={{
-                    marginTop: '1rem',
-                    padding: '1rem',
-                    background: 'rgba(255, 107, 53, 0.1)',
-                    borderRadius: 'var(--radius-md)',
-                    fontSize: '0.85rem',
-                    color: 'var(--color-text-secondary)'
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingTop: '1rem',
+                    borderTop: '1px solid var(--color-border)'
                 }}>
-                    💡 <strong>Suggerimento:</strong> Personalizza il messaggio in base allo stile selezionato per aumentare l'engagement!
+                    <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
+                        {filteredClients.length} clienti trovati
+                    </span>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                            onClick={selectAll}
+                            className={classes.addBtn}
+                            style={{ background: 'transparent', border: '1px solid var(--color-border)', color: 'var(--color-primary)' }}
+                        >
+                            <Check size={14} /> Seleziona Tutti
+                        </button>
+                        <button
+                            onClick={deselectAll}
+                            className={classes.addBtn}
+                            style={{ background: 'transparent', border: '1px solid var(--color-border)', color: 'var(--color-error)' }}
+                        >
+                            <X size={14} /> Deseleziona
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Clients List */}
             <div className={classes.tableWrapper}>
                 {filteredClients.length === 0 ? (
-                    <div style={{
-                        textAlign: 'center',
-                        padding: '3rem',
-                        background: 'var(--color-surface)',
-                        borderRadius: 'var(--radius-lg)',
-                        border: '1px solid var(--color-border)'
-                    }}>
-                        <p style={{ fontSize: '1.1rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
-                            Nessun cliente trovato
-                        </p>
-                        <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-                            Modifica i filtri per vedere più clienti
-                        </p>
+                    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                        Nessun cliente corrisponde ai criteri di ricerca
                     </div>
                 ) : (
                     <table className={classes.table}>
@@ -311,50 +256,69 @@ InkFlow Tattoo Studio"
                                         style={{ cursor: 'pointer', width: '18px', height: '18px' }}
                                     />
                                 </th>
-                                <th>Nome</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                                <th>Stile Preferito</th>
-                                <th>Broadcast</th>
+                                <th>Clienti Selezionati ({selectedClients.filter(id => filteredClients.find(c => c.id === id)).length})</th>
+                                <th>WhatsApp</th>
+                                <th className={classes.desktopOnly}>Stile</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredClients.map(client => (
-                                <tr key={client.id} className={classes.row}>
-                                    <td>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedClients.includes(client.id)}
-                                            onChange={() => toggleClient(client.id)}
-                                            style={{
-                                                cursor: 'pointer',
-                                                width: '18px',
-                                                height: '18px',
-                                                accentColor: 'var(--color-primary)'
-                                            }}
-                                        />
-                                    </td>
-                                    <td>
-                                        <strong>{client.firstName} {client.lastName}</strong>
-                                    </td>
-                                    <td>{client.email}</td>
-                                    <td>{client.phone}</td>
-                                    <td>
-                                        {client.preferredStyle ? (
-                                            <span className={classes.tag}>{client.preferredStyle}</span>
-                                        ) : (
-                                            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>-</span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        {client.inBroadcast ? (
-                                            <span style={{ color: '#25D366', fontSize: '1.2rem' }}>✓</span>
-                                        ) : (
-                                            <span style={{ color: 'var(--color-text-muted)' }}>-</span>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
+                            {filteredClients.map(client => {
+                                const isSelected = selectedClients.includes(client.id);
+                                return (
+                                    <tr key={client.id} className={classes.row} style={{ background: isSelected ? 'rgba(37, 211, 102, 0.05)' : undefined }}>
+                                        <td>
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => toggleClient(client.id)}
+                                                style={{
+                                                    cursor: 'pointer',
+                                                    width: '18px',
+                                                    height: '18px',
+                                                    accentColor: 'var(--color-primary)'
+                                                }}
+                                            />
+                                        </td>
+                                        <td>
+                                            <div style={{ fontWeight: '600', fontSize: '1rem' }}>{client.firstName} {client.lastName}</div>
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <Smartphone size={14} />
+                                                {client.phone}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {isSelected ? (
+                                                <button
+                                                    onClick={() => handleSendWhatsApp(client)}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.5rem',
+                                                        background: '#25D366',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        padding: '0.5rem 1rem',
+                                                        borderRadius: '999px',
+                                                        fontWeight: '600',
+                                                        cursor: 'pointer',
+                                                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                                                    }}
+                                                >
+                                                    <MessageCircle size={18} />
+                                                    Invia Promo
+                                                </button>
+                                            ) : (
+                                                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                                                    Seleziona per inviare
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className={classes.desktopOnly}>
+                                            {client.preferredStyle && <span className={classes.tag}>{client.preferredStyle}</span>}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 )}
