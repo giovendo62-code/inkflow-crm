@@ -15,6 +15,7 @@ import { PromotionsPage } from './features/promotions/PromotionsPage';
 import { AcademyPage } from './features/academy/AcademyPage';
 import { AttendancePage } from './features/academy/AttendancePage';
 import { MaterialsPage } from './features/academy/MaterialsPage';
+import { WaitlistPage } from './features/waitlist/WaitlistPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { RoleGuard } from './components/layout/RoleGuard';
 
@@ -58,6 +59,11 @@ function App() {
             } />
 
             {/* Manager Only Routes */}
+            <Route path="/waitlist" element={
+              <RoleGuard allowedRoles={['MANAGER']}>
+                <WaitlistPage />
+              </RoleGuard>
+            } />
             <Route path="/artists" element={
               <RoleGuard allowedRoles={['MANAGER']}>
                 <OperatorListPage />

@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { type Appointment, type Client, type Tenant, type User, type ChatMessage, type Course, type Student, type Attendance, type CoursePayment, type TeachingMaterial } from '../types';
+import { type Appointment, type Client, type Tenant, type User, type ChatMessage, type Course, type Student, type Attendance, type CoursePayment, type TeachingMaterial, type WaitlistEntry } from '../types';
 
 // Data Mappers (DB <-> App)
 const mapClientFromDB = (data: any): Client => ({
@@ -113,18 +113,18 @@ const mapCourseFromDB = (data: any): Course => ({
     tenantId: data.tenant_id,
     name: data.name,
     description: data.description,
-    startDate: data.start_date,
-    endDate: data.end_date,
-    totalHours: data.total_hours,
-    totalLessons: data.total_lessons,
+    startDate: data.start_date || undefined,
+    endDate: data.end_date || undefined,
+    totalHours: data.total_hours || 0,
+    totalLessons: data.total_lessons || 0,
     schedule: data.schedule,
     program: data.program,
-    price: data.price,
-    attachments: data.attachments,
+    price: data.price || 0,
+    attachments: data.attachments || [],
     instructorId: 'user-manager', // Default or fetch
     status: 'ACTIVE', // Default or fetch
     createdAt: data.created_at,
-    updatedAt: data.created_at
+    updatedAt: data.updated_at || data.created_at
 });
 
 const mapCourseToDB = (course: Course) => ({
@@ -192,6 +192,39 @@ const mapMessageToDB = (msg: ChatMessage) => ({
     timestamp: msg.timestamp,
     type: msg.type || 'chat',
     read: msg.read || false
+});
+
+const mapWaitlistFromDB = (data: any): WaitlistEntry => ({
+    id: data.id,
+    tenantId: data.tenant_id,
+    clientId: data.client_id,
+    firstName: data.first_name,
+    lastName: data.last_name,
+    phone: data.phone,
+    email: data.email,
+    projectDescription: data.project_description,
+    requestDate: data.request_date,
+    assignedArtistId: data.assigned_artist_id,
+    notes: data.notes,
+    status: data.status,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
+});
+
+const mapWaitlistToDB = (entry: WaitlistEntry) => ({
+    id: entry.id,
+    tenant_id: entry.tenantId,
+    client_id: entry.clientId,
+    first_name: entry.firstName,
+    last_name: entry.lastName,
+    phone: entry.phone,
+    email: entry.email,
+    project_description: entry.projectDescription,
+    request_date: entry.requestDate,
+    assigned_artist_id: entry.assignedArtistId,
+    notes: entry.notes,
+    status: entry.status,
+    updated_at: new Date().toISOString()
 });
 
 export const storage = {
@@ -363,6 +396,11 @@ export const storage = {
         return mapCourseFromDB(data[0]);
     },
 
+    deleteCourse: async (courseId: string) => {
+        const { error } = await supabase.from('courses').delete().eq('id', courseId);
+        if (error) throw error;
+    },
+
     getStudents: async (tenantId?: string): Promise<Student[]> => {
         let query = supabase.from('students').select('*');
         if (tenantId) query = query.eq('tenant_id', tenantId);
@@ -387,7 +425,7 @@ export const storage = {
     getAttendances: async (tenantId?: string): Promise<Attendance[]> => {
         let query = supabase.from('attendances').select('*');
         // If tenant-aware, enable this:
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+        // if (tenantId) query = query.eq('tenant_id', tenantId);
         // Note: Attendances table previously didn't have explicit filtering in mock, 
         // but now it should probably have it. Assuming the DB table has tenant_id.
         // Based on map above, tenantId is hardcoded 'studio-1' in response, but let's check input params.
@@ -510,6 +548,26 @@ export const storage = {
             .getPublicUrl(path);
 
         return data.publicUrl;
+    },
+
+    // Waitlist
+    getWaitlist: async (tenantId?: string): Promise<WaitlistEntry[]> => {
+        let query = supabase.from('waitlist').select('*').order('request_date', { ascending: false });
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        const { data, error } = await query;
+        if (error) throw error;
+        return data.map(mapWaitlistFromDB);
+    },
+
+    saveWaitlistEntry: async (entry: WaitlistEntry) => {
+        const dbEntry = mapWaitlistToDB(entry);
+        const { error } = await supabase.from('waitlist').upsert(dbEntry);
+        if (error) throw error;
+    },
+
+    deleteWaitlistEntry: async (id: string) => {
+        const { error } = await supabase.from('waitlist').delete().eq('id', id);
+        if (error) throw error;
     },
 
     initialize: async () => {

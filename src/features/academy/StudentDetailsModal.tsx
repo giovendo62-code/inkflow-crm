@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Euro, Plus, Calendar, Clock, CheckCircle, XCircle, FileText, Video, Link as LinkIcon, Trash2, Lock, Unlock } from 'lucide-react';
+import { X, Euro, Plus, Calendar, Clock, CheckCircle, XCircle, FileText, Video, Link as LinkIcon, Trash2, Lock, Unlock, Eye, EyeOff } from 'lucide-react';
 import { type Student, type Course, type CoursePayment, type Attendance, type TeachingMaterial } from '../../types';
 import { storage } from '../../lib/storage';
 import classes from '../crm/ClientListPage.module.css';
@@ -15,6 +15,7 @@ interface StudentDetailsModalProps {
 
 export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, onDelete }: StudentDetailsModalProps) {
     const [isEditing, setIsEditing] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState<Student | null>(null);
     const [activeTab, setActiveTab] = useState<'PAYMENTS' | 'ATTENDANCE' | 'MATERIALS'>('PAYMENTS');
 
@@ -98,7 +99,7 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
         }
 
         const material: TeachingMaterial = {
-            id: `mat-${Date.now()}`,
+            id: self.crypto.randomUUID(),
             tenantId: 'studio-1',
             studentId: student.id,
             courseId: student.courseId,
@@ -165,7 +166,7 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
         }
 
         const payment: CoursePayment = {
-            id: `payment-${Date.now()}`,
+            id: self.crypto.randomUUID(),
             tenantId: 'studio-1',
             studentId: student.id,
             courseId: student.courseId,
@@ -215,7 +216,7 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
         }
 
         const attendance: Attendance = {
-            id: `attendance-${Date.now()}`,
+            id: self.crypto.randomUUID(),
             tenantId: 'studio-1',
             studentId: student.id,
             courseId: student.courseId,
@@ -503,6 +504,46 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
                                     }}>
                                         {formData.status}
                                     </span>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Access Credentials */}
+                        <section>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Lock size={18} />
+                                Credenziali Accesso
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface-hover)', padding: '1rem', borderRadius: '8px' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
+                                        Email Accesso
+                                    </label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <code style={{ fontSize: '0.95rem', background: 'var(--color-surface)', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--color-border)', flex: 1 }}>
+                                            {formData.email}
+                                        </code>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
+                                        Password
+                                    </label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <code style={{ fontSize: '0.95rem', background: 'var(--color-surface)', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--color-border)', flex: 1, fontFamily: 'monospace' }}>
+                                            {showPassword ? "password123" : "•••••••••••"}
+                                        </code>
+                                        <button
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+                                            title={showPassword ? "Nascondi" : "Mostra"}
+                                        >
+                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                                        * Password predefinita per nuovi account.
+                                    </p>
                                 </div>
                             </div>
                         </section>

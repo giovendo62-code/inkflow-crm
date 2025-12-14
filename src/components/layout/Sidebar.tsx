@@ -13,7 +13,8 @@ import {
     MessageSquare,
     FileText,
     Send,
-    GraduationCap
+    GraduationCap,
+    Clock
 } from 'lucide-react';
 import classes from './Sidebar.module.css';
 import { cn } from '../../lib/utils';
@@ -64,6 +65,7 @@ export function Sidebar() {
         { label: 'Dashboard', path: '/', icon: LayoutDashboard, visible: true },
         { label: 'Calendar', path: '/calendar', icon: Calendar, visible: true },
         { label: 'Clients', path: '/clients', icon: Users, visible: true }, // Artists can see clients too
+        { label: 'Waitlist', path: '/waitlist', icon: Clock, visible: isManager }, // Manager only
         { label: 'Chat & News', path: '/chat', icon: MessageSquare, visible: true }, // New
         { label: 'Consents', path: '/consents', icon: FileText, visible: true }, // New
         { label: 'Artists', path: '/artists', icon: Palette, visible: isManager },

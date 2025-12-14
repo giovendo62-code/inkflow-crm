@@ -399,6 +399,8 @@ export function OperatorListPage() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     style={{
+                                        width: '100%',
+                                        boxSizing: 'border-box',
                                         padding: '1rem',
                                         borderRadius: 'var(--radius-md)',
                                         background: '#25D366',

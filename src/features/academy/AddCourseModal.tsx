@@ -16,9 +16,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        startDate: '',
-        endDate: '',
-        totalHours: '',
+        totalLessons: '', // Changed from totalHours
         price: '',
         schedule: '',
         program: '',
@@ -36,15 +34,23 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
             return;
         }
 
+        const lessons = parseInt(formData.totalLessons);
+        const priceVal = parseFloat(formData.price);
+
+        if (isNaN(lessons) || lessons <= 0) {
+            alert("Inserisci un numero valido di lezioni");
+            return;
+        }
+
         const newCourse: Course = {
-            id: `course-${Date.now()}`,
+            id: self.crypto.randomUUID(),
             tenantId: user.tenantId,
             name: formData.name,
             description: formData.description,
-            startDate: formData.startDate,
-            endDate: formData.endDate,
-            totalHours: parseInt(formData.totalHours),
-            price: parseFloat(formData.price),
+            // Dates removed as per user request
+            totalLessons: lessons,
+            totalHours: lessons * 5, // Estimate
+            price: isNaN(priceVal) ? 0 : priceVal,
             instructorId: user.id,
             schedule: formData.schedule,
             program: formData.program,
@@ -54,14 +60,17 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
             updatedAt: new Date().toISOString()
         };
 
+        console.log("Attempting to save course:", newCourse);
+        console.log("User Context:", user);
+
         try {
             await storage.saveCourse(newCourse);
             onSuccess();
             onClose();
             resetForm();
-        } catch (error) {
-            console.error("Failed to save course:", error);
-            alert("Errore salvataggio corso");
+        } catch (error: any) {
+            console.error("Failed to save course FULL ERROR:", error);
+            alert(`Errore salvataggio corso:\n${error.message || JSON.stringify(error)}\n\nDettagli: ${error.details || 'Nessun dettaglio aggiuntivo'}\nHint: ${error.hint || 'Nessun suggerimento'}`);
         }
     };
 
@@ -69,9 +78,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
         setFormData({
             name: '',
             description: '',
-            startDate: '',
-            endDate: '',
-            totalHours: '',
+            totalLessons: '',
             price: '',
             schedule: '',
             program: '',
@@ -145,7 +152,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                             className={classes.formInput}
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="es. Corso Base Tatuaggio 2024"
+                            placeholder="es. Corso Base Tatuaggio"
                             required
                         />
                     </div>
@@ -166,42 +173,14 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                     <div className={classes.formGrid}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
-                                Data Inizio *
-                            </label>
-                            <input
-                                type="date"
-                                className={classes.formInput}
-                                value={formData.startDate}
-                                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
-                                Data Fine *
-                            </label>
-                            <input
-                                type="date"
-                                className={classes.formInput}
-                                value={formData.endDate}
-                                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className={classes.formGrid}>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
-                                Giorni di Corso *
+                                Numero Lezioni (Giorni) *
                             </label>
                             <input
                                 type="number"
                                 className={classes.formInput}
-                                value={formData.totalHours}
-                                onChange={(e) => setFormData({ ...formData, totalHours: e.target.value })}
-                                placeholder="es. 5"
+                                value={formData.totalLessons}
+                                onChange={(e) => setFormData({ ...formData, totalLessons: e.target.value })}
+                                placeholder="es. 20"
                                 required
                             />
                         </div>

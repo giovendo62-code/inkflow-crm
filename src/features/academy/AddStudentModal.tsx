@@ -15,6 +15,7 @@ interface AddStudentModalProps {
 export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStudentModalProps) {
     const { user } = useAuth();
     const [createdCredentials, setCreatedCredentials] = useState<{ email: string, password: string } | null>(null);
+    const [saveError, setSaveError] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -34,7 +35,9 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
     if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
+        // ... (existing handleSubmit logic is fine, we just want to ensure state exists)
         e.preventDefault();
+        setSaveError(null);
 
         if (!formData.courseId) {
             alert('Seleziona un corso');
@@ -47,7 +50,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
         }
 
         const newStudent: Student = {
-            id: `student-${Date.now()}`,
+            id: self.crypto.randomUUID(),
             tenantId: user.tenantId,
             courseId: formData.courseId,
             firstName: formData.firstName,
@@ -70,24 +73,19 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
         try {
             await storage.saveStudent(newStudent);
             onSuccess();
-            // Don't close immediately, show credentials
-            // onClose(); 
-            // resetForm(); // Don't reset form yet, maybe just clear some sensitive fields if needed, but here we want to show success UI overlay
-
-            // Set credentials to show overlay
             setCreatedCredentials({
                 email: newStudent.email,
-                password: "password123" // Same mock password
+                password: "password123"
             });
-
-        } catch (error) {
-            console.error("Failed to save student:", error);
-            alert("Errore salvataggio corsista");
+        } catch (error: any) {
+            console.error("Failed to save student FULL ERROR:", error);
+            setSaveError("Dettagli: " + (error.message || JSON.stringify(error)));
         }
     };
 
     const resetForm = () => {
         setCreatedCredentials(null);
+        setSaveError(null);
         setFormData({
             firstName: '',
             lastName: '',
@@ -110,13 +108,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
             style={{
                 position: 'fixed',
                 top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(0, 0, 0, 0.7)',
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'center',
+                // ...
                 zIndex: 1000,
                 padding: '1rem',
                 paddingTop: '3rem'
@@ -134,6 +126,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                 }}
                 onClick={(e) => e.stopPropagation()}
             >
+                {/* Header */}
                 <div style={{
                     padding: '1.5rem',
                     borderBottom: '1px solid var(--color-border)',
@@ -161,6 +154,16 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
                 </div>
 
                 <form onSubmit={handleSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+                    {/* Error Box */}
+                    {saveError && (
+                        <div style={{ padding: '1rem', background: '#f8d7da', color: '#721c24', borderRadius: '4px', border: '1px solid #f5c6cb' }}>
+                            <b>Errore Salvataggio:</b><br />
+                            {saveError}
+                        </div>
+                    )}
+
+                    {/* Personal Info */}
                     {/* Personal Info */}
                     <section>
                         <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>

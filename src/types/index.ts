@@ -149,9 +149,9 @@ export interface Course {
   tenantId: string;
   name: string; // e.g., "Corso Base Tatuaggio 2024"
   description?: string;
-  startDate: string;
-  endDate: string;
-  totalHours: number;
+  startDate?: string;
+  endDate?: string;
+  totalHours?: number;
   totalLessons?: number; // Numero totale lezioni/giornate
   price: number; // Costo totale corso
   instructorId: string; // User ID dell'istruttore
@@ -232,5 +232,24 @@ export interface ChatMessage {
   content?: string; // Alias for message
   type?: 'info' | 'warning' | 'message' | 'chat';
   senderAvatar?: string;
+}
+
+export type WaitlistStatus = 'PENDING' | 'WORKED' | 'PARTIAL';
+
+export interface WaitlistEntry {
+  id: string;
+  tenantId: string;
+  clientId?: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  email?: string;
+  projectDescription?: string;
+  requestDate: string;
+  assignedArtistId?: string;
+  notes?: string;
+  status: WaitlistStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 

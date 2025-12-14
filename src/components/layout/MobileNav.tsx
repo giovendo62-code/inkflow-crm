@@ -13,7 +13,8 @@ import {
     DollarSign,
     Palette,
     Send,
-    X
+    X,
+    Clock
 } from 'lucide-react';
 import classes from './MobileNav.module.css';
 
@@ -59,6 +60,7 @@ export function MobileNav() {
         { label: 'Clienti', path: '/clients', icon: Users, main: true },
 
         // Secondary items
+        { label: 'Waitlist', path: '/waitlist', icon: Clock, visible: isManager, main: false },
         { label: 'Finanze', path: '/financials', icon: DollarSign, main: false },
         { label: 'Consensi', path: '/consents', icon: FileText, main: false },
         { label: 'Artisti', path: '/artists', icon: Palette, visible: isManager, main: false },
