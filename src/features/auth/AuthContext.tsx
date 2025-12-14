@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { type User, type UserRole } from '../../types';
 import { storage } from '../../lib/storage';
+import { supabase } from '../../lib/supabase'; // Ensure this import exists
 
 // --- HELPER: UUID SICURO (No dipendenze esterne) ---
 const generateUUID = () => {
@@ -58,45 +59,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
             console.log(`🔐 Login attempt: ${email}`);
 
-            // 1. Cerca Utenti nel DB (Cloud)
+            // 1. Cerca Utente nel DB (Cloud)
+            // Usiamo storage.getUsers che fa la query su 'users'
             const users = await storage.getUsers();
             const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
-            // The original code had a `data` object which is not defined here.
-            // Assuming `foundUser` is the equivalent of `data.user` for the purpose of this edit.
-            // If `foundUser` is null, it means login failed.
-            if (!foundUser) throw new Error('Login failed: User not found.');
-
-            // The original code had a `supabase` object which is not defined here.
-            // Assuming the profile fetch is now integrated with `storage.getUsers()`
-            // and `foundUser` already contains the full profile.
-            // If `foundUser` is present, we proceed with password check and role check.
-
-            // 2. Fetch Profile from 'users' table (This step is implicitly handled if `foundUser` is already a full User object)
-            // If `foundUser` is just basic user info and a separate profile fetch is needed,
-            // you would need to define `supabase` or a similar mechanism here.
-            // For now, we assume `foundUser` is the complete profile.
-
-            // If profile is missing (e.g., foundUser is null or incomplete), fail.
-            if (!foundUser) { // This check is redundant due to the previous throw, but kept for clarity if logic changes.
-                console.error('Profile not found for user:', email);
-                throw new Error('User profile not found.');
+            if (!foundUser) {
+                throw new Error('Utente non trovato.');
             }
 
-            // 3. Verify Password (if strictly enforcing stored password match)
+            // 2. Strict Password Check
+            // La password è nel profilo (come da design attuale)
             const storedPassword = (foundUser.profile as any)?.password;
 
             if (!storedPassword) {
-                throw new Error("Account not configured (Password missing). Contact Manager.");
+                // Fallback: se non c'è nel profilo, forse è un operatore vecchio o demo
+                // Per sicurezza, se non c'è password, neghiamo accesso in Strict Mode
+                throw new Error("Password non impostata per questo utente. Contatta l'amministratore.");
             }
 
             if (!password || storedPassword !== password) {
-                throw new Error('Invalid password.');
+                throw new Error("Password errata.");
             }
 
-            // Role check
+            // 3. Verifica Ruolo
             if (requiredRole && foundUser.role !== requiredRole) {
-                throw new Error(`Access denied. Required role: ${requiredRole}`);
+                throw new Error(`Accesso negato. Ruolo richiesto: ${requiredRole}`);
             }
 
             // 4. Set Session
@@ -110,16 +98,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         } catch (error: any) {
             console.error('Login error:', error);
-            // STRICT MODE: No fallback to local storage.
-            // If server login fails, we fail.
             setError(error.message);
-            throw error;
+            throw error; // Rilancia per gestire l'UI (es. mostrare alert)
         } finally {
             setLoading(false);
         }
     };
 
-    // --- REGISTER ---
+    // --- REGISTER (Solo Manager) ---
     const register = async (email: string, password: string, name: string, role: string) => {
         setLoading(true);
         setError(null);
@@ -131,7 +117,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 throw new Error("Solo i Manager possono registrarsi da qui.");
             }
 
-            // 1. Prepara i Dati (ID generati qui per consistenza locale/cloud)
+            // check esistenza email
+            try {
+                const existingUsers = await storage.getUsers();
+                if (existingUsers.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+                    throw new Error("Questa email è già registrata.");
+                }
+            } catch (err) {
+                // Ignore error checking users, maybe connection issue or table empty
+            }
+
+            // 1. IDs
             const tenantId = generateUUID();
             const userId = generateUUID();
 
@@ -141,80 +137,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 email,
                 name,
                 role: 'MANAGER',
-                avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.replace(/\s/g, '')}`,
+                avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+                createdAt: new Date().toISOString(),
                 profile: {
-                    bio: 'Studio Manager',
-                    color: '#FF6B35'
+                    bio: 'Manager',
+                    phone: '',
+                    address: '',
+                    password: password,
+                    preferences: {
+                        theme: 'dark',
+                        notifications: true,
+                        password: password
+                    },
+                    color: '#7C3AED' // Default color
                 }
             };
 
-            // 2. Tenta Salvataggio Cloud (Prima Tenant, poi User)
-            let cloudSuccess = false;
-            try {
-                await storage.saveTenant({
+            // 2. CREATE TENANT FIRST (Crucial for Foreign Key)
+            const { error: tenantError } = await supabase
+                .from('tenants')
+                .insert({
                     id: tenantId,
                     name: `Studio di ${name}`,
-                    logo: '',
-                    theme: { primaryColor: '#7C3AED', sidebarStyle: 'dark', menuPosition: 'left', colorMode: 'dark' }
+                    created_at: new Date().toISOString()
                 });
 
-                await storage.saveUser(newUser);
-                cloudSuccess = true;
-                console.log("✅ Cloud Registration Success");
-
-            } catch (cloudErr: any) {
-                console.error("❌ Cloud Registration Failed:", cloudErr);
-
-                // Se errore è Conflitto (409), significa che esiste già.
-                if (cloudErr.status === 409 || (cloudErr.message && cloudErr.message.includes('409'))) {
-                    alert("⚠️ Attenzione: Utente o Studio già esistenti.\nTi faccio entrare lo stesso.");
-                    cloudSuccess = true; // Consideriamolo un successo parziale (l'utente c'è)
-                } else {
-                    alert(`⚠️ Errore Cloud: ${cloudErr.message}\n\nL'account verrà creato solo LOCALE.`);
-                }
+            if (tenantError) {
+                console.error("Tenant creation failed:", tenantError);
+                throw new Error("Errore creazione Studio: " + tenantError.message);
             }
 
-            // 3. Finalizza Login (Sempre, anche se Cloud fallisce)
-            finishLogin(newUser);
+            // 3. CREATE USER
+            await storage.saveUser(newUser);
 
-            if (cloudSuccess) {
-                alert("🎉 Benvenuto in InkFlow!");
-            }
+            // 4. Auto-Login
+            await login(email, password);
 
-        } catch (e: any) {
-            console.error("Register Logic Error:", e);
-            setError(e.message);
-            throw e;
+        } catch (error: any) {
+            console.error('Registration failed:', error);
+            setError(error.message);
+            throw error;
         } finally {
             setLoading(false);
         }
     };
 
-    // --- HELPERS ---
-    const finishLogin = (u: User) => {
-        setUser(u);
-        localStorage.setItem('inkflow_session', JSON.stringify(u));
-        // Force reload tenants/data if needed
-    };
-
     const logout = () => {
         setUser(null);
         localStorage.removeItem('inkflow_session');
-        localStorage.removeItem('inkflow_tenant_id'); // clean up extra vars
-    };
-
-    const createDemoUser = (email: string): User => {
-        return {
-            id: generateUUID(),
-            tenantId: 'demo-tenant',
-            email,
-            name: 'Demo User',
-            role: email.includes('manager') ? 'MANAGER' : 'ARTIST',
-            avatarUrl: '',
-            profile: {
-                color: '#888888'
-            }
-        };
+        // Opzionale: supabase.auth.signOut() se usassimo auth nativa
     };
 
     return (

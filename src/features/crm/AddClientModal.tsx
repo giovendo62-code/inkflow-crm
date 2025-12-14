@@ -113,9 +113,10 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
             await storage.saveClient(newClient);
             onSuccess();
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save client:', error);
-            alert('Errore durante il salvataggio. Riprova.');
+            // Mostra l'errore specifico (es. violazione vincoli, RLS, etc)
+            alert('Errore dettagliato: ' + (error.message || JSON.stringify(error)));
         } finally {
             setLoading(false);
         }
