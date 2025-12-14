@@ -5,6 +5,7 @@ import { type Appointment, type Client, type TattooStyle } from '../../types';
 import { Calendar as CalendarIcon, User as UserIcon } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { StudentDashboard } from '../academy/StudentDashboard';
+import { AppointmentDetailsModal } from '../calendar/AppointmentDetailsModal';
 
 export function DashboardPage() {
     const { user } = useAuth();
@@ -178,6 +179,15 @@ export function DashboardPage() {
         return client ? `${client.firstName} ${client.lastName}` : 'Unknown';
     };
 
+    // Modals State for Dashboard
+    const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+
+    const handleAppointmentClick = (apt: Appointment) => {
+        setSelectedAppointment(apt);
+        setDetailsModalOpen(true);
+    };
+
     // ARTIST VIEW: Today's appointments
     if (!isManager) {
         return (
@@ -221,14 +231,14 @@ export function DashboardPage() {
                             Prossimo Appuntamento
                         </h3>
                         {todayAppointments.length > 0 ? (
-                            <>
+                            <div onClick={() => handleAppointmentClick(todayAppointments[0])} style={{ cursor: 'pointer' }}>
                                 <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-success)' }}>
                                     {new Date(todayAppointments[0].startTime).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                                 <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
                                     {getClientName(todayAppointments[0].clientId)}
                                 </p>
-                            </>
+                            </div>
                         ) : (
                             <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-text-muted)' }}>
                                 Nessuno
@@ -268,6 +278,7 @@ export function DashboardPage() {
                                 return (
                                     <div
                                         key={apt.id}
+                                        onClick={() => handleAppointmentClick(apt)}
                                         style={{
                                             padding: '1.25rem',
                                             borderRadius: 'var(--radius-md)',
@@ -276,8 +287,12 @@ export function DashboardPage() {
                                             opacity: isPast ? 0.6 : 1,
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '1rem'
+                                            gap: '1rem',
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.1s',
                                         }}
+                                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                     >
                                         <div style={{
                                             minWidth: '80px',
@@ -334,6 +349,13 @@ export function DashboardPage() {
                         </div>
                     )}
                 </div>
+
+                <AppointmentDetailsModal
+                    isOpen={detailsModalOpen}
+                    onClose={() => setDetailsModalOpen(false)}
+                    appointment={selectedAppointment}
+                    onSave={() => { /* Reload not critical for dashboard view but could be added */ }}
+                />
             </div>
         );
     }
