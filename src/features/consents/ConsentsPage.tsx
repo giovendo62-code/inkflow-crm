@@ -9,7 +9,7 @@ export function ConsentsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [showSignModal, setShowSignModal] = useState(false);
-    const [signType, setSignType] = useState<'PRIVACY' | 'CONSENT' | 'CARE'>('PRIVACY');
+    const [signType, setSignType] = useState<'PRIVACY' | 'CONSENT'>('PRIVACY');
     const [isSigning, setIsSigning] = useState(false);
 
     // OTP State
@@ -30,7 +30,7 @@ export function ConsentsPage() {
         c.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleSignRequest = (client: Client, type: 'PRIVACY' | 'CONSENT' | 'CARE') => {
+    const handleSignRequest = (client: Client, type: 'PRIVACY' | 'CONSENT') => {
         setSelectedClient(client);
         setSignType(type);
         setOtpStep('REVIEW');
@@ -69,12 +69,9 @@ export function ConsentsPage() {
         if (signType === 'PRIVACY') {
             updatedClient.privacyPolicyAccepted = true;
             updatedClient.privacyPolicyDate = timestamp;
-        } else if (signType === 'CONSENT') {
+        } else {
             updatedClient.informedConsentAccepted = true;
             updatedClient.informedConsentDate = timestamp;
-        } else {
-            updatedClient.tattooCareAccepted = true;
-            updatedClient.tattooCareDate = timestamp;
         }
 
         try {
@@ -98,7 +95,6 @@ export function ConsentsPage() {
         switch (signType) {
             case 'PRIVACY': return 'Privacy Policy & GDPR';
             case 'CONSENT': return 'Consenso Informato';
-            case 'CARE': return 'Cura del Tatuaggio (Aftercare)';
         }
     };
 
@@ -123,20 +119,6 @@ export function ConsentsPage() {
                             <li>Non soffro di patologie cardiache, epilessia, emofilia...</li>
                             <li>Sono consapevole che il tatuaggio è indelebile.</li>
                         </ul>
-                    </>
-                );
-            case 'CARE':
-                return (
-                    <>
-                        <p><strong>ISTRUZIONI PER LA CURA DEL TATUAGGIO (AFTERCARE)</strong></p>
-                        <p>Per garantire una corretta guarigione, seguire attentamente le seguenti istruzioni:</p>
-                        <ol>
-                            <li>Rimuovere la pellicola protettiva dopo 2-3 ore.</li>
-                            <li>Lavare delicatamente con sapone neutro e acqua tiepida.</li>
-                            <li>Asciugare tamponando con carta assorbente pulita.</li>
-                            <li>Applicare uno strato sottile di crema specifica 3-4 volte al giorno.</li>
-                            <li>Non grattare le crosticine. Evitare sole, mare e piscina per 15 giorni.</li>
-                        </ol>
                     </>
                 );
         }
@@ -214,14 +196,6 @@ export function ConsentsPage() {
                                         date={client.informedConsentDate}
                                         icon={<FileText size={18} />}
                                         onSign={() => handleSignRequest(client, 'CONSENT')}
-                                    />
-                                    {/* Care */}
-                                    <ConsentBadge
-                                        title="Cura Tattoo"
-                                        accepted={client.tattooCareAccepted}
-                                        date={client.tattooCareDate}
-                                        icon={<HeartHandshake size={18} />}
-                                        onSign={() => handleSignRequest(client, 'CARE')}
                                     />
                                 </div>
 
