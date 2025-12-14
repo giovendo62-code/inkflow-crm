@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { type Course } from '../../types';
 import { storage } from '../../lib/storage';
@@ -9,9 +9,10 @@ interface AddCourseModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    courseToEdit?: Course | null;
 }
 
-export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalProps) {
+export function AddCourseModal({ isOpen, onClose, onSuccess, courseToEdit }: AddCourseModalProps) {
     const { user } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
@@ -23,6 +24,32 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
         maxStudents: '',
         status: 'PLANNED' as const
     });
+
+    useEffect(() => {
+        if (courseToEdit) {
+            setFormData({
+                name: courseToEdit.name,
+                description: courseToEdit.description || '',
+                totalLessons: courseToEdit.totalLessons?.toString() || '',
+                price: courseToEdit.price.toString(),
+                schedule: courseToEdit.schedule || '',
+                program: courseToEdit.program || '',
+                maxStudents: courseToEdit.maxStudents?.toString() || '',
+                status: courseToEdit.status as any
+            });
+        } else {
+            setFormData({
+                name: '',
+                description: '',
+                totalLessons: '',
+                price: '',
+                schedule: '',
+                program: '',
+                maxStudents: '',
+                status: 'PLANNED'
+            });
+        }
+    }, [courseToEdit, isOpen]);
 
     if (!isOpen) return null;
 
@@ -43,7 +70,7 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
         }
 
         const newCourse: Course = {
-            id: self.crypto.randomUUID(),
+            id: courseToEdit?.id || self.crypto.randomUUID(),
             tenantId: user.tenantId,
             name: formData.name,
             description: formData.description,
@@ -51,12 +78,12 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
             totalLessons: lessons,
             totalHours: lessons * 5, // Estimate
             price: isNaN(priceVal) ? 0 : priceVal,
-            instructorId: user.id,
+            instructorId: courseToEdit?.instructorId || user.id,
             schedule: formData.schedule,
             program: formData.program,
             maxStudents: formData.maxStudents ? parseInt(formData.maxStudents) : undefined,
             status: formData.status,
-            createdAt: new Date().toISOString(),
+            createdAt: courseToEdit?.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
 
@@ -127,7 +154,9 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                     background: 'var(--color-surface)',
                     zIndex: 10
                 }}>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>Nuovo Corso</h2>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>
+                        {courseToEdit ? 'Modifica Corso' : 'Nuovo Corso'}
+                    </h2>
                     <button
                         onClick={onClose}
                         style={{
@@ -143,6 +172,22 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
                 </div>
 
                 <form onSubmit={handleSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {/* Status Field (Only if editing or useful) */}
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
+                            Stato
+                        </label>
+                        <select
+                            className={classes.formInput}
+                            value={formData.status}
+                            onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                        >
+                            <option value="PLANNED">Pianificato</option>
+                            <option value="ACTIVE">Attivo</option>
+                            <option value="COMPLETED">Completato</option>
+                            <option value="CANCELLED">Cancellato</option>
+                        </select>
+                    </div>
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
                             Nome Corso *

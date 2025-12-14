@@ -4,6 +4,7 @@ import { storage } from '../../lib/storage';
 import { type User, type Appointment } from '../../types';
 import { useAuth } from '../auth/AuthContext';
 import { ArrowLeft, Calendar, Euro, User as UserIcon, MessageCircle, Mail, MapPin } from 'lucide-react';
+import { usePrivacy } from '../context/PrivacyContext';
 import classes from '../crm/ClientListPage.module.css';
 
 export function OperatorDetailsPage() {
@@ -15,6 +16,8 @@ export function OperatorDetailsPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [clients, setClients] = useState<any[]>([]); // Using any[] to avoid importing Client type if not imported yet, ideally import it
     const [loading, setLoading] = useState(true);
+
+    const { showFinancials } = usePrivacy();
 
     useEffect(() => {
         const loadData = async () => {
@@ -163,7 +166,9 @@ export function OperatorDetailsPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>
                         <Euro size={18} /> Fatturato Generato
                     </div>
-                    <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--color-success)' }}>€{totalEarnings.toLocaleString()}</div>
+                    <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--color-success)' }}>
+                        {showFinancials ? `€${totalEarnings.toLocaleString()}` : '••••'}
+                    </div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Solo completati</div>
                 </div>
 
@@ -171,7 +176,9 @@ export function OperatorDetailsPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>
                         <Euro size={18} /> Commissione Stimata
                     </div>
-                    <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#FFD700' }}>€{estimatedCommission.toLocaleString()}</div>
+                    <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#FFD700' }}>
+                        {showFinancials ? `€${estimatedCommission.toLocaleString()}` : '••••'}
+                    </div>
                 </div>
             </div>
 
@@ -203,7 +210,9 @@ export function OperatorDetailsPage() {
                                             {apt.status}
                                         </span>
                                     </td>
-                                    <td>€{apt.financials?.priceQuote || 0}</td>
+                                    <td>
+                                        {showFinancials ? `€${apt.financials?.priceQuote || 0}` : '••••'}
+                                    </td>
                                 </tr>
                             ))
                         ) : (

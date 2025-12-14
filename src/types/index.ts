@@ -134,7 +134,7 @@ export interface Appointment {
 export interface TeachingMaterial {
   id: string;
   tenantId: string;
-  studentId: string; // Materiale assegnato allo studente specifico
+  studentId?: string; // Materiale assegnato allo studente specifico (opzionale)
   courseId: string;
   title: string;
   description?: string;

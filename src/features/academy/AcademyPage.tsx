@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { storage } from '../../lib/storage';
 import { type Course, type Student } from '../../types';
-import { GraduationCap, Plus, Users, Calendar, Euro, BookOpen, Trash2 } from 'lucide-react';
+import { GraduationCap, Plus, Users, Euro, BookOpen, Trash2, Pencil, Eye, EyeOff } from 'lucide-react';
 import classes from '../crm/ClientListPage.module.css';
 import { AddCourseModal } from './AddCourseModal';
 import { AddStudentModal } from './AddStudentModal';
 import { StudentDetailsModal } from './StudentDetailsModal';
+import { TeachingMaterialsSection } from './TeachingMaterialsSection';
 import { useAuth } from '../auth/AuthContext';
+import { usePrivacy } from '../context/PrivacyContext';
 
 export function AcademyPage() {
     const { user } = useAuth();
+    const { showFinancials, toggleFinancials } = usePrivacy();
     const [courses, setCourses] = useState<Course[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
     const [selectedCourse, setSelectedCourse] = useState<string | 'all'>('all');
@@ -19,9 +22,16 @@ export function AcademyPage() {
     const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+    const [editingCourse, setEditingCourse] = useState<Course | null>(null);
 
     const [attendances, setAttendances] = useState<any[]>([]);
     const [onlyActive, setOnlyActive] = useState(true);
+
+    const handleEditCourse = (course: Course, event: React.MouseEvent) => {
+        event.stopPropagation();
+        setEditingCourse(course);
+        setIsCourseModalOpen(true);
+    };
 
     const loadData = useCallback(async () => {
         if (!user?.tenantId) return;
@@ -103,7 +113,26 @@ export function AcademyPage() {
                     Academy
                 </h1>
 
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                        onClick={toggleFinancials}
+                        style={{
+                            background: 'var(--color-surface)',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '50%',
+                            cursor: 'pointer',
+                            color: 'var(--color-text-secondary)',
+                            padding: '0.75rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: '0.5rem',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                        }}
+                        title={showFinancials ? "Nascondi importi" : "Mostra importi"}
+                    >
+                        {showFinancials ? <Eye size={24} /> : <EyeOff size={24} />}
+                    </button>
                     <button
                         className={classes.addBtn}
                         style={{ background: 'rgba(66, 133, 244, 0.2)', border: '1px solid #4285F4' }}
@@ -159,7 +188,7 @@ export function AcademyPage() {
                     </p>
                 </div>
 
-                <div style={{
+                <div className={classes.desktopOnly} style={{
                     background: 'var(--color-surface)',
                     padding: '1.5rem',
                     borderRadius: 'var(--radius-lg)',
@@ -170,7 +199,7 @@ export function AcademyPage() {
                         Incassi Totali
                     </h3>
                     <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#FFD700' }}>
-                        €{students.reduce((sum, s) => sum + s.totalPaid, 0).toLocaleString()}
+                        {showFinancials ? `€${students.reduce((sum, s) => sum + s.totalPaid, 0).toLocaleString()}` : '••••'}
                     </p>
                 </div>
             </div>
@@ -230,6 +259,25 @@ export function AcademyPage() {
                                             {course.status}
                                         </span>
                                         <button
+                                            onClick={(e) => handleEditCourse(course, e)}
+                                            style={{
+                                                background: 'var(--color-surface-hover)',
+                                                border: '1px solid var(--color-border)',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                color: 'var(--color-text-secondary)',
+                                                padding: '4px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                width: '28px',
+                                                height: '28px'
+                                            }}
+                                            title="Modifica corso"
+                                        >
+                                            <Pencil size={16} />
+                                        </button>
+                                        <button
                                             onClick={(e) => handleDeleteCourse(course.id, e)}
                                             style={{
                                                 background: 'var(--color-surface-hover)',
@@ -268,7 +316,7 @@ export function AcademyPage() {
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <Euro size={14} />
-                                        {course.price?.toLocaleString()}
+                                        {showFinancials ? course.price?.toLocaleString() : '••••'}
                                     </div>
                                 </div>
                             </div>
@@ -276,6 +324,9 @@ export function AcademyPage() {
                     </div>
                 )}
             </div>
+
+            {/* Teaching Materials Section */}
+            <TeachingMaterialsSection courses={courses} />
 
             {/* Students Filter */}
             <div style={{ marginBottom: '1rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'flex-end' }}>
@@ -309,90 +360,180 @@ export function AcademyPage() {
                 </div>
             </div>
 
-            {/* Students Table */}
-            <div className={classes.tableWrapper}>
-                <table className={classes.table}>
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>Corso</th>
-                            <th>Progresso</th>
-                            <th>Iscrizione</th>
-                            <th>Pagato</th>
-                            <th>Stato</th>
-                            <th>Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredStudents.length > 0 ? (
-                            filteredStudents.map(student => {
-                                const progress = getStudentProgress(student.id, student.courseId);
-                                return (
-                                    <tr key={student.id} className={classes.row}>
-                                        <td>
-                                            <strong>{student.firstName} {student.lastName}</strong>
-                                        </td>
-                                        <td style={{ fontSize: '0.9rem' }}>{getCourseName(student.courseId)}</td>
-                                        <td style={{ width: '150px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '4px' }}>
-                                                <span>{progress.percent}%</span>
-                                                <span style={{ color: 'var(--color-text-muted)' }}>{progress.label}</span>
-                                            </div>
-                                            <div style={{ width: '100%', height: '6px', background: 'var(--color-border)', borderRadius: '999px', overflow: 'hidden' }}>
-                                                <div style={{ width: `${progress.percent}%`, height: '100%', background: 'var(--color-primary)' }} />
-                                            </div>
-                                        </td>
-                                        <td style={{ fontSize: '0.9rem' }}>{new Date(student.enrollmentDate).toLocaleDateString('it-IT')}</td>
-                                        <td>
-                                            <strong style={{ color: 'var(--color-success)' }}>
-                                                €{student.totalPaid.toLocaleString()}
-                                            </strong>
-                                        </td>
-                                        <td>
-                                            <span style={{
-                                                padding: '0.25rem 0.75rem',
-                                                borderRadius: '999px',
-                                                fontSize: '0.75rem',
-                                                fontWeight: '600',
-                                                background: student.status === 'ACTIVE' ? 'rgba(0, 204, 102, 0.2)' :
-                                                    student.status === 'COMPLETED' ? 'rgba(66, 133, 244, 0.2)' :
-                                                        'rgba(255, 68, 68, 0.2)',
-                                                color: student.status === 'ACTIVE' ? '#00CC66' :
-                                                    student.status === 'COMPLETED' ? '#4285F4' :
-                                                        '#ff4444'
-                                            }}>
-                                                {student.status}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button
-                                                className={classes.actionBtn}
-                                                onClick={() => handleViewStudent(student)}
-                                            >
-                                                Gestisci
-                                            </button>
-                                        </td>
-                                    </tr>
-                                )
-                            })
-                        ) : (
+            {/* Students List - Responsive */}
+            <div className={classes.desktopOnly}>
+                <div className={classes.tableWrapper}>
+                    <table className={classes.table}>
+                        <thead>
                             <tr>
-                                <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>
-                                    {courses.length === 0
-                                        ? 'Crea un corso per aggiungere corsisti'
-                                        : 'Nessun corsista trovato.'}
-                                </td>
+                                <th>Nome</th>
+                                <th>Corso</th>
+                                <th>Progresso</th>
+                                <th>Iscrizione</th>
+                                <th>Pagato</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {filteredStudents.length > 0 ? (
+                                filteredStudents.map(student => {
+                                    const progress = getStudentProgress(student.id, student.courseId);
+                                    return (
+                                        <tr key={student.id} className={classes.row}>
+                                            <td>
+                                                <strong>{student.firstName} {student.lastName}</strong>
+                                            </td>
+                                            <td style={{ fontSize: '0.9rem' }}>{getCourseName(student.courseId)}</td>
+                                            <td style={{ width: '150px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '4px' }}>
+                                                    <span>{progress.percent}%</span>
+                                                    <span style={{ color: 'var(--color-text-muted)' }}>{progress.label}</span>
+                                                </div>
+                                                <div style={{ width: '100%', height: '6px', background: 'var(--color-border)', borderRadius: '999px', overflow: 'hidden' }}>
+                                                    <div style={{ width: `${progress.percent}%`, height: '100%', background: 'var(--color-primary)' }} />
+                                                </div>
+                                            </td>
+                                            <td style={{ fontSize: '0.9rem' }}>{new Date(student.enrollmentDate).toLocaleDateString('it-IT')}</td>
+                                            <td>
+                                                <strong style={{ color: 'var(--color-success)' }}>
+                                                    {showFinancials ? `€${student.totalPaid.toLocaleString()}` : '••••'}
+                                                </strong>
+                                            </td>
+                                            <td>
+                                                <span style={{
+                                                    padding: '0.25rem 0.75rem',
+                                                    borderRadius: '999px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '600',
+                                                    background: student.status === 'ACTIVE' ? 'rgba(0, 204, 102, 0.2)' :
+                                                        student.status === 'COMPLETED' ? 'rgba(66, 133, 244, 0.2)' :
+                                                            'rgba(255, 68, 68, 0.2)',
+                                                    color: student.status === 'ACTIVE' ? '#00CC66' :
+                                                        student.status === 'COMPLETED' ? '#4285F4' :
+                                                            '#ff4444'
+                                                }}>
+                                                    {student.status}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button
+                                                    className={classes.actionBtn}
+                                                    onClick={() => handleViewStudent(student)}
+                                                >
+                                                    Gestisci
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    )
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>
+                                        {courses.length === 0
+                                            ? 'Crea un corso per aggiungere corsisti'
+                                            : 'Nessun corsista trovato.'}
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Mobile View - Cards */}
+            <div className={classes.mobileOnly} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {filteredStudents.length > 0 ? (
+                    filteredStudents.map(student => {
+                        const progress = getStudentProgress(student.id, student.courseId);
+                        return (
+                            <div key={student.id} style={{
+                                background: 'var(--color-surface)',
+                                padding: '1rem',
+                                borderRadius: 'var(--radius-lg)',
+                                border: '1px solid var(--color-border)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.75rem'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                        <h3 style={{ fontSize: '1rem', fontWeight: '600' }}>{student.firstName} {student.lastName}</h3>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{getCourseName(student.courseId)}</p>
+                                    </div>
+                                    <span style={{
+                                        padding: '0.25rem 0.5rem',
+                                        borderRadius: '999px',
+                                        fontSize: '0.7rem',
+                                        fontWeight: '600',
+                                        background: student.status === 'ACTIVE' ? 'rgba(0, 204, 102, 0.2)' : 'rgba(255, 68, 68, 0.2)',
+                                        color: student.status === 'ACTIVE' ? '#00CC66' : '#ff4444'
+                                    }}>
+                                        {student.status}
+                                    </span>
+                                </div>
+
+                                <div style={{ fontSize: '0.85rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                        <span>Progresso</span>
+                                        <span>{progress.percent}%</span>
+                                    </div>
+                                    <div style={{ width: '100%', height: '4px', background: 'var(--color-border)', borderRadius: '999px', overflow: 'hidden' }}>
+                                        <div style={{ width: `${progress.percent}%`, height: '100%', background: 'var(--color-primary)' }} />
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                                    <span style={{ color: 'var(--color-text-muted)' }}>Pagato: <strong style={{ color: 'var(--color-success)' }}>{showFinancials ? `€${student.totalPaid.toLocaleString()}` : '••••'}</strong></span>
+                                    <button
+                                        className={classes.actionBtn}
+                                        onClick={() => handleViewStudent(student)}
+                                        style={{ padding: '0.5rem', background: 'var(--color-primary)', color: 'white', borderRadius: 'var(--radius-md)', textDecoration: 'none' }}
+                                    >
+                                        Gestisci
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    })
+                ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>
+                        Nessun corsista trovato
+                    </div>
+                )}
+            </div>
+
+            {/* Mobile Total Earnings - Bottom */}
+            <div className={classes.mobileOnly} style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+                <div style={{
+                    background: 'var(--color-surface)',
+                    padding: '1.5rem',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--color-border)',
+                    textAlign: 'center'
+                }}>
+                    <h3 style={{ color: 'var(--color-text-secondary)', fontSize: '1rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                        <Euro size={20} />
+                        Incassi Totali Academy
+                    </h3>
+                    <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#FFD700' }}>
+                        {showFinancials ? `€${students.reduce((sum, s) => sum + s.totalPaid, 0).toLocaleString()}` : '••••'}
+                    </p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                        {courses.filter(c => c.status === 'ACTIVE').length} corsi attivi
+                    </p>
+                </div>
             </div>
 
             {/* Modals */}
             <AddCourseModal
                 isOpen={isCourseModalOpen}
-                onClose={() => setIsCourseModalOpen(false)}
+                onClose={() => {
+                    setIsCourseModalOpen(false);
+                    setEditingCourse(null);
+                }}
                 onSuccess={loadData}
+                courseToEdit={editingCourse}
             />
 
             <AddStudentModal

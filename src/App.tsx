@@ -18,93 +18,97 @@ import { MaterialsPage } from './features/academy/MaterialsPage';
 import { WaitlistPage } from './features/waitlist/WaitlistPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { RoleGuard } from './components/layout/RoleGuard';
-
+import { PrivacyProvider } from './features/context/PrivacyContext';
+//...
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register/:tenantId" element={<PublicClientForm />} />
+        <PrivacyProvider>
+          <Routes>
+//...
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register/:tenantId" element={<PublicClientForm />} />
 
-          <Route element={<AppLayout />}>
-            {/* Shared Route (Dashboard handles internal logic) */}
-            <Route path="/" element={<DashboardPage />} />
+            <Route element={<AppLayout />}>
+              {/* Shared Route (Dashboard handles internal logic) */}
+              <Route path="/" element={<DashboardPage />} />
 
-            {/* Staff Routes (Manager & Artist) */}
-            <Route path="/calendar" element={
-              <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
-                <CalendarPage />
-              </RoleGuard>
-            } />
-            <Route path="/clients" element={
-              <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
-                <ClientListPage />
-              </RoleGuard>
-            } />
-            <Route path="/financials" element={
-              <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
-                <FinancialsPage />
-              </RoleGuard>
-            } />
-            <Route path="/chat" element={
-              <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
-                <ChatPage />
-              </RoleGuard>
-            } />
-            <Route path="/consents" element={
-              <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
-                <ConsentsPage />
-              </RoleGuard>
-            } />
+              {/* Staff Routes (Manager & Artist) */}
+              <Route path="/calendar" element={
+                <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
+                  <CalendarPage />
+                </RoleGuard>
+              } />
+              <Route path="/clients" element={
+                <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
+                  <ClientListPage />
+                </RoleGuard>
+              } />
+              <Route path="/financials" element={
+                <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
+                  <FinancialsPage />
+                </RoleGuard>
+              } />
+              <Route path="/chat" element={
+                <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
+                  <ChatPage />
+                </RoleGuard>
+              } />
+              <Route path="/consents" element={
+                <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
+                  <ConsentsPage />
+                </RoleGuard>
+              } />
 
-            {/* Manager Only Routes */}
-            <Route path="/waitlist" element={
-              <RoleGuard allowedRoles={['MANAGER']}>
-                <WaitlistPage />
-              </RoleGuard>
-            } />
-            <Route path="/artists" element={
-              <RoleGuard allowedRoles={['MANAGER']}>
-                <OperatorListPage />
-              </RoleGuard>
-            } />
-            <Route path="/artists/:id" element={
-              <RoleGuard allowedRoles={['MANAGER']}>
-                <OperatorDetailsPage />
-              </RoleGuard>
-            } />
-            <Route path="/promotions" element={
-              <RoleGuard allowedRoles={['MANAGER']}>
-                <PromotionsPage />
-              </RoleGuard>
-            } />
-            <Route path="/academy" element={
-              <RoleGuard allowedRoles={['MANAGER']}>
-                <AcademyPage />
-              </RoleGuard>
-            } />
-            <Route path="/settings" element={
-              <RoleGuard allowedRoles={['MANAGER']}>
-                <SettingsPage />
-              </RoleGuard>
-            } />
+              {/* Manager Only Routes */}
+              <Route path="/waitlist" element={
+                <RoleGuard allowedRoles={['MANAGER']}>
+                  <WaitlistPage />
+                </RoleGuard>
+              } />
+              <Route path="/artists" element={
+                <RoleGuard allowedRoles={['MANAGER']}>
+                  <OperatorListPage />
+                </RoleGuard>
+              } />
+              <Route path="/artists/:id" element={
+                <RoleGuard allowedRoles={['MANAGER']}>
+                  <OperatorDetailsPage />
+                </RoleGuard>
+              } />
+              <Route path="/promotions" element={
+                <RoleGuard allowedRoles={['MANAGER']}>
+                  <PromotionsPage />
+                </RoleGuard>
+              } />
+              <Route path="/academy" element={
+                <RoleGuard allowedRoles={['MANAGER']}>
+                  <AcademyPage />
+                </RoleGuard>
+              } />
+              <Route path="/settings" element={
+                <RoleGuard allowedRoles={['MANAGER']}>
+                  <SettingsPage />
+                </RoleGuard>
+              } />
 
-            {/* Student Only Routes */}
-            <Route path="/attendance" element={
-              <RoleGuard allowedRoles={['STUDENT']}>
-                <AttendancePage />
-              </RoleGuard>
-            } />
-            <Route path="/materials" element={
-              <RoleGuard allowedRoles={['STUDENT']}>
-                <MaterialsPage />
-              </RoleGuard>
-            } />
-          </Route>
+              {/* Student Only Routes */}
+              <Route path="/attendance" element={
+                <RoleGuard allowedRoles={['STUDENT']}>
+                  <AttendancePage />
+                </RoleGuard>
+              } />
+              <Route path="/materials" element={
+                <RoleGuard allowedRoles={['STUDENT']}>
+                  <MaterialsPage />
+                </RoleGuard>
+              } />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </PrivacyProvider>
       </AuthProvider>
     </BrowserRouter>
   );

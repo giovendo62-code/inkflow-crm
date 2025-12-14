@@ -4,6 +4,7 @@ import { X, Calendar as CalendarIcon, Clock, MessageCircle, Bell, Mail, FileText
 import { type Appointment, type Client, type User, type Tenant, type TattooStyle } from '../../types';
 import { storage } from '../../lib/storage';
 import { useAuth } from '../auth/AuthContext';
+import { usePrivacy } from '../context/PrivacyContext';
 import classes from '../crm/ClientListPage.module.css';
 
 interface AppointmentDetailsModalProps {
@@ -15,6 +16,7 @@ interface AppointmentDetailsModalProps {
 
 export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }: AppointmentDetailsModalProps) {
     const { user } = useAuth();
+    const { showFinancials } = usePrivacy();
     const [clients, setClients] = useState<Client[]>([]);
     const [artists, setArtists] = useState<User[]>([]);
     const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -408,29 +410,29 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                                     </select>
                                 </div>
 
-                                <div className={classes.formGrid}>
-                                    <div className={classes.group}>
-                                        <label className={classes.label}>Preventivo (€)</label>
-                                        <input
-                                            type="number"
-                                            className={classes.searchInput}
-                                            style={{ width: '100%' }}
-                                            value={priceQuote}
-                                            onChange={e => setPriceQuote(Number(e.target.value))}
-                                            min="0"
-                                        />
-                                    </div>
-                                    <div className={classes.group}>
-                                        <label className={classes.label}>Acconto (€)</label>
-                                        <input
-                                            type="number"
-                                            className={classes.searchInput}
-                                            style={{ width: '100%' }}
-                                            value={depositAmount}
-                                            onChange={e => setDepositAmount(Number(e.target.value))}
-                                            min="0"
-                                        />
-                                    </div>
+                                <div className={classes.group}>
+                                    <label className={classes.label}>Preventivo (€)</label>
+                                    <input
+                                        type={showFinancials ? "number" : "password"}
+                                        className={classes.searchInput}
+                                        style={{ width: '100%' }}
+                                        value={priceQuote}
+                                        onChange={e => setPriceQuote(Number(e.target.value))}
+                                        min="0"
+                                        disabled={!showFinancials && !canEdit} // Optional safety
+                                    />
+                                </div>
+                                <div className={classes.group}>
+                                    <label className={classes.label}>Acconto (€)</label>
+                                    <input
+                                        type={showFinancials ? "number" : "password"}
+                                        className={classes.searchInput}
+                                        style={{ width: '100%' }}
+                                        value={depositAmount}
+                                        onChange={e => setDepositAmount(Number(e.target.value))}
+                                        min="0"
+                                        disabled={!showFinancials && !canEdit}
+                                    />
                                 </div>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                                     <input

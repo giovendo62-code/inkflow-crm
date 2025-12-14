@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
+import { usePrivacy } from '../context/PrivacyContext';
 import { storage } from '../../lib/storage';
 import { type Appointment, type Client, type User } from '../../types';
+import { Eye, EyeOff } from 'lucide-react';
 import classes from '../crm/ClientListPage.module.css';
 
 export function FinancialsPage() {
     const { user } = useAuth();
+    const { showFinancials, toggleFinancials } = usePrivacy();
     const isManager = user?.role === 'MANAGER';
 
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -169,41 +172,86 @@ export function FinancialsPage() {
 
     return (
         <div className={classes.container}>
-            <div className={classes.header}>
-                <h1 className={classes.title}>Financials - {getPeriodLabel()}</h1>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+                flexWrap: 'wrap',
+                gap: '1rem'
+            }}>
+                <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>Financial Overview</h1>
+
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <select
-                        value={timePeriod}
-                        onChange={(e) => setTimePeriod(e.target.value as any)}
-                        style={{
-                            padding: '0.5rem',
-                            borderRadius: 'var(--radius-md)',
-                            background: 'var(--color-surface)',
-                            color: 'var(--color-text-primary)',
-                            border: '1px solid var(--color-border)',
-                            fontWeight: '600'
-                        }}
-                    >
-                        <option value="this-month">📅 Questo Mese</option>
-                        <option value="last-month">📅 Mese Scorso</option>
-                        <option value="this-year">📆 Quest'Anno</option>
-                        <option value="last-year">📆 Anno Scorso</option>
-                        <option value="all-time">🌍 Tutti i Tempi</option>
-                    </select>
                     <button
-                        onClick={isManager ? handleClearFinancialData : handleClearMyData}
+                        onClick={toggleFinancials}
                         style={{
-                            padding: '0.5rem 1rem',
-                            borderRadius: 'var(--radius-md)',
-                            border: '1px solid #ff4444',
-                            background: 'transparent',
-                            color: '#ff4444',
+                            background: 'var(--color-surface)',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '50%',
                             cursor: 'pointer',
-                            fontWeight: '600'
+                            color: 'var(--color-text-secondary)',
+                            padding: '0.75rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                         }}
+                        title={showFinancials ? "Nascondi importi" : "Mostra importi"}
                     >
-                        🗑️ {isManager ? 'Cancella Tutti i Dati' : 'Cancella i Miei Dati'}
+                        {showFinancials ? <Eye size={24} /> : <EyeOff size={24} />}
                     </button>
+
+                    <div style={{
+                        display: 'flex',
+                        background: 'var(--color-surface)',
+                        padding: '4px',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--color-border)'
+                    }}>
+                        <button
+                            onClick={() => setTimePeriod('this-month')}
+                            style={{
+                                padding: '0.5rem 1rem',
+                                borderRadius: 'var(--radius-sm)',
+                                border: 'none',
+                                background: timePeriod === 'this-month' ? 'var(--color-primary)' : 'transparent',
+                                color: timePeriod === 'this-month' ? 'white' : 'var(--color-text-secondary)',
+                                cursor: 'pointer',
+                                fontWeight: '500'
+                            }}
+                        >
+                            Mese Corrente
+                        </button>
+                        <button
+                            onClick={() => setTimePeriod('last-month')}
+                            style={{
+                                padding: '0.5rem 1rem',
+                                borderRadius: 'var(--radius-sm)',
+                                border: 'none',
+                                background: timePeriod === 'last-month' ? 'var(--color-primary)' : 'transparent',
+                                color: timePeriod === 'last-month' ? 'white' : 'var(--color-text-secondary)',
+                                cursor: 'pointer',
+                                fontWeight: '500'
+                            }}
+                        >
+                            Mese Scorso
+                        </button>
+                        <button
+                            onClick={() => setTimePeriod('this-year')}
+                            style={{
+                                padding: '0.5rem 1rem',
+                                borderRadius: 'var(--radius-sm)',
+                                border: 'none',
+                                background: timePeriod === 'this-year' ? 'var(--color-primary)' : 'transparent',
+                                color: timePeriod === 'this-year' ? 'white' : 'var(--color-text-secondary)',
+                                cursor: 'pointer',
+                                fontWeight: '500'
+                            }}
+                        >
+                            Anno Corrente
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -232,7 +280,7 @@ export function FinancialsPage() {
                         fontWeight: 'bold',
                         color: 'var(--color-success)'
                     }}>
-                        €{totalEarnings.toFixed(2)}
+                        {showFinancials ? `€${totalEarnings.toFixed(2)}` : '••••'}
                     </p>
                     <p style={{
                         fontSize: '0.8rem',
@@ -261,7 +309,7 @@ export function FinancialsPage() {
                         fontWeight: 'bold',
                         color: 'var(--color-primary)'
                     }}>
-                        €{pendingDeposits.toFixed(2)}
+                        {showFinancials ? `€${pendingDeposits.toFixed(2)}` : '••••'}
                     </p>
                     <p style={{
                         fontSize: '0.8rem',
@@ -321,14 +369,14 @@ export function FinancialsPage() {
                                             fontWeight: '600',
                                             color: 'var(--color-success)'
                                         }}>
-                                            €{(apt.financials?.priceQuote || 0).toFixed(2)}
+                                            {showFinancials ? `€${(apt.financials?.priceQuote || 0).toFixed(2)}` : '••••'}
                                         </td>
                                         <td>
                                             {apt.financials?.depositPaid ? (
                                                 <span style={{ color: 'var(--color-success)' }}>✓ Paid</span>
                                             ) : (
                                                 <span style={{ color: 'var(--color-warning)' }}>
-                                                    €{(apt.financials?.depositAmount || 0).toFixed(2)} pending
+                                                    {showFinancials ? `€${(apt.financials?.depositAmount || 0).toFixed(2)} pending` : '•••• pending'}
                                                 </span>
                                             )}
                                         </td>
@@ -436,7 +484,7 @@ export function FinancialsPage() {
                                             Total Earnings
                                         </p>
                                         <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-success)' }}>
-                                            €{artistEarnings.toFixed(2)}
+                                            {showFinancials ? `€${artistEarnings.toFixed(2)}` : '••••'}
                                         </p>
                                     </div>
 
@@ -447,7 +495,7 @@ export function FinancialsPage() {
                                                 Pending Deposits
                                             </p>
                                             <p style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--color-warning)' }}>
-                                                €{artistPendingDeposits.toFixed(2)}
+                                                {showFinancials ? `€${artistPendingDeposits.toFixed(2)}` : '••••'}
                                             </p>
                                         </div>
                                     )}
@@ -538,10 +586,10 @@ export function FinancialsPage() {
                                             </td>
                                             <td style={{ textAlign: 'center' }}>{stats.count}</td>
                                             <td style={{ color: 'var(--color-success)', fontWeight: 'bold' }}>
-                                                €{stats.revenue.toFixed(2)}
+                                                {showFinancials ? `€${stats.revenue.toFixed(2)}` : '••••'}
                                             </td>
                                             <td style={{ color: 'var(--color-text-secondary)' }}>
-                                                €{(stats.revenue / stats.count).toFixed(2)}
+                                                {showFinancials ? `€${(stats.revenue / stats.count).toFixed(2)}` : '••••'}
                                             </td>
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

@@ -70,7 +70,10 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
                     ]);
                     setPayments(allPayments.filter(p => p.studentId === student.id));
                     setAttendances(allAttendances.filter(a => a.studentId === student.id));
-                    setMaterials(allMaterials.filter(m => m.studentId === student.id));
+                    setMaterials(allMaterials.filter(m =>
+                        m.courseId === student.courseId &&
+                        (!m.studentId || m.studentId === student.id)
+                    ));
                 } catch (e) {
                     console.error("Error loading student details", e);
                 }
@@ -100,7 +103,7 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
 
         const material: TeachingMaterial = {
             id: self.crypto.randomUUID(),
-            tenantId: 'studio-1',
+            tenantId: student.tenantId,
             studentId: student.id,
             courseId: student.courseId,
             title: newMaterial.title,
@@ -167,7 +170,7 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
 
         const payment: CoursePayment = {
             id: self.crypto.randomUUID(),
-            tenantId: 'studio-1',
+            tenantId: student.tenantId,
             studentId: student.id,
             courseId: student.courseId,
             amount: parseFloat(newPayment.amount),
@@ -217,7 +220,7 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
 
         const attendance: Attendance = {
             id: self.crypto.randomUUID(),
-            tenantId: 'studio-1',
+            tenantId: student.tenantId,
             studentId: student.id,
             courseId: student.courseId,
             date: newAttendance.date,
@@ -404,9 +407,9 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
                 </div>
 
                 {/* Content */}
-                <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                <div className={classes.formGrid} style={{ padding: '1.5rem', gap: '2rem', alignItems: 'start' }}>
                     {/* Left Column - Student Info */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
                         {/* Personal Info */}
                         <section>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>
@@ -550,7 +553,7 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
                     </div>
 
                     {/* Right Column - Tabs */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
                         {/* Tabs Navigation */}
                         <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)' }}>
                             <button
@@ -851,6 +854,74 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
                                     <h3 style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '1rem' }}>
                                         Riepilogo Presenze
                                     </h3>
+
+                                    {/* Quick Mark Today */
+                                        (() => {
+                                            const getLocalDayString = (date: Date) => {
+                                                const year = date.getFullYear();
+                                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                                const day = String(date.getDate()).padStart(2, '0');
+                                                return `${year}-${month}-${day}`;
+                                            };
+                                            const todayStr = getLocalDayString(new Date());
+                                            const hasToday = attendances.some(a => a.date === todayStr);
+
+                                            if (!hasToday) {
+                                                return (
+                                                    <div style={{
+                                                        marginBottom: '1rem',
+                                                        padding: '1rem',
+                                                        background: 'rgba(255, 255, 255, 0.15)',
+                                                        borderRadius: '8px',
+                                                        border: '1px solid rgba(255,255,255,0.3)',
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center'
+                                                    }}>
+                                                        <div>
+                                                            <p style={{ fontWeight: '600', fontSize: '0.95rem' }}>Segna Presenza Oggi</p>
+                                                            <p style={{ fontSize: '0.8rem', opacity: 0.9 }}>{new Date().toLocaleDateString('it-IT')}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={async () => {
+                                                                const attendance: Attendance = {
+                                                                    id: self.crypto.randomUUID(),
+                                                                    tenantId: student.tenantId,
+                                                                    studentId: student.id,
+                                                                    courseId: student.courseId,
+                                                                    date: todayStr,
+                                                                    present: true,
+                                                                    hours: 4, // Default standard hours
+                                                                    notes: '',
+                                                                    createdAt: new Date().toISOString()
+                                                                };
+                                                                try {
+                                                                    await storage.saveAttendance(attendance);
+                                                                    const allAttendances = await storage.getAttendances();
+                                                                    setAttendances(allAttendances.filter(a => a.studentId === student.id));
+                                                                } catch (e) {
+                                                                    console.error(e);
+                                                                    alert('Errore durante il salvataggio');
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                padding: '0.5rem 1rem',
+                                                                background: 'white',
+                                                                color: '#F97316',
+                                                                border: 'none',
+                                                                borderRadius: '6px',
+                                                                fontWeight: '600',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.85rem'
+                                                            }}
+                                                        >
+                                                            Conferma Oggi (4h)
+                                                        </button>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                         <div>
                                             <p style={{ fontSize: '0.75rem', opacity: 0.8 }}>Giornate Presente</p>
@@ -1150,37 +1221,91 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     {materials.length === 0 ? (
                                         <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>Nessun materiale caricato.</p>
-                                    ) : materials.map(item => (
-                                        <div key={item.id} style={{ padding: '0.75rem', background: 'var(--color-surface-hover)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                <div style={{ padding: '0.5rem', background: 'var(--color-surface)', borderRadius: '8px', color: 'var(--color-text-primary)' }}>
-                                                    {item.type === 'PDF' && <FileText size={20} />}
-                                                    {item.type === 'VIDEO' && <Video size={20} />}
-                                                    {item.type === 'LINK' && <LinkIcon size={20} />}
-                                                </div>
-                                                <div>
-                                                    <p style={{ fontWeight: '500', fontSize: '0.9rem' }}>{item.title}</p>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                                                        {item.unlockThresholdDays > 0 ? (
-                                                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--color-warning)' }}>
-                                                                <Lock size={12} /> Sblocco a {item.unlockThresholdDays} gg
-                                                            </span>
-                                                        ) : (
-                                                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--color-success)' }}>
-                                                                <Unlock size={12} /> Visibile subito
-                                                            </span>
-                                                        )}
+                                    ) : (
+                                        (() => {
+                                            const presentCount = attendances.filter(a => a.present).length;
+
+                                            return materials.map(item => {
+                                                const threshold = item.unlockThresholdDays || 0;
+                                                const isUnlocked = presentCount >= threshold;
+                                                const remaining = Math.max(0, threshold - presentCount);
+
+                                                return (
+                                                    <div key={item.id} style={{
+                                                        padding: '0.75rem',
+                                                        background: 'var(--color-surface-hover)',
+                                                        borderRadius: 'var(--radius-md)',
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        opacity: isUnlocked ? 1 : 0.7
+                                                    }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
+                                                            <div style={{
+                                                                padding: '0.5rem',
+                                                                background: isUnlocked ? 'var(--color-surface)' : 'rgba(0,0,0,0.1)',
+                                                                borderRadius: '8px',
+                                                                color: isUnlocked ? 'var(--color-text-primary)' : 'var(--color-text-muted)'
+                                                            }}>
+                                                                {item.type === 'PDF' && <FileText size={20} />}
+                                                                {item.type === 'VIDEO' && <Video size={20} />}
+                                                                {item.type === 'LINK' && <LinkIcon size={20} />}
+                                                                {item.type === 'IMAGE' && <FileText size={20} />}
+                                                            </div>
+                                                            <div style={{ flex: 1 }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                    <p style={{ fontWeight: '500', fontSize: '0.9rem' }}>{item.title}</p>
+                                                                    {!isUnlocked && <Lock size={12} color="var(--color-text-secondary)" />}
+                                                                </div>
+
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem' }}>
+                                                                    {isUnlocked ? (
+                                                                        <span style={{ color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                            <Unlock size={12} /> Sbloccato
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span style={{ color: 'var(--color-warning)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                            <Lock size={12} /> Richiede ancora {remaining} presenze
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            {/* Always allow Manager to download/view, or only if unlocked? Manager can always view. */}
+                                                            <a
+                                                                href={item.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                title="Scarica / Visualizza"
+                                                                style={{
+                                                                    padding: '0.4rem',
+                                                                    background: 'var(--color-surface)',
+                                                                    border: '1px solid var(--color-border)',
+                                                                    borderRadius: '4px',
+                                                                    color: 'var(--color-text-primary)',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    textDecoration: 'none'
+                                                                }}
+                                                            >
+                                                                <LinkIcon size={16} />
+                                                            </a>
+                                                            <button
+                                                                onClick={() => handleDeleteMaterial(item.id)}
+                                                                style={{ padding: '0.4rem', color: 'var(--color-error)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                                                                title="Elimina"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => handleDeleteMaterial(item.id)}
-                                                style={{ padding: '0.4rem', color: 'var(--color-error)', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    ))}
+                                                );
+                                            });
+                                        })()
+                                    )}
                                 </div>
                             </>
                         )}
