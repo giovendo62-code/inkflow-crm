@@ -284,28 +284,33 @@ export function LoginPage() {
                                             onClick={async () => {
                                                 const emailReq = prompt("Inserisci la tua email di registrazione:");
                                                 if (emailReq) {
-                                                    // HINT LOGIC FOR MANAGER
-                                                    if (selectedRole === 'MANAGER') {
-                                                        try {
-                                                            // Lazy import storage to avoid top-level issues if any
-                                                            const { storage } = await import('../../lib/storage');
-                                                            const users = await storage.getUsers();
-                                                            const found = users.find(u => u.email.toLowerCase() === emailReq.toLowerCase() && u.role === 'MANAGER');
-                                                            if (found && (found.profile as any).password) {
-                                                                const pass = (found.profile as any).password;
-                                                                if (pass.length > 2) {
-                                                                    const hint = pass.substring(0, 3) + "...";
-                                                                    alert(`Suggerimento Password: Inizia con "${hint}"`);
-                                                                    return;
-                                                                }
-                                                            }
-                                                        } catch (e) { console.error(e); }
-                                                    }
+                                                    try {
+                                                        // Lazy import storage to avoid top-level issues if any
+                                                        const { storage } = await import('../../lib/storage');
+                                                        const users = await storage.getUsers();
 
-                                                    // Fallback to Mailto
-                                                    const subject = encodeURIComponent("Richiesta Reset Password InkFlow");
-                                                    const body = encodeURIComponent(`Salve Assistenza,\n\nHo dimenticato la password per l'account associato all'email: ${emailReq}.\n\nChiedo gentilemte il reset della password.\n\nGrazie.`);
-                                                    window.location.href = `mailto:support@inkflow.com?subject=${subject}&body=${body}`;
+                                                        // Cerca utente (Manager o Artist, se vogliamo aiutare anche loro)
+                                                        const found = users.find(u => u.email.toLowerCase() === emailReq.toLowerCase());
+
+                                                        if (found && (found.profile as any).password) {
+                                                            const pass = (found.profile as any).password;
+                                                            if (pass.length > 2) {
+                                                                const start = pass.substring(0, 3);
+                                                                const end = pass.substring(pass.length - 2);
+                                                                alert(`Suggerimento Password per ${found.name}:\n\nInizia con "${start}..." e finisce con "...${end}"`);
+                                                                return;
+                                                            } else {
+                                                                alert(`Suggerimento Password: La tua password è molto breve (${pass.length} caratteri). Prova a ricordarla!`);
+                                                                return;
+                                                            }
+                                                        } else {
+                                                            // Utente non trovato o senza password salvata
+                                                            alert("Nessun suggerimento disponibile per questa email.\nContatta l'amministratore del sistema.");
+                                                        }
+                                                    } catch (e) {
+                                                        console.error(e);
+                                                        alert("Errore durante il recupero. Riprova.");
+                                                    }
                                                 }
                                             }}
                                         >
