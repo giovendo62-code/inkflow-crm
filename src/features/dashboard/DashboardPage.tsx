@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { storage } from '../../lib/storage';
 import { type Appointment, type Client, type TattooStyle } from '../../types';
-import { Calendar as CalendarIcon, User as UserIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, User as UserIcon, MessageCircle, Bell } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { StudentDashboard } from '../academy/StudentDashboard';
 import { AppointmentDetailsModal } from '../calendar/AppointmentDetailsModal';
@@ -18,6 +18,7 @@ export function DashboardPage() {
     }
 
     const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
+    const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
 
     // Manager Stats State
@@ -87,10 +88,25 @@ export function DashboardPage() {
 
                     setStats({
                         todayAppointments: myApts.length,
-                        totalClients: 0, // Not relevant for artist dashboard summary usually, or filtered
+                        totalClients: 0,
                         monthlyEarnings: monthlyEarnings,
                         pendingDeposits: 0
                     });
+
+                    // Upcoming for Artist
+                    const startNext = new Date();
+                    startNext.setDate(startNext.getDate() + 1);
+                    startNext.setHours(0, 0, 0, 0);
+
+                    const endNext = new Date();
+                    endNext.setDate(endNext.getDate() + 8);
+                    endNext.setHours(23, 59, 59, 999);
+
+                    const upc = allAppointments.filter(apt => {
+                        const d = new Date(apt.startTime);
+                        return d >= startNext && d <= endNext && apt.status !== 'CANCELLED' && apt.artistId === user.id;
+                    }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+                    setUpcomingAppointments(upc);
 
                 } else { // Manager role
                     // Manager sees all
@@ -115,6 +131,22 @@ export function DashboardPage() {
                         monthlyEarnings: monthlyRevenue,
                         pendingDeposits: pending
                     });
+
+                    // Upcoming Appointments Logic (Next 7 days)
+                    const startNext = new Date();
+                    startNext.setDate(startNext.getDate() + 1);
+                    startNext.setHours(0, 0, 0, 0);
+
+                    const endNext = new Date();
+                    endNext.setDate(endNext.getDate() + 8);
+                    endNext.setHours(23, 59, 59, 999);
+
+                    const upc = allAppointments.filter(apt => {
+                        const d = new Date(apt.startTime);
+                        // Filter by artist if needed (Manager sees all usually, or filter by user? Manager sees ALL)
+                        return d >= startNext && d <= endNext && apt.status !== 'CANCELLED';
+                    }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+                    setUpcomingAppointments(upc);
 
                     // Manager specific stats (monthly, yearly, style) - Re-implementing the original manager logic here
                     const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
@@ -364,6 +396,81 @@ export function DashboardPage() {
                     )}
                 </div>
 
+                {/* Upcoming Weekly Reminders Section */}
+                <div style={{
+                    marginTop: '2rem',
+                    background: 'var(--color-surface)',
+                    padding: '1.5rem',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--color-border)'
+                }}>
+                    <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Bell size={20} className="text-blue-500" />
+                        Promemoria Settimana Prossima
+                    </h3>
+
+                    {upcomingAppointments.length === 0 ? (
+                        <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '1rem' }}>Nessun appuntamento in arrivo nei prossimi 7 giorni.</p>
+                    ) : (
+                        <div style={{ display: 'grid', gap: '1rem' }}>
+                            {upcomingAppointments.map(apt => {
+                                const client = clients.find(c => c.id === apt.clientId);
+                                const aptDate = new Date(apt.startTime);
+                                const dateStr = aptDate.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+                                const timeStr = aptDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+                                return (
+                                    <div key={apt.id} style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: '1rem',
+                                        background: 'var(--color-surface-hover)',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px solid var(--color-border)',
+                                        flexWrap: 'wrap', gap: '1rem'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <div style={{
+                                                background: 'var(--color-primary)', color: 'white',
+                                                padding: '0.5rem', borderRadius: 'var(--radius-md)',
+                                                textAlign: 'center', minWidth: '60px'
+                                            }}>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{dateStr}</div>
+                                                <div style={{ fontSize: '1.1rem' }}>{timeStr}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: '600' }}>{client ? `${client.firstName} ${client.lastName}` : 'Cliente sconosciuto'}</div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{apt.title}</div>
+                                            </div>
+                                        </div>
+
+                                        {client && (
+                                            <button
+                                                onClick={() => {
+                                                    const phone = client.phone.replace(/[^0-9]/g, '');
+                                                    const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
+                                                    const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\nCi confermi la tua presenza? Grazie!`;
+                                                    window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
+                                                }}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                    padding: '0.5rem 1rem',
+                                                    background: '#25D366', color: 'white',
+                                                    border: 'none', borderRadius: '999px',
+                                                    fontWeight: '600', cursor: 'pointer',
+                                                    fontSize: '0.9rem'
+                                                }}
+                                            >
+                                                <MessageCircle size={16} />
+                                                Invia Reminder
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
                 <AppointmentDetailsModal
                     isOpen={detailsModalOpen}
                     onClose={() => setDetailsModalOpen(false)}
@@ -442,6 +549,82 @@ export function DashboardPage() {
                         €{yearlyRevenue.toLocaleString()}
                     </p>
                 </div>
+            </div>
+
+            {/* Upcoming Weekly Reminders Section (Manager) */}
+            <div style={{
+                marginBottom: '2rem',
+                background: 'var(--color-surface)',
+                padding: '1.5rem',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--color-border)'
+            }}>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Bell size={20} color="#4285F4" />
+                    Promemoria Settimana Prossima
+                </h3>
+
+                {upcomingAppointments.length === 0 ? (
+                    <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '1rem' }}>Nessun appuntamento in arrivo nei prossimi 7 giorni.</p>
+                ) : (
+                    <div style={{ display: 'grid', gap: '1rem' }}>
+                        {upcomingAppointments.map(apt => {
+                            const client = clients.find(c => c.id === apt.clientId);
+                            const aptDate = new Date(apt.startTime);
+                            const dateStr = aptDate.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+                            const timeStr = aptDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+                            return (
+                                <div key={apt.id} style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '1rem',
+                                    background: 'var(--color-surface-hover)',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: '1px solid var(--color-border)',
+                                    flexWrap: 'wrap', gap: '1rem'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div style={{
+                                            background: 'var(--color-secondary)', color: 'white',
+                                            padding: '0.5rem', borderRadius: 'var(--radius-md)',
+                                            textAlign: 'center', minWidth: '60px',
+                                            backgroundColor: user?.role === 'MANAGER' ? '#666' : 'var(--color-primary)' // Just a color distinction
+                                        }}>
+                                            <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{dateStr}</div>
+                                            <div style={{ fontSize: '1.1rem' }}>{timeStr}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontWeight: '600' }}>{client ? `${client.firstName} ${client.lastName}` : 'Cliente sconosciuto'}</div>
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{apt.title}</div>
+                                        </div>
+                                    </div>
+
+                                    {client && (
+                                        <button
+                                            onClick={() => {
+                                                const phone = client.phone.replace(/[^0-9]/g, '');
+                                                const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
+                                                const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\nCi confermi la tua presenza? Grazie!`;
+                                                window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
+                                            }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                padding: '0.5rem 1rem',
+                                                background: '#25D366', color: 'white',
+                                                border: 'none', borderRadius: '999px',
+                                                fontWeight: '600', cursor: 'pointer',
+                                                fontSize: '0.9rem'
+                                            }}
+                                        >
+                                            <MessageCircle size={16} />
+                                            Invia Reminder
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* Charts Grid */}
