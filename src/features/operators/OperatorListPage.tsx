@@ -222,7 +222,7 @@ export function OperatorListPage() {
                 </button>
             </div>
 
-            <div className={classes.tableWrapper}>
+            <div className={`${classes.tableWrapper} ${classes.desktopOnly}`}>
                 <table className={classes.table}>
                     <thead>
                         <tr>
@@ -333,6 +333,103 @@ export function OperatorListPage() {
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile List View */}
+            <div className={classes.mobileOnly}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {users.map(user => (
+                        <div key={user.id} style={{
+                            background: 'var(--color-surface)',
+                            borderRadius: 'var(--radius-lg)',
+                            padding: '1.5rem',
+                            border: '1px solid var(--color-border)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                            display: 'flex', flexDirection: 'column', gap: '1.25rem'
+                        }}>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                {user.avatarUrl ? (
+                                    <img src={user.avatarUrl} alt={user.name} style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-primary)' }} />
+                                ) : (
+                                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--color-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <UserIcon size={32} />
+                                    </div>
+                                )}
+                                <div style={{ flex: 1 }}>
+                                    <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: 0, marginBottom: '0.25rem' }}>{user.name}</h3>
+                                    <span style={{
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '999px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: '600',
+                                        background: user.role === 'MANAGER' ? 'rgba(255, 107, 53, 0.15)' : 'rgba(0, 204, 102, 0.15)',
+                                        color: user.role === 'MANAGER' ? 'var(--color-primary)' : '#00CC66'
+                                    }}>
+                                        {user.role}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                                <button
+                                    onClick={() => handleOpenEditModal(user)}
+                                    style={{
+                                        padding: '0.875rem', borderRadius: 'var(--radius-md)',
+                                        background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)',
+                                        color: 'var(--color-text-primary)', fontWeight: '500', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem'
+                                    }}
+                                >
+                                    <Pencil size={18} /> Modifica
+                                </button>
+                                <button
+                                    onClick={(e) => handleDeleteUser(e, user.id)}
+                                    style={{
+                                        padding: '0.875rem', borderRadius: 'var(--radius-md)',
+                                        background: 'rgba(255, 0, 0, 0.1)', border: '1px solid rgba(255, 0, 0, 0.2)',
+                                        color: 'var(--color-error)', fontWeight: '500', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem'
+                                    }}
+                                >
+                                    <Trash2 size={18} /> Elimina
+                                </button>
+                            </div>
+
+                            {user.profile?.phone ? (
+                                <a
+                                    href={`https://wa.me/${user.profile.phone.replace(/[^0-9]/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        padding: '1rem',
+                                        borderRadius: 'var(--radius-md)',
+                                        background: '#25D366',
+                                        color: 'white',
+                                        fontWeight: 'bold',
+                                        fontSize: '1rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.75rem',
+                                        textDecoration: 'none',
+                                        boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)'
+                                    }}
+                                >
+                                    <MessageCircle size={24} />
+                                    Scrivigli su WhatsApp
+                                </a>
+                            ) : (
+                                <div style={{
+                                    padding: '1rem', textAlign: 'center',
+                                    background: 'var(--color-surface-hover)',
+                                    borderRadius: 'var(--radius-md)',
+                                    color: 'var(--color-text-muted)',
+                                    fontSize: '0.9rem'
+                                }}>
+                                    Nessun telefono
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Modal Overlay */}
