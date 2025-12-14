@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { storage } from '../../lib/storage';
 import { type Client } from '../../types';
-import { Search, FileText, CheckCircle, XCircle, PenTool, ShieldCheck, Download, HeartHandshake, Lock, Phone } from 'lucide-react';
+import { Search, FileText, CheckCircle, XCircle, PenTool, ShieldCheck, Download, HeartHandshake, Lock, Phone, Eye } from 'lucide-react';
+import { getPrivacyText, getConsentText } from '../../lib/legalText';
 import { v4 as uuidv4 } from 'uuid';
 
 export function ConsentsPage() {
@@ -99,28 +100,16 @@ export function ConsentsPage() {
     };
 
     const getDocContent = () => {
-        switch (signType) {
-            case 'PRIVACY':
-                return (
-                    <>
-                        <p><strong>INFORMATIVA SUL TRATTAMENTO DEI DATI PERSONALI (Art. 13 GDPR 679/2016)</strong></p>
-                        <p>Il sottoscritto/a, acquisite le informazioni fornite dal titolare del trattamento...</p>
-                        {/* More Lorem Ipsum or real text */}
-                        <p>Dichiara di aver ricevuto l'informativa e acconsente al trattamento dei propri dati personali per le finalità indicate.</p>
-                    </>
-                );
-            case 'CONSENT':
-                return (
-                    <>
-                        <p><strong>CONSENSO INFORMATO ALL'ESECUZIONE DI TATUAGGIO / PIERCING</strong></p>
-                        <p>Il sottoscritto dichiara di essere maggiorenne e nel pieno possesso delle proprie facoltà mentali...</p>
-                        <ul>
-                            <li>Non sono sotto l'effetto di alcool o droghe.</li>
-                            <li>Non soffro di patologie cardiache, epilessia, emofilia...</li>
-                            <li>Sono consapevole che il tatuaggio è indelebile.</li>
-                        </ul>
-                    </>
-                );
+        if (!selectedClient) return null;
+
+        const style = { whiteSpace: 'pre-wrap', fontFamily: 'sans-serif', lineHeight: '1.6' };
+
+        if (signType === 'PRIVACY') {
+            return <div style={style}>{getPrivacyText('InkFlow Studio')}</div>;
+        }
+
+        if (signType === 'CONSENT') {
+            return <div style={style}>{getConsentText(selectedClient)}</div>;
         }
     };
 
@@ -247,31 +236,44 @@ export function ConsentsPage() {
                             {getDocContent()}
                         </div>
 
-                        {otpStep === 'REVIEW' && (
-                            <div style={{ marginTop: '1rem' }}>
-                                <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>
-                                    Per firmare digitalmente questo documento, verrà inviato un codice ATP (One-Time Password) al numero:
-                                    <br /><strong>{selectedClient.phone || 'Numero mancante!'}</strong>
+                        {(signType === 'PRIVACY' ? selectedClient.privacyPolicyAccepted : selectedClient.informedConsentAccepted) ? (
+                            <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(0, 200, 81, 0.1)', border: '1px solid #00C851', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                                <CheckCircle size={32} color="#00C851" style={{ marginBottom: '0.5rem' }} />
+                                <h3 style={{ color: '#00C851', marginBottom: '0.5rem' }}>Documento Firmato Digitalmente</h3>
+                                <p style={{ color: 'var(--color-text-primary)' }}>
+                                    Firmato il: {new Date(signType === 'PRIVACY' ? selectedClient.privacyPolicyDate! : selectedClient.informedConsentDate!).toLocaleString()}
                                 </p>
-                                <button
-                                    onClick={requestOtp}
-                                    disabled={!selectedClient.phone || isSigning}
-                                    style={{
-                                        width: '100%', padding: '1rem',
-                                        background: 'var(--color-primary)', color: 'white',
-                                        border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 'bold',
-                                        cursor: (!selectedClient.phone || isSigning) ? 'not-allowed' : 'pointer',
-                                        opacity: (!selectedClient.phone || isSigning) ? 0.6 : 1
-                                    }}
-                                >
-                                    {isSigning ? 'Invio in corso...' : 'Invia Codice ATP via SMS'}
-                                </button>
-                                {!selectedClient.phone && (
-                                    <p style={{ color: '#ff4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-                                        ⚠️ Il cliente non ha un numero di telefono salvato. Modifica l'anagrafica.
-                                    </p>
-                                )}
+                                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '0.5rem' }}>
+                                    Identità verificata tramite Codice ATP (SMS) inviato a {selectedClient.phone}
+                                </p>
                             </div>
+                        ) : (
+                            otpStep === 'REVIEW' && (
+                                <div style={{ marginTop: '1rem' }}>
+                                    <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>
+                                        Per firmare digitalmente questo documento, verrà inviato un codice ATP (One-Time Password) al numero:
+                                        <br /><strong>{selectedClient.phone || 'Numero mancante!'}</strong>
+                                    </p>
+                                    <button
+                                        onClick={requestOtp}
+                                        disabled={!selectedClient.phone || isSigning}
+                                        style={{
+                                            width: '100%', padding: '1rem',
+                                            background: 'var(--color-primary)', color: 'white',
+                                            border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 'bold',
+                                            cursor: (!selectedClient.phone || isSigning) ? 'not-allowed' : 'pointer',
+                                            opacity: (!selectedClient.phone || isSigning) ? 0.6 : 1
+                                        }}
+                                    >
+                                        {isSigning ? 'Invio in corso...' : 'Invia Codice ATP via SMS'}
+                                    </button>
+                                    {!selectedClient.phone && (
+                                        <p style={{ color: '#ff4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                                            ⚠️ Il cliente non ha un numero di telefono salvato. Modifica l'anagrafica.
+                                        </p>
+                                    )}
+                                </div>
+                            )
                         )}
 
                         {otpStep === 'OTP_INPUT' && (
@@ -338,9 +340,25 @@ function ConsentBadge({ title, accepted, date, icon, onSign }: { title: string, 
                 <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{title}</span>
             </div>
             {accepted ? (
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-success)' }}>
-                    Firma: {new Date(date!).toLocaleDateString()}
-                </div>
+                <button
+                    onClick={onSign}
+                    style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--color-success)',
+                        background: 'rgba(0, 200, 81, 0.05)',
+                        border: '1px solid currentColor',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        margin: '0 auto'
+                    }}
+                >
+                    <CheckCircle size={12} />
+                    Vedi Firma: {new Date(date!).toLocaleDateString()}
+                </button>
             ) : (
                 <button
                     onClick={onSign}

@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { storage } from '../../lib/storage';
 import { type Client, type TattooStyle, type Tenant } from '../../types';
 import { Building2, ShieldCheck, Lock } from 'lucide-react';
+import { getPrivacyText, getConsentText } from '../../lib/legalText';
 import { sendWelcomeEmail } from '../../lib/email';
 
 export function PublicClientForm() {
@@ -407,25 +408,26 @@ export function PublicClientForm() {
                             fontSize: '0.9rem', lineHeight: '1.6', border: '1px solid var(--color-border)'
                         }}>
                             {viewDoc === 'PRIVACY' ? (
-                                <>
-                                    <p><strong>INFORMATIVA SUL TRATTAMENTO DEI DATI PERSONALI (Art. 13 GDPR 679/2016)</strong></p>
-                                    <p>Gentile Cliente, ai sensi del Regolamento UE 2016/679...</p>
-                                    <p><strong>1. Titolare del Trattamento:</strong> {tenant?.name || 'Lo Studio'}</p>
-                                    <p><strong>2. Finalità:</strong> Gestione appuntamenti, comunicazioni di servizio, obblighi fiscali.</p>
-                                    <p><strong>3. Diritti dell'interessato:</strong> Accesso, rettifica, cancellazione...</p>
-                                    {/* ... text ... */}
-                                </>
+                                <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'sans-serif' }}>
+                                    {getPrivacyText(tenant?.name)}
+                                </div>
                             ) : (
-                                <>
-                                    <p><strong>CONSENSO INFORMATO ALL'ESECUZIONE DI TATUAGGIO / PIERCING</strong></p>
-                                    <p>Dichiaro di essere maggiorenne e consapevole dei rischi...</p>
-                                    <ul>
-                                        <li>Il tatuaggio è una procedura irreversibile.</li>
-                                        <li>Dichiaro di non avere allergie note ai pigmenti.</li>
-                                        <li>Non sono sotto effetto di alcool o droghe.</li>
-                                    </ul>
-                                    <p>Mi impegno a seguire le istruzioni di cura fornite.</p>
-                                </>
+                                <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'sans-serif' }}>
+                                    {getConsentText({
+                                        firstName: formData.firstName,
+                                        lastName: formData.lastName,
+                                        fiscalCode: formData.fiscalCode,
+                                        birthDate: formData.birthDate,
+                                        birthPlace: formData.birthPlace,
+                                        address: {
+                                            street: formData.street,
+                                            city: formData.city,
+                                            zip: formData.zip,
+                                            municipality: formData.municipality,
+                                            country: 'Italia'
+                                        }
+                                    } as any)}
+                                </div>
                             )}
                         </div>
 
