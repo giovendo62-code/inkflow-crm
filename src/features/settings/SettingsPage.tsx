@@ -367,7 +367,7 @@ export function SettingsPage() {
                         {qrCodeUrl && (
                             <div style={{
                                 marginTop: '2rem',
-                                padding: '2rem',
+                                padding: '1rem', // Reduced padding for mobile
                                 background: 'linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-hover) 100%)',
                                 borderRadius: 'var(--radius-lg)',
                                 border: '2px solid var(--color-border)',
@@ -377,16 +377,21 @@ export function SettingsPage() {
                                     📱 QR Code Form Clienti
                                 </h3>
                                 <p style={{ marginBottom: '1.5rem', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-                                    Scansiona questo QR code per accedere al form di registrazione clienti
+                                    Tocca per ingrandire
                                 </p>
-                                <div style={{
-                                    display: 'inline-block',
-                                    padding: '1.5rem',
-                                    background: 'white',
-                                    borderRadius: 'var(--radius-md)',
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                                }}>
+                                <div
+                                    onClick={() => window.open(qrCodeUrl, '_blank')}
+                                    style={{
+                                        display: 'inline-block',
+                                        padding: '1rem', // Reduced padding
+                                        background: 'white',
+                                        borderRadius: 'var(--radius-md)',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                        cursor: 'zoom-in'
+                                    }}
+                                >
                                     <img
+                                        src={qrCodeUrl}
                                         alt="QR Code Form Clienti"
                                         style={{ display: 'block', width: '256px', maxWidth: '100%', height: 'auto' }}
                                     />
