@@ -25,6 +25,8 @@ const mapClientFromDB = (data: any): Client => ({
     privacyPolicyDate: data.consents?.privacyDate,
     informedConsentAccepted: data.consents?.informedConsent,
     informedConsentDate: data.consents?.informedConsentDate,
+    tattooCareAccepted: data.consents?.tattooCare,
+    tattooCareDate: data.consents?.tattooCareDate,
 
     // FALLBACK: Read from column OR from preferences JSON
     attachments: data.attachments || data.preferences?.attachments || [],
@@ -55,9 +57,11 @@ const mapClientToDB = (client: Client) => ({
     in_broadcast: client.inBroadcast || false,
     consents: {
         privacy: client.privacyPolicyAccepted || false,
-        informedConsent: client.informedConsentAccepted || false,
+        informendConsent: client.informedConsentAccepted || false,
+        tattooCare: client.tattooCareAccepted || false,
         privacyDate: client.privacyPolicyDate || null,
         informedConsentDate: client.informedConsentDate || null,
+        tattooCareDate: client.tattooCareDate || null,
         ...client.consents
     },
     // We still try to save to column if it exists, but preferences is our Golden Copy

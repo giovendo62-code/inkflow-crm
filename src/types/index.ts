@@ -90,6 +90,8 @@ export interface Client {
   privacyPolicyDate?: string;
   informedConsentAccepted?: boolean;
   informedConsentDate?: string;
+  tattooCareAccepted?: boolean;
+  tattooCareDate?: string;
   attachments?: string[]; // URLs of uploaded images/documents
   createdAt: string;
   updatedAt: string;

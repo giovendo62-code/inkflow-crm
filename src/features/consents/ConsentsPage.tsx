@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { storage } from '../../lib/storage';
 import { type Client } from '../../types';
-import { Search, FileText, CheckCircle, XCircle, PenTool, ShieldCheck, Download } from 'lucide-react';
+import { Search, FileText, CheckCircle, XCircle, PenTool, ShieldCheck, Download, HeartHandshake, Lock, Phone } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export function ConsentsPage() {
@@ -9,8 +9,13 @@ export function ConsentsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [showSignModal, setShowSignModal] = useState(false);
-    const [signType, setSignType] = useState<'PRIVACY' | 'CONSENT'>('PRIVACY');
+    const [signType, setSignType] = useState<'PRIVACY' | 'CONSENT' | 'CARE'>('PRIVACY');
     const [isSigning, setIsSigning] = useState(false);
+
+    // OTP State
+    const [otpStep, setOtpStep] = useState<'REVIEW' | 'OTP_INPUT'>('REVIEW');
+    const [generatedOtp, setGeneratedOtp] = useState('');
+    const [inputOtp, setInputOtp] = useState('');
 
     useEffect(() => {
         const loadClients = async () => {
@@ -25,45 +30,116 @@ export function ConsentsPage() {
         c.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleSignRequest = (client: Client, type: 'PRIVACY' | 'CONSENT') => {
+    const handleSignRequest = (client: Client, type: 'PRIVACY' | 'CONSENT' | 'CARE') => {
         setSelectedClient(client);
         setSignType(type);
+        setOtpStep('REVIEW');
+        setInputOtp('');
+        setGeneratedOtp('');
         setShowSignModal(true);
     };
 
-    const confirmSignature = () => {
+    const requestOtp = () => {
         if (!selectedClient) return;
         setIsSigning(true);
 
-        setTimeout(async () => {
-            const updatedClient = { ...selectedClient };
-            const timestamp = new Date().toISOString();
-            const atpCode = uuidv4().split('-')[0].toUpperCase(); // Short code
+        // Simulate SMS sending
+        setTimeout(() => {
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            setGeneratedOtp(code);
+            setOtpStep('OTP_INPUT');
+            setIsSigning(false);
 
-            if (signType === 'PRIVACY') {
-                updatedClient.privacyPolicyAccepted = true;
-                updatedClient.privacyPolicyDate = timestamp;
-                // Add signature metadata if we had a dedicated field, for now just boolean
-            } else {
-                updatedClient.informedConsentAccepted = true;
-                updatedClient.informedConsentDate = timestamp;
-            }
+            // In production, this would be an SMS API call
+            alert(`[SIMULAZIONE SMS]\nInviato a ${selectedClient.phone || 'Numero Sconosciuto'}\n\nIL TUO CODICE ATP È: ${code}`);
+        }, 1000);
+    };
 
-            try {
-                await storage.saveClient(updatedClient);
+    const verifyAndSign = async () => {
+        if (!selectedClient) return;
+        if (inputOtp !== generatedOtp) {
+            alert("Codice ATP non valido. Riprova.");
+            return;
+        }
 
-                // Refresh local list
-                setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+        setIsSigning(true);
+        const updatedClient = { ...selectedClient };
+        const timestamp = new Date().toISOString();
 
-                setIsSigning(false);
-                setShowSignModal(false);
-                setSelectedClient(null);
-            } catch (error) {
-                console.error("Failed to save consent:", error);
-                alert("Errore salvataggio consenso");
-                setIsSigning(false);
-            }
-        }, 1500); // Simulate processing
+        if (signType === 'PRIVACY') {
+            updatedClient.privacyPolicyAccepted = true;
+            updatedClient.privacyPolicyDate = timestamp;
+        } else if (signType === 'CONSENT') {
+            updatedClient.informedConsentAccepted = true;
+            updatedClient.informedConsentDate = timestamp;
+        } else {
+            updatedClient.tattooCareAccepted = true;
+            updatedClient.tattooCareDate = timestamp;
+        }
+
+        try {
+            await storage.saveClient(updatedClient);
+
+            // Refresh local list
+            setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+
+            setIsSigning(false);
+            setShowSignModal(false);
+            setSelectedClient(null);
+            alert("Documento firmato con successo!");
+        } catch (error) {
+            console.error("Failed to save consent:", error);
+            alert("Errore salvataggio consenso");
+            setIsSigning(false);
+        }
+    };
+
+    const getDocTitle = () => {
+        switch (signType) {
+            case 'PRIVACY': return 'Privacy Policy & GDPR';
+            case 'CONSENT': return 'Consenso Informato';
+            case 'CARE': return 'Cura del Tatuaggio (Aftercare)';
+        }
+    };
+
+    const getDocContent = () => {
+        switch (signType) {
+            case 'PRIVACY':
+                return (
+                    <>
+                        <p><strong>INFORMATIVA SUL TRATTAMENTO DEI DATI PERSONALI (Art. 13 GDPR 679/2016)</strong></p>
+                        <p>Il sottoscritto/a, acquisite le informazioni fornite dal titolare del trattamento...</p>
+                        {/* More Lorem Ipsum or real text */}
+                        <p>Dichiara di aver ricevuto l'informativa e acconsente al trattamento dei propri dati personali per le finalità indicate.</p>
+                    </>
+                );
+            case 'CONSENT':
+                return (
+                    <>
+                        <p><strong>CONSENSO INFORMATO ALL'ESECUZIONE DI TATUAGGIO / PIERCING</strong></p>
+                        <p>Il sottoscritto dichiara di essere maggiorenne e nel pieno possesso delle proprie facoltà mentali...</p>
+                        <ul>
+                            <li>Non sono sotto l'effetto di alcool o droghe.</li>
+                            <li>Non soffro di patologie cardiache, epilessia, emofilia...</li>
+                            <li>Sono consapevole che il tatuaggio è indelebile.</li>
+                        </ul>
+                    </>
+                );
+            case 'CARE':
+                return (
+                    <>
+                        <p><strong>ISTRUZIONI PER LA CURA DEL TATUAGGIO (AFTERCARE)</strong></p>
+                        <p>Per garantire una corretta guarigione, seguire attentamente le seguenti istruzioni:</p>
+                        <ol>
+                            <li>Rimuovere la pellicola protettiva dopo 2-3 ore.</li>
+                            <li>Lavare delicatamente con sapone neutro e acqua tiepida.</li>
+                            <li>Asciugare tamponando con carta assorbente pulita.</li>
+                            <li>Applicare uno strato sottile di crema specifica 3-4 volte al giorno.</li>
+                            <li>Non grattare le crosticine. Evitare sole, mare e piscina per 15 giorni.</li>
+                        </ol>
+                    </>
+                );
+        }
     };
 
     return (
@@ -71,7 +147,7 @@ export function ConsentsPage() {
             <div style={{ marginBottom: '2rem' }}>
                 <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Gestione Consensi & Privacy</h1>
                 <p style={{ color: 'var(--color-text-secondary)' }}>
-                    Cerca un cliente per visualizzare lo stato dei consensi e richiedere la firma digitale.
+                    Visualizza moduli e richiedi firma digitale tramite Codice ATP (SMS).
                 </p>
             </div>
 
@@ -93,12 +169,8 @@ export function ConsentsPage() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
-                        background: 'none',
-                        border: 'none',
-                        fontSize: '1.1rem',
-                        width: '100%',
-                        color: 'var(--color-text-primary)',
-                        outline: 'none'
+                        background: 'none', border: 'none', fontSize: '1.1rem', width: '100%',
+                        color: 'var(--color-text-primary)', outline: 'none'
                     }}
                 />
             </div>
@@ -122,65 +194,42 @@ export function ConsentsPage() {
                                 <div style={{ minWidth: '200px' }}>
                                     <h3 style={{ fontSize: '1.2rem', fontWeight: '600' }}>{client.firstName} {client.lastName}</h3>
                                     <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>{client.email}</p>
-                                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>CF: {client.fiscalCode || 'N/D'}</p>
+                                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>{client.phone || 'No telefono'}</p>
                                 </div>
 
                                 {/* Status Badges */}
-                                <div style={{ display: 'flex', gap: '2rem', flex: 1, justifyContent: 'center' }}>
+                                <div style={{ display: 'flex', gap: '1.5rem', flex: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
                                     {/* Privacy */}
-                                    <div style={{ textAlign: 'center' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', justifyContent: 'center' }}>
-                                            <ShieldCheck size={18} color={client.privacyPolicyAccepted ? 'var(--color-success)' : 'var(--color-text-muted)'} />
-                                            <span style={{ fontWeight: 600 }}>Privacy Policy</span>
-                                        </div>
-                                        {client.privacyPolicyAccepted ? (
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-success)' }}>
-                                                Firmato il {new Date(client.privacyPolicyDate!).toLocaleDateString()}
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={() => handleSignRequest(client, 'PRIVACY')}
-                                                style={{
-                                                    background: 'rgba(66, 133, 244, 0.1)', color: '#4285F4',
-                                                    border: '1px solid rgba(66, 133, 244, 0.3)',
-                                                    padding: '0.25rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem'
-                                                }}
-                                            >
-                                                Richiedi Firma
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Informed Consent */}
-                                    <div style={{ textAlign: 'center' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', justifyContent: 'center' }}>
-                                            <FileText size={18} color={client.informedConsentAccepted ? 'var(--color-success)' : 'var(--color-text-muted)'} />
-                                            <span style={{ fontWeight: 600 }}>Consenso Informato</span>
-                                        </div>
-                                        {client.informedConsentAccepted ? (
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-success)' }}>
-                                                Firmato il {new Date(client.informedConsentDate!).toLocaleDateString()}
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={() => handleSignRequest(client, 'CONSENT')}
-                                                style={{
-                                                    background: 'rgba(66, 133, 244, 0.1)', color: '#4285F4',
-                                                    border: '1px solid rgba(66, 133, 244, 0.3)',
-                                                    padding: '0.25rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem'
-                                                }}
-                                            >
-                                                Richiedi Firma
-                                            </button>
-                                        )}
-                                    </div>
+                                    <ConsentBadge
+                                        title="Privacy"
+                                        accepted={client.privacyPolicyAccepted}
+                                        date={client.privacyPolicyDate}
+                                        icon={<ShieldCheck size={18} />}
+                                        onSign={() => handleSignRequest(client, 'PRIVACY')}
+                                    />
+                                    {/* Consent */}
+                                    <ConsentBadge
+                                        title="Consenso"
+                                        accepted={client.informedConsentAccepted}
+                                        date={client.informedConsentDate}
+                                        icon={<FileText size={18} />}
+                                        onSign={() => handleSignRequest(client, 'CONSENT')}
+                                    />
+                                    {/* Care */}
+                                    <ConsentBadge
+                                        title="Cura Tattoo"
+                                        accepted={client.tattooCareAccepted}
+                                        date={client.tattooCareDate}
+                                        icon={<HeartHandshake size={18} />}
+                                        onSign={() => handleSignRequest(client, 'CARE')}
+                                    />
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                     <button style={{
                                         padding: '0.5rem', borderRadius: '50%', border: '1px solid var(--color-border)',
                                         background: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer'
-                                    }} title="Scarica PDF Summary">
+                                    }} title="Scarica Riepilogo PDF">
                                         <Download size={20} />
                                     </button>
                                 </div>
@@ -188,7 +237,7 @@ export function ConsentsPage() {
                         ))
                     ) : (
                         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>
-                            Nessun cliente trovato con questo nome.
+                            Nessun cliente trovato.
                         </div>
                     )}
                 </div>
@@ -213,55 +262,122 @@ export function ConsentsPage() {
                     }}>
                         <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <PenTool size={24} color="var(--color-primary)" />
-                            Firma Digitale: {signType === 'PRIVACY' ? 'Privacy Policy' : 'Consenso Informato'}
+                            {getDocTitle()}
                         </h2>
 
                         <div style={{
-                            background: 'var(--color-surface-hover)', padding: '1rem', borderRadius: 'var(--radius-md)',
-                            maxHeight: '200px', overflowY: 'auto', marginBottom: '1.5rem', fontSize: '0.9rem', lineHeight: '1.5',
+                            background: 'var(--color-surface-hover)', padding: '1.5rem', borderRadius: 'var(--radius-md)',
+                            maxHeight: '30vh', overflowY: 'auto', marginBottom: '1.5rem', fontSize: '0.9rem', lineHeight: '1.6',
                             border: '1px solid var(--color-border)'
                         }}>
-                            <p>
-                                <strong>CONDIZIONI GENERALI {signType === 'PRIVACY' ? 'DI TRATTAMENTO DATI' : 'DI ESECUZIONE TATUAGGIO'}</strong><br /><br />
-                                Il sottoscritto <strong>{selectedClient.firstName} {selectedClient.lastName}</strong>, nato a {selectedClient.birthPlace || '___'} il {selectedClient.birthDate || '___'},<br />
-                                dichiara di aver letto e compreso quanto segue:<br /><br />
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                                Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.<br /><br />
-                                1. Accetto le procedure igienico-sanitarie.<br />
-                                2. Dichiaro di non essere sotto effetto di sostanze.<br />
-                                3. Acconsento al trattamento dei dati personali (GDPR 2016/679).<br /><br />
-                                Firma Digitale apposta tramite sistema InkFlow CRM.
-                            </p>
+                            {getDocContent()}
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', padding: '1rem', background: 'rgba(0, 204, 102, 0.1)', borderRadius: 'var(--radius-md)' }}>
-                            <input type="checkbox" id="accept" style={{ width: '20px', height: '20px' }} defaultChecked />
-                            <label htmlFor="accept" style={{ fontSize: '0.9rem', cursor: 'pointer' }}>
-                                Dichiaro di aver letto e compreso i termini e accetto di apporre la mia firma digitale.
-                            </label>
-                        </div>
+                        {otpStep === 'REVIEW' && (
+                            <div style={{ marginTop: '1rem' }}>
+                                <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>
+                                    Per firmare digitalmente questo documento, verrà inviato un codice ATP (One-Time Password) al numero:
+                                    <br /><strong>{selectedClient.phone || 'Numero mancante!'}</strong>
+                                </p>
+                                <button
+                                    onClick={requestOtp}
+                                    disabled={!selectedClient.phone || isSigning}
+                                    style={{
+                                        width: '100%', padding: '1rem',
+                                        background: 'var(--color-primary)', color: 'white',
+                                        border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 'bold',
+                                        cursor: (!selectedClient.phone || isSigning) ? 'not-allowed' : 'pointer',
+                                        opacity: (!selectedClient.phone || isSigning) ? 0.6 : 1
+                                    }}
+                                >
+                                    {isSigning ? 'Invio in corso...' : 'Invia Codice ATP via SMS'}
+                                </button>
+                                {!selectedClient.phone && (
+                                    <p style={{ color: '#ff4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                                        ⚠️ Il cliente non ha un numero di telefono salvato. Modifica l'anagrafica.
+                                    </p>
+                                )}
+                            </div>
+                        )}
 
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button
-                                onClick={() => setShowSignModal(false)}
-                                disabled={isSigning}
-                                style={{ flex: 1, padding: '1rem', background: 'transparent', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-text-primary)' }}
-                            >
-                                Annulla
-                            </button>
-                            <button
-                                onClick={confirmSignature}
-                                disabled={isSigning}
-                                style={{
-                                    flex: 1, padding: '1rem', background: 'var(--color-primary)', border: 'none',
-                                    borderRadius: 'var(--radius-md)', color: 'white', fontWeight: 'bold'
-                                }}
-                            >
-                                {isSigning ? 'Generazione ATP Code...' : 'Firma Digitalmente'}
-                            </button>
-                        </div>
+                        {otpStep === 'OTP_INPUT' && (
+                            <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <Lock size={32} color="var(--color-primary)" style={{ marginBottom: '0.5rem' }} />
+                                    <p style={{ fontWeight: 'bold' }}>Inserisci il codice ricevuto via SMS</p>
+                                </div>
+
+                                <input
+                                    type="text"
+                                    maxLength={6}
+                                    value={inputOtp}
+                                    onChange={(e) => setInputOtp(e.target.value.toUpperCase())}
+                                    placeholder="000000"
+                                    style={{
+                                        fontSize: '2rem', letterSpacing: '0.5rem', textAlign: 'center',
+                                        width: '200px', padding: '0.5rem', borderRadius: 'var(--radius-md)',
+                                        border: '2px solid var(--color-primary)', outline: 'none',
+                                        marginBottom: '1.5rem', backgroundColor: 'var(--color-background)',
+                                        color: 'var(--color-text-primary)'
+                                    }}
+                                />
+
+                                <button
+                                    onClick={verifyAndSign}
+                                    disabled={inputOtp.length < 6 || isSigning}
+                                    style={{
+                                        width: '100%', padding: '1rem',
+                                        background: '#00C851', color: 'white',
+                                        border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 'bold',
+                                        cursor: (inputOtp.length < 6 || isSigning) ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    {isSigning ? 'Verifica in corso...' : 'Verifica & Firma'}
+                                </button>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => setShowSignModal(false)}
+                            style={{
+                                marginTop: '1rem', width: '100%', padding: '0.75rem',
+                                background: 'transparent', border: '1px solid var(--color-border)',
+                                borderRadius: 'var(--radius-md)', color: 'var(--color-text-secondary)',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Annulla
+                        </button>
                     </div>
                 </div>
+            )}
+        </div>
+    );
+}
+
+// Subcomponent for Cleaner UI
+function ConsentBadge({ title, accepted, date, icon, onSign }: { title: string, accepted?: boolean, date?: string, icon: any, onSign: () => void }) {
+    return (
+        <div style={{ textAlign: 'center', minWidth: '100px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem', justifyContent: 'center', color: accepted ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                {icon}
+                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{title}</span>
+            </div>
+            {accepted ? (
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-success)' }}>
+                    Firma: {new Date(date!).toLocaleDateString()}
+                </div>
+            ) : (
+                <button
+                    onClick={onSign}
+                    style={{
+                        background: 'rgba(66, 133, 244, 0.1)', color: '#4285F4',
+                        border: '1px solid rgba(66, 133, 244, 0.3)',
+                        padding: '0.25rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem'
+                    }}
+                >
+                    Firma Ora
+                </button>
             )}
         </div>
     );
