@@ -28,37 +28,105 @@ Hai diritto di chiedere l'accesso, la rettifica, la cancellazione dei dati o la 
 
 export const getConsentText = (client: Partial<Client> | null) => {
     const fullName = client && client.firstName ? `${client.firstName} ${client.lastName}`.trim() : 'IL CLIENTE';
-    const birth = client?.birthDate ? `nato/a a ${client.birthPlace || '___'} il ${client.birthDate}` : 'nato/a a ___ il ___';
+    const birth = client?.birthDate ? `${client.birthDate} a ${client.birthPlace || '___'}` : '___ a ___';
     const cf = client?.fiscalCode || '________________';
     const address = client?.address ? `${client.address.street || ''}, ${client.address.city || ''}` : '___';
 
     return `
-CONSENSO INFORMATO ALL'ESECUZIONE DI TATUAGGIO / PIERCING
-
-Il/La sottoscritto/a: ${fullName}
-${birth}
+DATI DEL CLIENTE
+Nome e Cognome: ${fullName}
+Data di Nascita: ${birth}
 Codice Fiscale: ${cf}
-Residente in: ${address}
+Indirizzo: ${address}
 
-DICHIARA DI ESSERE MAGGIORENNE E NEL PIENO POSSESSO DELLE PROPRIE FACOLTÀ.
+--------------------------------------------------
 
-PREMESSO CHE
-- Sono stato/a esaustivamente informato/a sulla natura dell'intervento di tatuaggio/piercing, che consiste nell'introduzione nella cute di pigmenti o monili mediante aghi sterili monouso.
-- Sono consapevole che il tatuaggio è una modificazione permanente della pelle e che la sua rimozione può essere difficile, costosa e lasciare cicatrici.
+# CONSENSO INFORMATO PER TATUAGGIO
 
-DICHIARO SOTTO LA MIA RESPONSABILITÀ
-1. SALUTE FISICA: Di non essere affetto/a da emofilia, epilessia, malattie infettive trasmissibili (Epatite A/B/C, HIV), malattie della pelle nella zona da trattare (psoriasi, dermatiti), diabete non compensato o patologie cardiache gravi.
-2. ALLERGIE: Di non avere allergie note ai componenti dei pigmenti, al lattice, ai metalli (nichel) o a creme/saponi medicali.
-3. STATO FISIOLOGICO: Di non essere in stato di gravidanza o allattamento.
-4. CONDIZIONI PSICOFISICHE: Di non essere sotto l'effetto di alcool, droghe o farmaci che alterano la capacità di intendere o la coagulazione del sangue.
+**Versione digitale – lettura online e firma con OTP (One Time Password)**
+**Aggiornato 2025**
 
-MI IMPEGNO A
-- Seguire scrupolosamente le istruzioni "Aftercare" (cura post-tatuaggio) fornite dall'operatore.
-- Sollevare lo studio e l'artista da ogni responsabilità civile e penale per complicazioni derivanti da mia negligenza nella cura, da cause non imputabili all'artista o da informazioni false/omesse in questo modulo.
+---
 
-ACCONSENTO
-All'esecuzione del tatuaggio/piercing secondo il disegno/progetto concordato.
+Il presente documento costituisce **consenso informato digitale** per l’esecuzione di un tatuaggio.
 
-Letto, confermato e sottoscritto.
+Il contenuto viene **letto integralmente online** e **accettato mediante firma elettronica semplice tramite codice OTP**, inviato al recapito associato all’account del Cliente all’interno dell’applicazione.
+
+La firma con OTP equivale ad accettazione **libera, consapevole, esplicita e legalmente valida**, ai sensi della normativa vigente.
+
+---
+
+## DICHIARAZIONI DEL CLIENTE
+
+Il Cliente dichiara e conferma quanto segue:
+
+* di essere **maggiorenne (18+)**
+* di aver ricevuto informazioni chiare e comprensibili sulla procedura di tatuaggio
+* di comprendere che il tatuaggio è una **procedura invasiva** che comporta la perforazione della cute
+* di essere consapevole che il tatuaggio è **permanente** e che la sua rimozione è complessa, costosa e non sempre totale
+
+---
+
+## DICHIARAZIONE SANITARIA
+
+Il Cliente dichiara sotto la propria responsabilità:
+
+* di non presentare patologie cutanee attive nell’area da trattare
+* di non essere affetto/a da epatite B, epatite C, HIV o altre malattie trasmissibili per via ematica
+* di non soffrire di disturbi della coagulazione, diabete non controllato o immunodeficienze
+* di non assumere farmaci anticoagulanti o immunosoppressori
+* di non essere in stato di gravidanza o allattamento
+* di non avere allergie note a lattice, metalli, pigmenti o disinfettanti
+
+Il Cliente si impegna a comunicare **qualsiasi variazione dello stato di salute** prima dell’esecuzione del tatuaggio.
+
+---
+
+## RISCHI E POSSIBILI COMPLICANZE
+
+Il Cliente dichiara di essere stato informato e di accettare che il tatuaggio può comportare:
+
+* dolore, sanguinamento, arrossamento, gonfiore o formazione di croste
+* infezioni locali o sistemiche
+* reazioni allergiche ai pigmenti o ai materiali utilizzati
+* cicatrici, alterazioni cromatiche o risultati estetici non perfettamente prevedibili
+
+---
+
+## CURA POST-TATUAGGIO
+
+Il Cliente dichiara di aver ricevuto istruzioni adeguate sulla corretta cura post-tatuaggio e si impegna a seguirle scrupolosamente.
+
+Eventuali complicazioni derivanti dal **mancato rispetto delle indicazioni post-trattamento** non potranno essere imputate allo Studio o al Tatuatore.
+
+---
+
+## RESPONSABILITÀ
+
+Il Cliente solleva lo Studio e il Tatuatore da ogni responsabilità derivante da:
+
+* dichiarazioni sanitarie non veritiere o incomplete
+* reazioni individuali imprevedibili
+* mancata osservanza delle istruzioni post-tatuaggio
+
+---
+
+## PRIVACY E TRATTAMENTO DEI DATI
+
+Il Cliente autorizza il trattamento dei dati personali e sanitari associati al proprio profilo digitale, ai sensi del **Regolamento UE 2016/679 (GDPR)**, esclusivamente per finalità amministrative, sanitarie e legali connesse al servizio di tatuaggio.
+
+---
+
+## CONSENSO FINALE E FIRMA DIGITALE
+
+Il Cliente dichiara di aver **letto integralmente** il presente consenso informato e di **accettarne ogni parte senza riserve**.
+
+La sottoscrizione avviene mediante inserimento di **codice OTP univoco**, che costituisce **firma elettronica semplice** e rende il presente documento pienamente valido ed efficace.
+
+☐ **Confermo e firmo digitalmente**
+
+---
+
+**Documento valido senza firma autografa**
 `;
 };
