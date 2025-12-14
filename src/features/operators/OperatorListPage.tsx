@@ -6,7 +6,7 @@ import { Plus, User as UserIcon, X, MessageCircle, Pencil, Trash2 } from 'lucide
 import classes from '../crm/ClientListPage.module.css'; // Reusing styles
 import { useAuth } from '../auth/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
-import { initGoogleCalendar, loginToGoogleCalendar, listGoogleCalendars } from '../../lib/googleCalendar';
+import { initGoogleCalendar, loginToGoogleCalendar, listGoogleCalendars, listGoogleCalendarEvents } from '../../lib/googleCalendar';
 
 export function OperatorListPage() {
     const navigate = useNavigate();
@@ -109,7 +109,130 @@ export function OperatorListPage() {
                 commissionRate: user.profile?.commissionRate || 50
             }
         });
+        setCreatedCredentials(null); // Fix: Ensure credentials overlay is hidden
         setIsModalOpen(true);
+    };
+
+    const handleImportFromGoogle = async () => {
+        const token = localStorage.getItem('google_access_token');
+        const calendarId = formData.profile?.googleCalendarId;
+
+        if (!token || !calendarId) {
+            alert("Assicurati di essere connesso a Google e di aver selezionato un calendario.");
+            return;
+        }
+
+        if (!confirm("Vuoi importare gli appuntamenti da Google Calendar? Verranno importati gli eventi dei prossimi 6 mesi.")) {
+            return;
+        }
+
+        setGoogleInitStatus({ status: 'loading', message: 'Importazione in corso...' });
+
+        try {
+            const timeMin = new Date().toISOString(); // From Now
+            const timeMax = new Date();
+            timeMax.setMonth(timeMax.getMonth() + 6); // +6 Months
+
+            const data = await listGoogleCalendarEvents(token, calendarId, timeMin, timeMax.toISOString());
+            const events = data.items || [];
+
+            if (events.length === 0) {
+                alert("Nessun evento trovato su Google Calendar nel periodo selezionato.");
+                setGoogleInitStatus({ status: 'success', message: 'Nessun evento da importare.' });
+                return;
+            }
+
+            // 1. Ensure we have a generic client for Google Imports
+            const allClients = await storage.getClients(user!.tenantId);
+            let googleClient = allClients.find(c => c.email === 'google-import@inkflow.com');
+
+            if (!googleClient) {
+                // Create dummy client
+                const newClient: any = {
+                    id: uuidv4(),
+                    tenantId: user!.tenantId,
+                    firstName: 'Google',
+                    lastName: 'Calendar Import',
+                    email: 'google-import@inkflow.com',
+                    phone: '',
+                    preferences: { styles: [] },
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                await storage.saveClient(newClient);
+                googleClient = newClient;
+            }
+
+            // 2. Fetch existing appointments to avoid duplicates
+            const allAppointments = await storage.getAppointments(user!.tenantId);
+            // We are editing a user or creating one?
+            // If creating (editMode=false), we don't have an ID yet!
+            // We can only import if we have an Artist ID.
+            // If creating, we must save first?
+            // Actually, we can generate the ID `userToSave.id` is available in `handleSubmit`.
+            // But here we are in `handleImport`.
+
+            // If !editMode, we don't know the ID yet. We should force user to save first?
+            // Or use the ID we are about to create?
+            // The `formData` doesn't have ID.
+
+            // Let's restrict import to Edit Mode only for safety, or generate ID if allowed.
+            // But if we generate ID here, we must ensure `handleSubmit` uses the SAME ID.
+            // Currently `handleSubmit` generates `uuidv4()` on the fly if not editMode.
+
+            // Allow import only in Edit Mode.
+            if (!editMode || !currentUserId) {
+                alert("Salva prima l'operatore per importare gli appuntamenti.");
+                setGoogleInitStatus({ status: 'idle', message: '' });
+                return;
+            }
+
+            const artistId = currentUserId;
+
+            let importedCount = 0;
+
+            for (const event of events) {
+                if (!event.start?.dateTime) continue; // Skip all-day events for now if they have date only
+
+                const start = new Date(event.start.dateTime).toISOString();
+                const end = new Date(event.end.dateTime || event.start.dateTime).toISOString();
+
+                // Check overlap
+                const isDuplicate = allAppointments.some(appt =>
+                    appt.artistId === artistId &&
+                    appt.startTime === start &&
+                    appt.title === (event.summary || 'Evento Google')
+                );
+
+                if (isDuplicate) continue;
+
+                const newAppt: any = {
+                    id: uuidv4(),
+                    tenantId: user!.tenantId,
+                    clientId: googleClient!.id,
+                    artistId: artistId,
+                    title: event.summary || 'Evento Google',
+                    description: event.description || 'Importato da Google Calendar',
+                    startTime: start,
+                    endTime: end,
+                    status: 'CONFIRMED',
+                    financials: { depositPaid: false },
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                await storage.saveAppointment(newAppt);
+                importedCount++;
+            }
+
+            alert(`Importazione completata! ${importedCount} appuntamenti aggiunti.`);
+            setGoogleInitStatus({ status: 'success', message: 'Importazione Riuscita!' });
+
+        } catch (error: any) {
+            console.error("Import failed:", error);
+            alert("Errore importazione: " + error.message);
+            setGoogleInitStatus({ status: 'error', message: 'Errore Importazione' });
+        }
     };
 
     const handleDeleteUser = async (e: React.MouseEvent, userId: string) => {
@@ -689,9 +812,34 @@ export function OperatorListPage() {
                                                 ))}
                                             </select>
                                             {formData.profile?.googleCalendarId && (
-                                                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                                    Gli appuntamenti per questo artista verranno salvati nel calendario selezionato.
-                                                </p>
+                                                <div style={{ marginTop: '0.5rem' }}>
+                                                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
+                                                        Gli appuntamenti per questo artista verranno salvati nel calendario selezionato.
+                                                    </p>
+
+                                                    {editMode && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleImportFromGoogle}
+                                                            style={{
+                                                                width: '100%',
+                                                                padding: '0.5rem',
+                                                                marginTop: '0.5rem',
+                                                                marginBottom: '0.5rem',
+                                                                background: 'var(--color-surface)',
+                                                                border: '1px solid var(--color-primary)',
+                                                                color: 'var(--color-primary)',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                                                fontSize: '0.85rem', fontWeight: '500'
+                                                            }}
+                                                        >
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+                                                            Importa Appuntamenti Esistenti (Prossimi 6 mesi)
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                             <button type="button" onClick={() => { localStorage.removeItem('google_access_token'); window.location.reload(); }} style={{ marginTop: '0.5rem', background: 'none', border: 'none', textDecoration: 'underline', fontSize: '0.75rem', color: 'gray', cursor: 'pointer' }}>
                                                 Logout Google
@@ -741,12 +889,15 @@ export function OperatorListPage() {
                                         onClick={() => {
                                             const subject = encodeURIComponent('Benvenuto nello Staff - Credenziali Accesso');
                                             const body = encodeURIComponent(`Ciao,\n\necco le tue credenziali per accedere al CRM:\n\nEmail: ${createdCredentials.email}\nPassword Provvisoria: ${createdCredentials.password}\n\nAccedi qui: ${window.location.origin}\n\nBuon lavoro!`);
-                                            window.location.href = `mailto:${createdCredentials.email}?subject=${subject}&body=${body}`;
+
+                                            // User requested Gmail specifically
+                                            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${createdCredentials.email}&su=${subject}&body=${body}`;
+                                            window.open(gmailUrl, '_blank');
                                         }}
                                         className={classes.secondaryButton}
                                         style={{ width: '100%', maxWidth: '400px', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                                     >
-                                        <MessageCircle size={18} /> Invia credenziali via Email
+                                        <MessageCircle size={18} /> Invia credenziali con Gmail
                                     </button>
 
                                     <button

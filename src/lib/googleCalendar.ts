@@ -123,13 +123,23 @@ export const listGoogleCalendars = async (accessToken: string) => {
     return await response.json(); // returns { items: [{id, summary, ...}] }
 };
 
-export const listGoogleCalendarEvents = async (accessToken: string) => {
-    const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=10&orderBy=startTime&singleEvents=true', {
+export const listGoogleCalendarEvents = async (accessToken: string, calendarId: string = 'primary', timeMin?: string, timeMax?: string) => {
+    const params = new URLSearchParams({
+        maxResults: '250',
+        orderBy: 'startTime',
+        singleEvents: 'true',
+    });
+
+    if (timeMin) params.append('timeMin', timeMin);
+    if (timeMax) params.append('timeMax', timeMax);
+
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params.toString()}`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${accessToken}`,
         },
     });
+
     if (!response.ok) {
         throw new Error(`Google Calendar API Error: ${response.statusText}`);
     }
