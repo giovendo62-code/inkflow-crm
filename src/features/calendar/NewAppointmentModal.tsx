@@ -58,16 +58,36 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
         }
     }, [isOpen, initialDate]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
+    const [uploading, setUploading] = useState(false);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            setUploading(true);
             const files = Array.from(e.target.files);
-            files.forEach(file => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setAttachments(prev => [...prev, reader.result as string]);
-                };
-                reader.readAsDataURL(file);
-            });
+
+            try {
+                const uploadPromises = files.map(async (file) => {
+                    // Generate a unique path: appointments/{Date}-{Random}-{Name}
+                    const path = `appointments/${Date.now()}-${Math.floor(Math.random() * 1000)}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                    try {
+                        const publicUrl = await storage.uploadFile(file, path);
+                        return publicUrl;
+                    } catch (err) {
+                        console.error("Error uploading file:", file.name, err);
+                        return null;
+                    }
+                });
+
+                const uploadedUrls = await Promise.all(uploadPromises);
+                const validUrls = uploadedUrls.filter(url => url !== null) as string[];
+
+                setAttachments(prev => [...prev, ...validUrls]);
+            } catch (error) {
+                console.error("Main upload error:", error);
+                alert("Errore durante il caricamento delle immagini");
+            } finally {
+                setUploading(false);
+            }
         }
     };
 
@@ -483,9 +503,10 @@ export function NewAppointmentModal({ isOpen, onClose, onSave, initialDate }: Ne
                         <button
                             type="submit"
                             className={classes.addBtn}
-                            style={{ flex: 1, justifyContent: 'center' }}
+                            style={{ flex: 1, justifyContent: 'center', opacity: uploading ? 0.7 : 1, cursor: uploading ? 'not-allowed' : 'pointer' }}
+                            disabled={uploading}
                         >
-                            Crea Appuntamento
+                            {uploading ? 'Caricamento immagini...' : 'Crea Appuntamento'}
                         </button>
                     </div>
                 </form>
