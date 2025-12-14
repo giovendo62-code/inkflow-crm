@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { type Course } from '../../types';
 import { storage } from '../../lib/storage';
+import { useAuth } from '../auth/AuthContext';
 import classes from '../crm/ClientListPage.module.css';
 
 interface AddCourseModalProps {
@@ -11,6 +12,7 @@ interface AddCourseModalProps {
 }
 
 export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalProps) {
+    const { user } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -29,16 +31,21 @@ export function AddCourseModal({ isOpen, onClose, onSuccess }: AddCourseModalPro
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (!user?.tenantId) {
+            alert('Errore: Tenant non identificato');
+            return;
+        }
+
         const newCourse: Course = {
             id: `course-${Date.now()}`,
-            tenantId: 'studio-1',
+            tenantId: user.tenantId,
             name: formData.name,
             description: formData.description,
             startDate: formData.startDate,
             endDate: formData.endDate,
             totalHours: parseInt(formData.totalHours),
             price: parseFloat(formData.price),
-            instructorId: 'user-manager', // Current user
+            instructorId: user.id,
             schedule: formData.schedule,
             program: formData.program,
             maxStudents: formData.maxStudents ? parseInt(formData.maxStudents) : undefined,
