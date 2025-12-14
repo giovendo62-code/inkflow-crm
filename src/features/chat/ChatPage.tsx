@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { storage } from '../../lib/storage';
+import { supabase } from '../../lib/supabase';
 import { type ChatMessage } from '../../types';
 import { Send, Info, MessageSquare } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -32,9 +33,31 @@ export function ChatPage() {
         };
 
         fetchAndMark();
-        // Poll for new messages every 5 seconds (primitive real-time)
-        const interval = setInterval(fetchAndMark, 5000);
-        return () => clearInterval(interval);
+
+        // Realtime Subscription for Chat
+        let messageSubscription: any;
+        if (user?.tenantId) {
+            messageSubscription = supabase
+                .channel(`chat-room-${user.tenantId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'messages',
+                        filter: `tenant_id=eq.${user.tenantId}`
+                    },
+                    (payload) => {
+                        console.log("📨 New Message received!", payload);
+                        fetchAndMark(); // Reload and mark as read
+                    }
+                )
+                .subscribe();
+        }
+
+        return () => {
+            if (messageSubscription) messageSubscription.unsubscribe();
+        };
     }, [user]);
 
     useEffect(() => {
@@ -244,8 +267,7 @@ export function ChatPage() {
                         backgroundColor: newMessage.trim() ? 'var(--color-primary)' : 'var(--color-surface-hover)',
                         color: newMessage.trim() ? 'white' : 'var(--color-text-muted)',
                         border: 'none',
-                        cursor: newMessage.trim() ? 'pointer' : 'not-allowed',
-                        transition: 'all 0.2s',
+                        cursor: newMessage.trim() ? 'pointer' : 'all 0.2s',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'

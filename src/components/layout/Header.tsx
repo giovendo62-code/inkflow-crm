@@ -1,5 +1,6 @@
 import { useAuth } from '../../features/auth/AuthContext';
 import { storage } from '../../lib/storage';
+import { supabase } from '../../lib/supabase';
 import { type Tenant } from '../../types';
 import { LogOut, Bell, Building2, RotateCw } from 'lucide-react';
 import classes from './Header.module.css';
@@ -31,9 +32,34 @@ export function Header() {
         loadTenant();
         checkUnread();
 
-        // Poll for unread messages every 30 seconds
+        // Poll fallback
         const interval = setInterval(checkUnread, 30000);
-        return () => clearInterval(interval);
+
+        // Realtime Subscription
+        let subscription: any;
+        if (user?.tenantId) {
+            subscription = supabase
+                .channel(`header-notifications-${user.tenantId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'messages',
+                        filter: `tenant_id=eq.${user.tenantId}`
+                    },
+                    () => {
+                        console.log("🔔 New Message Notification!");
+                        checkUnread();
+                    }
+                )
+                .subscribe();
+        }
+
+        return () => {
+            clearInterval(interval);
+            if (subscription) subscription.unsubscribe();
+        };
     }, [user]);
 
     return (
