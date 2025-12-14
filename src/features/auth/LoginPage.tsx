@@ -104,7 +104,9 @@ export function LoginPage() {
                             borderRadius: '50%',
                             marginBottom: '1rem',
                             border: '4px solid white',
-                            boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
+                            boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+                            display: 'block',     // Assicura comportamento a blocco
+                            margin: '0 auto 1rem auto' // Centratura esplicita
                         }}
                     />
                     <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#1a1a1a' }}>
@@ -263,7 +265,10 @@ export function LoginPage() {
                                 />
                                 {authMode === 'LOGIN' && (
                                     <div style={{ textAlign: 'right', marginTop: '6px' }}>
-                                        <small style={{ color: '#666', fontSize: '0.8rem', cursor: 'pointer' }} onClick={() => alert("Funzione recupero password non ancora attiva.")}>
+                                        <small
+                                            style={{ color: '#666', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+                                            onClick={() => alert("Per recuperare la password, contatta il supporto tecnico InkFlow o l'amministratore del tuo studio.")}
+                                        >
                                             Password dimenticata?
                                         </small>
                                     </div>

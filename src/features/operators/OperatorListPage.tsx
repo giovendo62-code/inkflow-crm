@@ -492,6 +492,18 @@ export function OperatorListPage() {
                                     </div>
 
                                     <button
+                                        onClick={() => {
+                                            const subject = encodeURIComponent('Benvenuto nello Staff - Credenziali Accesso');
+                                            const body = encodeURIComponent(`Ciao,\n\necco le tue credenziali per accedere al CRM:\n\nEmail: ${createdCredentials.email}\nPassword Provvisoria: ${createdCredentials.password}\n\nAccedi qui: ${window.location.origin}\n\nBuon lavoro!`);
+                                            window.location.href = `mailto:${createdCredentials.email}?subject=${subject}&body=${body}`;
+                                        }}
+                                        className={classes.secondaryButton}
+                                        style={{ width: '100%', maxWidth: '400px', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                    >
+                                        <MessageCircle size={18} /> Invia credenziali via Email
+                                    </button>
+
+                                    <button
                                         onClick={() => setIsModalOpen(false)}
                                         className={classes.primaryButton}
                                         style={{ width: '100%', maxWidth: '400px' }}
