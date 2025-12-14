@@ -19,6 +19,10 @@ export function PublicClientForm() {
     const [generatedOtp, setGeneratedOtp] = useState('');
     const [inputOtp, setInputOtp] = useState('');
 
+    // Document Preview State
+    const [viewDoc, setViewDoc] = useState<'PRIVACY' | 'CONSENT' | null>(null);
+    const openDocModal = (type: 'PRIVACY' | 'CONSENT') => setViewDoc(type);
+
     useEffect(() => {
         const loadTenant = async () => {
             try {
@@ -343,35 +347,115 @@ export function PublicClientForm() {
                     <h3 style={{ fontSize: '1rem', fontWeight: '600', marginTop: '1.5rem', color: 'var(--color-text-primary)' }}>Consensi & Firma Digitale (ATP)</h3>
 
                     <div className={classes.group}>
-                        <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
                             <input type="checkbox" checked={formData.privacyAccepted}
                                 onChange={e => setFormData({ ...formData, privacyAccepted: e.target.checked })}
+                                id="privacy-check"
                                 style={{ marginTop: '4px' }} />
-                            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                                Accetto l'<strong>Informativa Privacy</strong> e autorizzo il trattamento dei miei dati personali. *
-                            </span>
-                        </label>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                                <label htmlFor="privacy-check" style={{ cursor: 'pointer' }}>Accetto l'<strong>Informativa Privacy</strong> e autorizzo il trattamento dati. *</label>
+                                <button type="button" onClick={() => openDocModal('PRIVACY')} style={{ display: 'block', background: 'none', border: 'none', color: 'var(--color-primary)', textDecoration: 'underline', padding: 0, cursor: 'pointer', marginTop: '0.2rem', fontSize: '0.8rem' }}>
+                                    Leggi Informativa Completa
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div className={classes.group}>
-                        <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
                             <input type="checkbox" checked={formData.informedConsentAccepted}
                                 onChange={e => setFormData({ ...formData, informedConsentAccepted: e.target.checked })}
+                                id="consent-check"
                                 style={{ marginTop: '4px' }} />
-                            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                                Accetto il <strong>Consenso Informato</strong> per le procedure di tatuaggio. *
-                            </span>
-                        </label>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                                <label htmlFor="consent-check" style={{ cursor: 'pointer' }}>Accetto il <strong>Consenso Informato</strong> per le procedure di tatuaggio. *</label>
+                                <button type="button" onClick={() => openDocModal('CONSENT')} style={{ display: 'block', background: 'none', border: 'none', color: 'var(--color-primary)', textDecoration: 'underline', padding: 0, cursor: 'pointer', marginTop: '0.2rem', fontSize: '0.8rem' }}>
+                                    Leggi Consenso Completo
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <button type="submit" className={classes.button} disabled={loading} style={{ marginTop: '2rem' }}>
                         {loading ? 'Elaborazione...' : 'Richiedi Codice ATP & Firma'}
                     </button>
                     <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
-                        Riceverai un codice via SMS/Email per firmare digitalmente.
+                        Riceverai un codice via SMS al numero inserito per apporre la Firma Elettronica Avanzata (FEA).
                     </p>
                 </form>
             </div>
+
+            {/* Document Reading Modal */}
+            {viewDoc && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100
+                }}>
+                    <div style={{
+                        backgroundColor: 'var(--color-surface)', padding: '2rem', borderRadius: 'var(--radius-lg)',
+                        width: '90%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+                        border: '1px solid var(--color-border)'
+                    }}>
+                        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <ShieldCheck size={24} color="var(--color-primary)" />
+                            {viewDoc === 'PRIVACY' ? 'Privacy Policy & GDPR' : 'Consenso Informato'}
+                        </h2>
+
+                        <div style={{
+                            flex: 1, overflowY: 'auto', background: 'var(--color-surface-hover)',
+                            padding: '1.5rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem',
+                            fontSize: '0.9rem', lineHeight: '1.6', border: '1px solid var(--color-border)'
+                        }}>
+                            {viewDoc === 'PRIVACY' ? (
+                                <>
+                                    <p><strong>INFORMATIVA SUL TRATTAMENTO DEI DATI PERSONALI (Art. 13 GDPR 679/2016)</strong></p>
+                                    <p>Gentile Cliente, ai sensi del Regolamento UE 2016/679...</p>
+                                    <p><strong>1. Titolare del Trattamento:</strong> {tenant?.name || 'Lo Studio'}</p>
+                                    <p><strong>2. Finalità:</strong> Gestione appuntamenti, comunicazioni di servizio, obblighi fiscali.</p>
+                                    <p><strong>3. Diritti dell'interessato:</strong> Accesso, rettifica, cancellazione...</p>
+                                    {/* ... text ... */}
+                                </>
+                            ) : (
+                                <>
+                                    <p><strong>CONSENSO INFORMATO ALL'ESECUZIONE DI TATUAGGIO / PIERCING</strong></p>
+                                    <p>Dichiaro di essere maggiorenne e consapevole dei rischi...</p>
+                                    <ul>
+                                        <li>Il tatuaggio è una procedura irreversibile.</li>
+                                        <li>Dichiaro di non avere allergie note ai pigmenti.</li>
+                                        <li>Non sono sotto effetto di alcool o droghe.</li>
+                                    </ul>
+                                    <p>Mi impegno a seguire le istruzioni di cura fornite.</p>
+                                </>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                if (viewDoc === 'PRIVACY') setFormData({ ...formData, privacyAccepted: true });
+                                if (viewDoc === 'CONSENT') setFormData({ ...formData, informedConsentAccepted: true });
+                                setViewDoc(null);
+                            }}
+                            style={{
+                                width: '100%', padding: '1rem', backgroundColor: 'var(--color-primary)',
+                                color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
+                                fontWeight: 'bold', cursor: 'pointer'
+                            }}
+                        >
+                            Ho Letto e Accetto
+                        </button>
+                        <button
+                            onClick={() => setViewDoc(null)}
+                            style={{
+                                width: '100%', padding: '0.5rem', backgroundColor: 'transparent',
+                                color: 'var(--color-text-secondary)', border: 'none', marginTop: '0.5rem',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Chiudi
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* OTP Modal */}
             {otpModalOpen && (
