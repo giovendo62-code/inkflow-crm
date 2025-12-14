@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { type Student, type Course } from '../../types';
+import { type Student, type Course, type User, type CoursePayment } from '../../types';
 import { storage } from '../../lib/storage';
 import { useAuth } from '../auth/AuthContext';
 import classes from '../crm/ClientListPage.module.css';
@@ -70,8 +70,52 @@ export function AddStudentModal({ isOpen, onClose, onSuccess, courses }: AddStud
             updatedAt: new Date().toISOString()
         };
 
+        // Create corresponding User for Auth
+        const newUser: User = {
+            id: self.crypto.randomUUID(),
+            tenantId: user.tenantId,
+            email: formData.email,
+            name: `${formData.firstName} ${formData.lastName}`,
+            role: 'STUDENT',
+            avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.firstName + '+' + formData.lastName)}&background=random`,
+            createdAt: new Date().toISOString(),
+            profile: {
+                bio: 'Studente Academy',
+                phone: formData.phone,
+                address: `${formData.street}, ${formData.city}`,
+                password: 'password123',
+                preferences: {
+                    theme: 'dark',
+                    notifications: true,
+                    password: 'password123'
+                },
+                color: '#10B981'
+            }
+        };
+
         try {
-            await storage.saveStudent(newStudent);
+            const promises = [
+                storage.saveStudent(newStudent),
+                storage.saveUser(newUser)
+            ];
+
+            // If initial payment exists, record it
+            if (newStudent.totalPaid > 0) {
+                const initialPayment: CoursePayment = {
+                    id: self.crypto.randomUUID(),
+                    tenantId: user.tenantId,
+                    studentId: newStudent.id,
+                    courseId: newStudent.courseId,
+                    amount: newStudent.totalPaid,
+                    paymentDate: new Date().toISOString(),
+                    paymentMethod: 'CASH', // Default assumption for initial deposit
+                    notes: 'Acconto/Pagamento iniziale alla registrazione',
+                    createdAt: new Date().toISOString()
+                };
+                promises.push(storage.saveCoursePayment(initialPayment));
+            }
+
+            await Promise.all(promises);
             onSuccess();
             setCreatedCredentials({
                 email: newStudent.email,

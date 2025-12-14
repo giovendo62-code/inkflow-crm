@@ -101,6 +101,8 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
             return;
         }
 
+        setIsSavingMaterial(true);
+
         const material: TeachingMaterial = {
             id: self.crypto.randomUUID(),
             tenantId: student.tenantId,
@@ -132,8 +134,12 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
         } catch (error) {
             console.error(error);
             alert("Errore salvataggio materiale");
+        } finally {
+            setIsSavingMaterial(false);
         }
     };
+
+    const [isSavingMaterial, setIsSavingMaterial] = useState(false);
 
     const handleDeleteMaterial = async (id: string) => {
         if (confirm('Eliminare questo materiale?')) {
@@ -150,8 +156,8 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 2 * 1024 * 1024) { // 2MB limit
-                alert('File troppo grande (Max 2MB)');
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                alert('File troppo grande (Max 10MB)');
                 return;
             }
             const reader = new FileReader();
@@ -1212,7 +1218,22 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
                                             </div>
                                             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                                                 <button onClick={() => setShowMaterialForm(false)} style={{ flex: 1, padding: '0.5rem', background: 'transparent', border: '1px solid var(--color-border)', borderRadius: '4px' }}>Annulla</button>
-                                                <button onClick={handleAddMaterial} style={{ flex: 1, padding: '0.5rem', background: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '4px' }}>Salva</button>
+                                                <button
+                                                    onClick={handleAddMaterial}
+                                                    disabled={!newMaterial.title || !newMaterial.url || isSavingMaterial}
+                                                    style={{
+                                                        flex: 1,
+                                                        padding: '0.5rem',
+                                                        background: (!newMaterial.title || !newMaterial.url || isSavingMaterial) ? 'var(--color-text-muted)' : 'var(--color-success)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        opacity: (!newMaterial.title || !newMaterial.url || isSavingMaterial) ? 0.7 : 1,
+                                                        cursor: (!newMaterial.title || !newMaterial.url || isSavingMaterial) ? 'not-allowed' : 'pointer'
+                                                    }}
+                                                >
+                                                    {isSavingMaterial ? 'Salvataggio...' : 'Salva'}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>

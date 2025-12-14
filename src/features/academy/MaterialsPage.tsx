@@ -14,19 +14,19 @@ export function MaterialsPage() {
 
     useEffect(() => {
         const loadMaterialData = async () => {
-            if (user) {
+            if (user?.tenantId) {
                 try {
-                    const [students, courses, attendances, allMaterials] = await Promise.all([
-                        storage.getStudents(),
-                        storage.getCourses(),
-                        storage.getAttendances(),
-                        storage.getMaterials()
-                    ]);
-
+                    const students = await storage.getStudents(user.tenantId);
                     const myStudent = students.find(s => s.email === user.email);
 
                     if (myStudent) {
                         setStudent(myStudent);
+
+                        const [courses, attendances, allMaterials] = await Promise.all([
+                            storage.getCourses(user.tenantId),
+                            storage.getAttendances(user.tenantId),
+                            storage.getMaterials(user.tenantId)
+                        ]);
 
                         // Course
                         const myCourse = courses.find(c => c.id === myStudent.courseId);
@@ -36,8 +36,11 @@ export function MaterialsPage() {
                         const presentCount = attendances.filter(a => a.studentId === myStudent.id && a.present).length;
                         setDaysPresent(presentCount);
 
-                        // Materials
-                        const myMaterials = allMaterials.filter(m => m.studentId === myStudent.id);
+                        // Materials (Personal + Course Global)
+                        const myMaterials = allMaterials.filter(m =>
+                            m.studentId === myStudent.id ||
+                            (!m.studentId && m.courseId === myStudent.courseId)
+                        );
                         setMaterials(myMaterials);
                     }
                 } catch (error) {
@@ -177,8 +180,16 @@ export function MaterialsPage() {
                                         {mat.type === 'LINK' && <LinkIcon size={24} />}
                                     </div>
 
-                                    <div style={{ flex: 1 }}>
-                                        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.25rem', color: isUnlocked ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <h3 style={{
+                                            fontSize: '1.1rem',
+                                            fontWeight: '600',
+                                            marginBottom: '0.25rem',
+                                            color: isUnlocked ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                        }}>
                                             {mat.title}
                                         </h3>
                                         <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>

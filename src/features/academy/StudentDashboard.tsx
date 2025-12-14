@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { storage } from '../../lib/storage';
 import { useAuth } from '../auth/AuthContext';
-import { type Course, type Student, type Attendance, type CoursePayment } from '../../types';
-import { Calendar, BookOpen, FileText, Euro, CheckCircle, XCircle, Download } from 'lucide-react';
+import { type Course, type Student, type Attendance, type CoursePayment, type TeachingMaterial } from '../../types';
+import { Calendar, BookOpen, FileText, Euro, CheckCircle, XCircle, Download, Lock, Video, Link as LinkIcon, File } from 'lucide-react';
 import classes from '../crm/ClientListPage.module.css';
 
 export function StudentDashboard() {
@@ -11,6 +11,7 @@ export function StudentDashboard() {
     const [course, setCourse] = useState<Course | null>(null);
     const [attendances, setAttendances] = useState<Attendance[]>([]);
     const [payments, setPayments] = useState<CoursePayment[]>([]);
+    const [materials, setMaterials] = useState<TeachingMaterial[]>([]);
 
     useEffect(() => {
         const loadStudentData = async () => {
@@ -38,6 +39,14 @@ export function StudentDashboard() {
 
                         const myPayments = allPayments.filter(p => p.studentId === myStudent.id);
                         setPayments(myPayments);
+
+                        // Load Materials (both personal and course-wide)
+                        const allMaterials = await storage.getMaterials(myStudent.tenantId);
+                        const myMaterials = allMaterials.filter(m =>
+                            (m.studentId === myStudent.id) ||
+                            (!m.studentId && m.courseId === myStudent.courseId)
+                        );
+                        setMaterials(myMaterials);
                     }
                 } catch (error) {
                     console.error("Error loading student dashboard:", error);
@@ -77,6 +86,15 @@ export function StudentDashboard() {
         : 0;
 
     const remainingBalance = course ? course.price - student.totalPaid : 0;
+
+    const getMaterialIcon = (type: TeachingMaterial['type']) => {
+        switch (type) {
+            case 'PDF': return <FileText size={20} />;
+            case 'VIDEO': return <Video size={20} />;
+            case 'LINK': return <LinkIcon size={20} />;
+            default: return <File size={20} />;
+        }
+    };
 
     return (
         <div className={classes.container}>
@@ -315,24 +333,109 @@ export function StudentDashboard() {
             </div>
 
             {/* Course Materials */}
-            {course?.attachments && course.attachments.length > 0 && (
-                <div style={{ marginTop: '2rem' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Download size={20} />
-                        Materiale Didattico
-                    </h2>
+            <div style={{ marginTop: '2rem' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Download size={20} />
+                    Materiale Didattico
+                </h2>
+
+                {materials.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{
+                            background: 'var(--color-surface)',
+                            borderRadius: 'var(--radius-lg)',
+                            border: '1px solid var(--color-border)',
+                            overflow: 'hidden'
+                        }}>
+                            {materials.map((material, index) => {
+                                const threshold = material.unlockThresholdDays || 0;
+                                const isUnlocked = daysAttended >= threshold;
+
+                                return (
+                                    <div
+                                        key={material.id}
+                                        style={{
+                                            padding: '1rem',
+                                            borderBottom: index < materials.length - 1 ? '1px solid var(--color-border)' : 'none',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            opacity: isUnlocked ? 1 : 0.7,
+                                            background: isUnlocked ? 'transparent' : 'rgba(0,0,0,0.02)'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <div style={{
+                                                padding: '0.75rem',
+                                                background: isUnlocked ? 'var(--color-surface-hover)' : 'var(--color-border)',
+                                                borderRadius: '50%',
+                                                color: isUnlocked ? 'var(--color-primary)' : 'var(--color-text-muted)'
+                                            }}>
+                                                {getMaterialIcon(material.type)}
+                                            </div>
+                                            <div>
+                                                <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', color: isUnlocked ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>
+                                                    {material.title}
+                                                </h4>
+                                                {material.description && (
+                                                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                                                        {material.description}
+                                                    </p>
+                                                )}
+                                                {!isUnlocked && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--color-error)' }}>
+                                                        <Lock size={12} />
+                                                        <span>Sblocco al raggiungimento della {threshold}° lezione (Attuali: {daysAttended})</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {isUnlocked ? (
+                                            <a
+                                                href={material.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{
+                                                    padding: '0.5rem 1rem',
+                                                    background: 'var(--color-primary)',
+                                                    color: 'white',
+                                                    borderRadius: 'var(--radius-md)',
+                                                    textDecoration: 'none',
+                                                    fontSize: '0.9rem',
+                                                    fontWeight: '600',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <Download size={16} />
+                                                Apri
+                                            </a>
+                                        ) : (
+                                            <div style={{ padding: '0.5rem' }}>
+                                                <Lock size={20} color="var(--color-text-muted)" />
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ) : (
                     <div style={{
                         background: 'var(--color-surface)',
-                        padding: '1.5rem',
+                        padding: '2rem',
                         borderRadius: 'var(--radius-lg)',
-                        border: '1px solid var(--color-border)'
+                        border: '1px solid var(--color-border)',
+                        textAlign: 'center',
+                        color: 'var(--color-text-muted)'
                     }}>
-                        <p style={{ color: 'var(--color-text-secondary)' }}>
-                            {course.attachments.length} file disponibili per il download
-                        </p>
+                        Nessun materiale didattico disponibile.
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

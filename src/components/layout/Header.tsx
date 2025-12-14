@@ -65,8 +65,8 @@ export function Header() {
     return (
         <header className={classes.header}>
             {/* Studio Branding */}
-            {/* Studio Branding - Cleaner & Bigger for Mobile */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Studio Branding - Mobile Only */}
+            <div className={classes.studioBranding}>
                 {tenant?.logo ? (
                     <img
                         src={tenant.logo}

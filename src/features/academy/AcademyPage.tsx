@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { storage } from '../../lib/storage';
-import { type Course, type Student } from '../../types';
-import { GraduationCap, Plus, Users, Euro, BookOpen, Trash2, Pencil, Eye, EyeOff } from 'lucide-react';
+import { type Course, type Student, type TeachingMaterial } from '../../types';
+import { GraduationCap, Plus, Users, Euro, BookOpen, Trash2, Pencil, Eye, EyeOff, Download } from 'lucide-react';
 import classes from '../crm/ClientListPage.module.css';
 import { AddCourseModal } from './AddCourseModal';
 import { AddStudentModal } from './AddStudentModal';
@@ -15,6 +15,7 @@ export function AcademyPage() {
     const { showFinancials, toggleFinancials } = usePrivacy();
     const [courses, setCourses] = useState<Course[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
+    const [materials, setMaterials] = useState<TeachingMaterial[]>([]);
     const [selectedCourse, setSelectedCourse] = useState<string | 'all'>('all');
 
     // Modals
@@ -36,14 +37,16 @@ export function AcademyPage() {
     const loadData = useCallback(async () => {
         if (!user?.tenantId) return;
         try {
-            const [allCourses, allStudents, allAttendances] = await Promise.all([
+            const [allCourses, allStudents, allAttendances, allMaterials] = await Promise.all([
                 storage.getCourses(user.tenantId),
                 storage.getStudents(user.tenantId),
-                storage.getAttendances(user.tenantId)
+                storage.getAttendances(user.tenantId),
+                storage.getMaterials(user.tenantId)
             ]);
             setCourses(allCourses);
             setStudents(allStudents);
             setAttendances(allAttendances);
+            setMaterials(allMaterials);
         } catch (error: any) {
             console.error("Failed to load academy data:", error);
         }
@@ -316,7 +319,12 @@ export function AcademyPage() {
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <Euro size={14} />
+                                        <Euro size={14} />
                                         {showFinancials ? course.price?.toLocaleString() : '••••'}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <Download size={14} />
+                                        {materials.filter(m => m.courseId === course.id).length} materiali
                                     </div>
                                 </div>
                             </div>
@@ -326,7 +334,11 @@ export function AcademyPage() {
             </div>
 
             {/* Teaching Materials Section */}
-            <TeachingMaterialsSection courses={courses} />
+            <TeachingMaterialsSection
+                courses={courses}
+                materials={materials}
+                onUpdate={loadData}
+            />
 
             {/* Students Filter */}
             <div style={{ marginBottom: '1rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'flex-end' }}>

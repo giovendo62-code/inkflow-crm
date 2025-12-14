@@ -16,22 +16,23 @@
     /* Hidden on mobile */
 }
 
+/* Studio Branding Wrapper - Mobile Only */
+.studioBranding {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .brandText {
-    display: none;
-    /* Hidden on mobile by default */
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
 }
 
 @media (min-width: 768px) {
-    .pageTitle {
-        display: block;
-        /* Visible on Tablet/Desktop */
-    }
-
-    .brandText {
-        display: flex;
-        /* Visible on Desktop */
-        flex-direction: column;
-        line-height: 1.2;
+    .studioBranding {
+        display: none;
+        /* Hide logo/branding on Tablet/Desktop because Sidebar is visible */
     }
 }
 
