@@ -128,8 +128,8 @@ export function OperatorListPage() {
                 });
             }
         } catch (error: any) {
-            console.error("Failed to save user (Detailed):", JSON.stringify(error, null, 2));
-            alert("Errore salvataggio operatore: " + (error.message || 'Errore sconosciuto'));
+            console.error("Failed to save user (Detailed):", error);
+            alert("Errore salvataggio operatore: " + (error.message || JSON.stringify(error)));
         }
     };
 
