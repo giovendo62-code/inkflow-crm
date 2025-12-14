@@ -30,6 +30,7 @@ export interface User {
     googleCalendarConnected?: boolean;
     googleCalendarLastSync?: string;
     password?: string; // Stored locally for custom auth flow (Temporary/Demo)
+    preferences?: any; // Generic preferences object (theme, notifications, etc)
   };
 }
 
