@@ -112,6 +112,40 @@ export function OperatorListPage() {
             } as User;
         }
 
+        // --- PASSWORD HANDLING ---
+        const passwordInput = document.getElementById('password-field-manual') as HTMLInputElement;
+        if (passwordInput && passwordInput.value) {
+            // Salviamo la password nel profilo (sporco ma efficace per MVP senza Auth Server)
+            userToSave.profile = {
+                ...userToSave.profile,
+                password: passwordInput.value
+            } as any;
+
+            // Aggiorniamo anche lo stato locale credentials per mostrarlo nella modale di successo
+            if (!editMode) {
+                setCreatedCredentials({
+                    email: userToSave.email,
+                    password: passwordInput.value
+                });
+            }
+        } else if (editMode && !passwordInput.value) {
+            // In edit mode, se vuoto, manteniamo la vecchia password
+            if (currentUserId) {
+                const existingUser = users.find(u => u.id === currentUserId);
+                if (existingUser && (existingUser.profile as any)?.password) {
+                    userToSave.profile = {
+                        ...userToSave.profile,
+                        password: (existingUser.profile as any).password
+                    } as any;
+                }
+            }
+        } else if (!editMode && (!passwordInput || !passwordInput.value)) {
+            // Nuova creazione senza password? Generiamone una random
+            const randomPass = Math.random().toString(36).slice(-8);
+            userToSave.profile = { ...userToSave.profile, password: randomPass } as any;
+            setCreatedCredentials({ email: userToSave.email, password: randomPass });
+        }
+
         try {
             await storage.saveUser(userToSave);
 
@@ -121,11 +155,7 @@ export function OperatorListPage() {
                 setIsModalOpen(false);
             } else {
                 setUsers([...users, userToSave]);
-                // Show credentials for new user
-                setCreatedCredentials({
-                    email: userToSave.email,
-                    password: "password123" // In a real app this would be generated or handled differently
-                });
+                // Show credentials for new user is handled above or by checking createdCredentials state in render
             }
         } catch (error: any) {
             console.error("Failed to save user (Detailed):", error);
@@ -364,9 +394,35 @@ export function OperatorListPage() {
                                             value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                                     </div>
                                     <div className={classes.group}>
-                                        <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Email</label>
+                                        <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Email di Login</label>
                                         <input required type="email" className={classes.searchInput} style={{ width: '100%' }}
                                             value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                    </div>
+                                </div>
+
+                                {/* New Password Field */}
+                                <div className={classes.group}>
+                                    <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
+                                        {editMode ? 'Reset Password (lascia vuoto per non cambiare)' : 'Imposta Password Iniziale'}
+                                    </label>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <input
+                                            type="text"
+                                            className={classes.searchInput}
+                                            style={{ width: '100%', fontFamily: 'monospace' }}
+                                            placeholder={editMode ? 'Nuova password...' : 'Es. Pippo123'}
+                                            id="password-field-manual"
+                                        />
+                                        <button
+                                            type="button"
+                                            className={classes.secondaryButton}
+                                            onClick={() => {
+                                                const randomPass = Math.random().toString(36).slice(-8);
+                                                (document.getElementById('password-field-manual') as HTMLInputElement).value = randomPass;
+                                            }}
+                                        >
+                                            Genera
+                                        </button>
                                     </div>
                                 </div>
 
