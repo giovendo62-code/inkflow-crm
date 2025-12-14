@@ -2,26 +2,64 @@ import { useState, useEffect } from 'react';
 import { storage } from '../../lib/storage';
 import { type Tenant } from '../../types';
 import classes from '../crm/ClientListPage.module.css';
-import { Save, Palette, Layout, Plus, Building2 } from 'lucide-react';
+import { Save, Palette, Layout, Plus, Building2, User as UserIcon, Pencil } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useAuth } from '../auth/AuthContext';
 
 export function SettingsPage() {
     const { user } = useAuth();
-    const [tenants, setTenants] = useState<Tenant[]>([]);
     const [tenant, setTenant] = useState<Tenant | null>(null);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'general' | 'appearance'>('general');
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-    const [isCreating, setIsCreating] = useState(false);
-    const [newTenantName, setNewTenantName] = useState('');
     const [showFullQR, setShowFullQR] = useState(false);
+
+    // Manager Profile State
+    const [managerForm, setManagerForm] = useState({
+        name: '',
+        email: '',
+        avatarUrl: '',
+        phone: '',
+        password: ''
+    });
+
+    useEffect(() => {
+        if (user) {
+            setManagerForm({
+                name: user.name || '',
+                email: user.email || '',
+                avatarUrl: user.avatarUrl || '',
+                phone: user.profile?.phone || '',
+                password: (user.profile as any)?.password || ''
+            });
+        }
+    }, [user]);
+
+    const handleSaveManager = async () => {
+        if (!user) return;
+        try {
+            const updatedUser = {
+                ...user,
+                name: managerForm.name,
+                email: managerForm.email,
+                avatarUrl: managerForm.avatarUrl,
+                profile: {
+                    ...user.profile,
+                    phone: managerForm.phone,
+                    password: managerForm.password
+                }
+            };
+            await storage.saveUser(updatedUser);
+            alert('Profilo manager aggiornato con successo!');
+        } catch (e) {
+            console.error(e);
+            alert('Errore durante l\'aggiornamento del profilo.');
+        }
+    };
 
     useEffect(() => {
         const loadSettings = async () => {
             const allTenants = await storage.getTenants();
-            setTenants(allTenants);
-
             if (allTenants.length > 0) {
                 // Default to first or user's tenant if possible
                 const currentTenant = allTenants.find(t => t.id === user?.tenantId) || allTenants[0];
@@ -56,34 +94,6 @@ export function SettingsPage() {
         }).then(url => {
             setQrCodeUrl(url);
         }).catch(err => console.error(err));
-    };
-
-    const handleCreateTenant = async () => {
-        if (!newTenantName.trim()) return;
-        setLoading(true);
-        try {
-            const newTenant: Tenant = {
-                id: `studio-${Date.now()}`,
-                name: newTenantName,
-                theme: {
-                    primaryColor: '#FF6B35',
-                    sidebarStyle: 'dark',
-                    menuPosition: 'left',
-                    colorMode: 'dark'
-                }
-            };
-            await storage.saveTenant(newTenant);
-            setTenants([...tenants, newTenant]);
-            selectTenant(newTenant);
-            setIsCreating(false);
-            setNewTenantName('');
-            alert('Nuovo studio creato! Ora puoi configurarlo.');
-        } catch (error) {
-            console.error(error);
-            alert('Errore creazione studio');
-        } finally {
-            setLoading(false);
-        }
     };
 
     const handleSave = async () => {
@@ -219,52 +229,110 @@ export function SettingsPage() {
                 </button>
             </div>
 
-            <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                <div style={{ padding: '0.75rem', background: 'var(--color-primary)', borderRadius: '50%', color: 'white' }}>
-                    <Building2 size={24} />
-                </div>
-                <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Studio Corrente</p>
-                    <select
-                        value={tenant.id}
-                        onChange={(e) => {
-                            const t = tenants.find(t => t.id === e.target.value);
-                            if (t) selectTenant(t);
-                        }}
-                        style={{
-                            fontSize: '1.2rem',
-                            fontWeight: 'bold',
-                            border: 'none',
-                            background: 'transparent',
-                            color: 'var(--color-text-primary)',
-                            cursor: 'pointer',
-                            outline: 'none',
-                            width: '100%'
-                        }}
-                    >
-                        {tenants.map(t => <option key={t.id} value={t.id} style={{ color: 'black' }}>{t.name}</option>)}
-                    </select>
-                </div>
-                <button onClick={() => setIsCreating(true)} style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center', fontWeight: '500' }}>
-                    <Plus size={16} /> Nuovo Studio
-                </button>
-            </div>
-
-            {isCreating && (
-                <div style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--color-surface-hover)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-primary)' }}>
-                    <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Crea Nuovo Studio</h3>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-                        <input
-                            placeholder="Nome del nuovo studio..."
-                            value={newTenantName}
-                            onChange={(e) => setNewTenantName(e.target.value)}
-                            style={{ flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'var(--color-background)', color: 'var(--color-text-primary)' }}
-                        />
-                        <button onClick={handleCreateTenant} style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0 1.5rem', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontWeight: '600' }}>Crea Studio</button>
-                        <button onClick={() => setIsCreating(false)} style={{ background: 'transparent', border: '1px solid var(--color-border)', padding: '0 1.5rem', borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>Annulla</button>
+            {/* Manager Profile Section */}
+            <div style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--color-border)' }}>
+                    <div style={{ padding: '0.75rem', background: 'rgba(0, 102, 255, 0.1)', borderRadius: '50%', color: '#0066FF' }}>
+                        <UserIcon size={24} />
+                    </div>
+                    <div>
+                        <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 'bold' }}>Profilo Manager</h2>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', margin: 0 }}>Gestisci i tuoi dati personali</p>
                     </div>
                 </div>
-            )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', alignItems: 'start' }}>
+                    {/* Immagine Profilo */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', padding: '1rem', background: 'var(--color-surface-hover)', borderRadius: 'var(--radius-md)' }}>
+                        <div style={{ position: 'relative', width: '120px', height: '120px' }}>
+                            {managerForm.avatarUrl ? (
+                                <img src={managerForm.avatarUrl} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--color-surface)' }} />
+                            ) : (
+                                <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'var(--color-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--color-border)' }}>
+                                    <UserIcon size={48} color="var(--color-text-muted)" />
+                                </div>
+                            )}
+                            <label style={{
+                                position: 'absolute', bottom: 0, right: 0,
+                                background: '#0066FF', borderRadius: '50%',
+                                width: '32px', height: '32px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: 'pointer', border: '2px solid white'
+                            }}>
+                                <Pencil size={16} color="white" />
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setManagerForm(prev => ({ ...prev, avatarUrl: reader.result as string }));
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }
+                                    }}
+                                />
+                            </label>
+                        </div>
+                        <span style={{ fontSize: '0.9rem', fontWeight: '500', color: 'var(--color-text-primary)' }}>{managerForm.name || 'Manager'}</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{managerForm.email}</span>
+                    </div>
+
+                    {/* Form Fields */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div className={classes.group}>
+                            <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem', display: 'block' }}>Nome Completo</label>
+                            <input
+                                placeholder="Nome"
+                                value={managerForm.name}
+                                onChange={e => setManagerForm({ ...managerForm, name: e.target.value })}
+                                className={classes.searchInput}
+                                style={{ width: '100%' }}
+                            />
+                        </div>
+                        <div className={classes.group}>
+                            <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem', display: 'block' }}>Email</label>
+                            <input
+                                placeholder="Email"
+                                value={managerForm.email}
+                                onChange={e => setManagerForm({ ...managerForm, email: e.target.value })}
+                                className={classes.searchInput}
+                                style={{ width: '100%' }}
+                            />
+                        </div>
+                        <div className={classes.group}>
+                            <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem', display: 'block' }}>Telefono Mobile (per WhatsApp)</label>
+                            <input
+                                placeholder="+39 ..."
+                                value={managerForm.phone}
+                                onChange={e => setManagerForm({ ...managerForm, phone: e.target.value })}
+                                className={classes.searchInput}
+                                style={{ width: '100%' }}
+                            />
+                        </div>
+                        <div className={classes.group}>
+                            <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem', display: 'block' }}>Nuova Password (opzionale)</label>
+                            <input
+                                placeholder="Lascia vuoto per non cambiare"
+                                type="text"
+                                value={managerForm.password}
+                                onChange={e => setManagerForm({ ...managerForm, password: e.target.value })}
+                                className={classes.searchInput}
+                                style={{ width: '100%', fontFamily: 'monospace' }}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                            <button onClick={handleSaveManager} style={{ padding: '0.75rem 1.5rem', background: '#0066FF', color: 'white', border: 'none', borderRadius: 'var(--radius-md)', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Save size={18} /> Aggiorna Profilo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div style={{
                 display: 'flex',

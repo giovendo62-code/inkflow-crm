@@ -78,8 +78,8 @@ export function OperatorListPage() {
             try {
                 // Pass tenantId to filter users
                 const allUsers = await storage.getUsers(user.tenantId);
-                // Mostra solo MANAGER e ARTIST, nascondi gli STUDENTI (che sono in Academy)
-                const staff = allUsers.filter(u => u.role === 'MANAGER' || u.role === 'ARTIST');
+                // Mostra solo ARTIST, nascondi MANAGER e STUDIER
+                const staff = allUsers.filter(u => u.role === 'ARTIST');
                 setUsers(staff);
             } catch (error) {
                 console.error("Failed to load users:", error);
@@ -215,7 +215,7 @@ export function OperatorListPage() {
     return (
         <div className={classes.container}>
             <div className={classes.header}>
-                <h1 className={classes.title}>Artisti & Staff</h1>
+                <h1 className={classes.title}>Artisti</h1>
                 <button className={classes.addBtn} onClick={handleOpenAddModal}>
                     <Plus size={20} />
                     <span>Aggiungi Operatore</span>
