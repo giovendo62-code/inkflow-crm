@@ -14,7 +14,8 @@ export function ChatPage() {
 
     const loadMessages = async () => {
         try {
-            const msgs = await storage.getMessages();
+            if (!user?.tenantId) return;
+            const msgs = await storage.getMessages(user.tenantId);
             // Sort by timestamp
             setMessages(msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()));
         } catch (error) {
@@ -27,7 +28,7 @@ export function ChatPage() {
         // Poll for new messages every 5 seconds (primitive real-time)
         const interval = setInterval(loadMessages, 5000);
         return () => clearInterval(interval);
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,7 +40,7 @@ export function ChatPage() {
 
         const msg: ChatMessage = {
             id: uuidv4(),
-            tenantId: 'studio-1',
+            tenantId: user.tenantId,
             senderId: user.id,
             senderName: user.name,
             senderAvatar: user.avatarUrl,
