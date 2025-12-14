@@ -6,6 +6,7 @@ import { Calendar as CalendarIcon, User as UserIcon, MessageCircle, Bell } from 
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { StudentDashboard } from '../academy/StudentDashboard';
 import { AppointmentDetailsModal } from '../calendar/AppointmentDetailsModal';
+import classes from '../crm/ClientListPage.module.css';
 
 export function DashboardPage() {
     const { user } = useAuth();
@@ -412,62 +413,123 @@ export function DashboardPage() {
                     {upcomingAppointments.length === 0 ? (
                         <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '1rem' }}>Nessun appuntamento in arrivo nei prossimi 7 giorni.</p>
                     ) : (
-                        <div style={{ display: 'grid', gap: '1rem' }}>
-                            {upcomingAppointments.map(apt => {
-                                const client = clients.find(c => c.id === apt.clientId);
-                                const aptDate = new Date(apt.startTime);
-                                const dateStr = aptDate.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
-                                const timeStr = aptDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                        <>
+                            {/* Desktop View */}
+                            <div className={classes.desktopOnly} style={{ display: 'grid', gap: '1rem' }}>
+                                {upcomingAppointments.map(apt => {
+                                    const client = clients.find(c => c.id === apt.clientId);
+                                    const aptDate = new Date(apt.startTime);
+                                    const dateStr = aptDate.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+                                    const timeStr = aptDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
-                                return (
-                                    <div key={apt.id} style={{
-                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                        padding: '1rem',
-                                        background: 'var(--color-surface-hover)',
-                                        borderRadius: 'var(--radius-md)',
-                                        border: '1px solid var(--color-border)',
-                                        flexWrap: 'wrap', gap: '1rem'
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <div style={{
-                                                background: 'var(--color-primary)', color: 'white',
-                                                padding: '0.5rem', borderRadius: 'var(--radius-md)',
-                                                textAlign: 'center', minWidth: '60px'
-                                            }}>
-                                                <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{dateStr}</div>
-                                                <div style={{ fontSize: '1.1rem' }}>{timeStr}</div>
+                                    return (
+                                        <div key={apt.id} style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            padding: '1rem',
+                                            background: 'var(--color-surface-hover)',
+                                            borderRadius: 'var(--radius-md)',
+                                            border: '1px solid var(--color-border)',
+                                            flexWrap: 'wrap', gap: '1rem'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <div style={{
+                                                    background: 'var(--color-primary)', color: 'white',
+                                                    padding: '0.5rem', borderRadius: 'var(--radius-md)',
+                                                    textAlign: 'center', minWidth: '60px'
+                                                }}>
+                                                    <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{dateStr}</div>
+                                                    <div style={{ fontSize: '1.1rem' }}>{timeStr}</div>
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontWeight: '600' }}>{client ? `${client.firstName} ${client.lastName}` : 'Cliente sconosciuto'}</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{apt.title}</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div style={{ fontWeight: '600' }}>{client ? `${client.firstName} ${client.lastName}` : 'Cliente sconosciuto'}</div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{apt.title}</div>
-                                            </div>
+
+                                            {client && (
+                                                <button
+                                                    onClick={() => {
+                                                        const phone = client.phone.replace(/[^0-9]/g, '');
+                                                        const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
+                                                        const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\nCi confermi la tua presenza? Grazie!`;
+                                                        window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
+                                                    }}
+                                                    style={{
+                                                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                        padding: '0.5rem 1rem',
+                                                        background: '#25D366', color: 'white',
+                                                        border: 'none', borderRadius: '999px',
+                                                        fontWeight: '600', cursor: 'pointer',
+                                                        fontSize: '0.9rem'
+                                                    }}
+                                                >
+                                                    <MessageCircle size={16} />
+                                                    Invia Reminder
+                                                </button>
+                                            )}
                                         </div>
+                                    );
+                                })}
+                            </div>
 
-                                        {client && (
-                                            <button
-                                                onClick={() => {
-                                                    const phone = client.phone.replace(/[^0-9]/g, '');
-                                                    const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
-                                                    const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\nCi confermi la tua presenza? Grazie!`;
-                                                    window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
-                                                }}
-                                                style={{
-                                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                                    padding: '0.5rem 1rem',
-                                                    background: '#25D366', color: 'white',
-                                                    border: 'none', borderRadius: '999px',
-                                                    fontWeight: '600', cursor: 'pointer',
-                                                    fontSize: '0.9rem'
-                                                }}
-                                            >
-                                                <MessageCircle size={16} />
-                                                Invia Reminder
-                                            </button>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
+                            {/* Mobile View */}
+                            <div className={classes.mobileOnly} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {upcomingAppointments.map(apt => {
+                                    const client = clients.find(c => c.id === apt.clientId);
+                                    const aptDate = new Date(apt.startTime);
+                                    const dateStr = aptDate.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+                                    const timeStr = aptDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+                                    return (
+                                        <div key={apt.id} style={{
+                                            background: 'var(--color-surface)',
+                                            padding: '1rem',
+                                            borderRadius: 'var(--radius-lg)',
+                                            border: '1px solid var(--color-border)',
+                                            display: 'flex', flexDirection: 'column', gap: '1rem'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <div style={{
+                                                    background: 'var(--color-primary)', color: 'white',
+                                                    padding: '0.5rem', borderRadius: 'var(--radius-md)',
+                                                    textAlign: 'center', minWidth: '60px'
+                                                }}>
+                                                    <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{dateStr}</div>
+                                                    <div style={{ fontSize: '1.1rem' }}>{timeStr}</div>
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>{client ? `${client.firstName} ${client.lastName}` : 'Sconosciuto'}</div>
+                                                    <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>{apt.title}</div>
+                                                </div>
+                                            </div>
+
+                                            {client && (
+                                                <button
+                                                    onClick={() => {
+                                                        const phone = client.phone.replace(/[^0-9]/g, '');
+                                                        const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
+                                                        const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\nCi confermi la tua presenza? Grazie!`;
+                                                        window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
+                                                    }}
+                                                    style={{
+                                                        width: '100%',
+                                                        padding: '0.8rem',
+                                                        background: '#25D366', color: 'white',
+                                                        border: 'none', borderRadius: 'var(--radius-md)',
+                                                        fontWeight: '600', cursor: 'pointer',
+                                                        fontSize: '1rem',
+                                                        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem'
+                                                    }}
+                                                >
+                                                    <MessageCircle size={20} />
+                                                    Invia Reminder WhatsApp
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
                     )}
                 </div>
 
@@ -567,63 +629,125 @@ export function DashboardPage() {
                 {upcomingAppointments.length === 0 ? (
                     <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '1rem' }}>Nessun appuntamento in arrivo nei prossimi 7 giorni.</p>
                 ) : (
-                    <div style={{ display: 'grid', gap: '1rem' }}>
-                        {upcomingAppointments.map(apt => {
-                            const client = clients.find(c => c.id === apt.clientId);
-                            const aptDate = new Date(apt.startTime);
-                            const dateStr = aptDate.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
-                            const timeStr = aptDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                    <>
+                        {/* Desktop View */}
+                        <div className={classes.desktopOnly} style={{ display: 'grid', gap: '1rem' }}>
+                            {upcomingAppointments.map(apt => {
+                                const client = clients.find(c => c.id === apt.clientId);
+                                const aptDate = new Date(apt.startTime);
+                                const dateStr = aptDate.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+                                const timeStr = aptDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
-                            return (
-                                <div key={apt.id} style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                    padding: '1rem',
-                                    background: 'var(--color-surface-hover)',
-                                    borderRadius: 'var(--radius-md)',
-                                    border: '1px solid var(--color-border)',
-                                    flexWrap: 'wrap', gap: '1rem'
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <div style={{
-                                            background: 'var(--color-secondary)', color: 'white',
-                                            padding: '0.5rem', borderRadius: 'var(--radius-md)',
-                                            textAlign: 'center', minWidth: '60px',
-                                            backgroundColor: user?.role === 'MANAGER' ? '#666' : 'var(--color-primary)' // Just a color distinction
-                                        }}>
-                                            <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{dateStr}</div>
-                                            <div style={{ fontSize: '1.1rem' }}>{timeStr}</div>
+                                return (
+                                    <div key={apt.id} style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: '1rem',
+                                        background: 'var(--color-surface-hover)',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px solid var(--color-border)',
+                                        flexWrap: 'wrap', gap: '1rem'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <div style={{
+                                                background: 'var(--color-secondary)', color: 'white',
+                                                padding: '0.5rem', borderRadius: 'var(--radius-md)',
+                                                textAlign: 'center', minWidth: '60px',
+                                                backgroundColor: user?.role === 'MANAGER' ? '#666' : 'var(--color-primary)'
+                                            }}>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{dateStr}</div>
+                                                <div style={{ fontSize: '1.1rem' }}>{timeStr}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: '600' }}>{client ? `${client.firstName} ${client.lastName}` : 'Cliente sconosciuto'}</div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{apt.title}</div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <div style={{ fontWeight: '600' }}>{client ? `${client.firstName} ${client.lastName}` : 'Cliente sconosciuto'}</div>
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{apt.title}</div>
-                                        </div>
+
+                                        {client && (
+                                            <button
+                                                onClick={() => {
+                                                    const phone = client.phone.replace(/[^0-9]/g, '');
+                                                    const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
+                                                    const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\nCi confermi la tua presenza? Grazie!`;
+                                                    window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
+                                                }}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                    padding: '0.5rem 1rem',
+                                                    background: '#25D366', color: 'white',
+                                                    border: 'none', borderRadius: '999px',
+                                                    fontWeight: '600', cursor: 'pointer',
+                                                    fontSize: '0.9rem'
+                                                }}
+                                            >
+                                                <MessageCircle size={16} />
+                                                Invia Reminder
+                                            </button>
+                                        )}
                                     </div>
+                                );
+                            })}
+                        </div>
 
-                                    {client && (
-                                        <button
-                                            onClick={() => {
-                                                const phone = client.phone.replace(/[^0-9]/g, '');
-                                                const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
-                                                const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\nCi confermi la tua presenza? Grazie!`;
-                                                window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
-                                            }}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                                padding: '0.5rem 1rem',
-                                                background: '#25D366', color: 'white',
-                                                border: 'none', borderRadius: '999px',
-                                                fontWeight: '600', cursor: 'pointer',
-                                                fontSize: '0.9rem'
-                                            }}
-                                        >
-                                            <MessageCircle size={16} />
-                                            Invia Reminder
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
+                        {/* Mobile View */}
+                        <div className={classes.mobileOnly} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {upcomingAppointments.map(apt => {
+                                const client = clients.find(c => c.id === apt.clientId);
+                                const aptDate = new Date(apt.startTime);
+                                const dateStr = aptDate.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+                                const timeStr = aptDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+                                return (
+                                    <div key={apt.id} style={{
+                                        background: 'var(--color-surface)',
+                                        padding: '1rem',
+                                        borderRadius: 'var(--radius-lg)',
+                                        border: '1px solid var(--color-border)',
+                                        display: 'flex', flexDirection: 'column', gap: '1rem'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <div style={{
+                                                background: 'var(--color-secondary)', color: 'white',
+                                                padding: '0.5rem', borderRadius: 'var(--radius-md)',
+                                                textAlign: 'center', minWidth: '60px',
+                                                backgroundColor: user?.role === 'MANAGER' ? '#666' : 'var(--color-primary)'
+                                            }}>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{dateStr}</div>
+                                                <div style={{ fontSize: '1.1rem' }}>{timeStr}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>{client ? `${client.firstName} ${client.lastName}` : 'Sconosciuto'}</div>
+                                                <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>{apt.title}</div>
+                                            </div>
+                                        </div>
+
+                                        {client && (
+                                            <button
+                                                onClick={() => {
+                                                    const phone = client.phone.replace(/[^0-9]/g, '');
+                                                    const formattedPhone = phone.startsWith('3') && phone.length === 10 ? `39${phone}` : phone;
+                                                    const text = `Ciao ${client.firstName}! 👋\n\nTi ricordo il tuo appuntamento per *${aptDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}* alle ore *${timeStr}*.\n\nCi confermi la tua presenza? Grazie!`;
+                                                    window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
+                                                }}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '0.8rem',
+                                                    background: '#25D366', color: 'white',
+                                                    border: 'none', borderRadius: 'var(--radius-md)',
+                                                    fontWeight: '600', cursor: 'pointer',
+                                                    fontSize: '1rem',
+                                                    display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem'
+                                                }}
+                                            >
+                                                <MessageCircle size={20} />
+                                                Invia Reminder WhatsApp
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </>
                 )}
             </div>
 
