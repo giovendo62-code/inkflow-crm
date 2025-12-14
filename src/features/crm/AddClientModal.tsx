@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { storage } from '../../lib/storage';
@@ -16,6 +16,12 @@ interface AddClientModalProps {
 export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalProps) {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false); // State for file upload
+
+    // We generate a ID on mount/init so we can use it for folder path before saving
+    // Using a state initialized with uuidv4 ensures it stays constant across re-renders until closed/reset
+    const [newClientId] = useState(uuidv4());
+
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -64,7 +70,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
         setLoading(true);
 
         const newClient: Client = {
-            id: uuidv4(),
+            id: newClientId, // Use the pre-generated ID
             tenantId: user.tenantId,
             firstName: formData.firstName,
             lastName: formData.lastName,
@@ -115,6 +121,24 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
         }
     };
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+        const file = e.target.files[0];
+        setUploading(true);
+
+        try {
+            // Use the newClientId for the folder path
+            const path = `clients/${newClientId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+            const url = await storage.uploadFile(file, path);
+            setFormData(prev => ({ ...prev, attachments: [...prev.attachments, url] }));
+        } catch (err: any) {
+            console.error(err);
+            alert("Errore caricamento file: " + err.message);
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const toggleStyle = (style: TattooStyle) => {
         if (formData.styles.includes(style)) {
             setFormData({ ...formData, styles: formData.styles.filter(s => s !== style) });
@@ -123,12 +147,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
         }
     };
 
-    const addAttachment = () => {
-        const url = prompt('Inserisci URL immagine/documento:');
-        if (url) {
-            setFormData({ ...formData, attachments: [...formData.attachments, url] });
-        }
-    };
+    // Old addAttachment via URL prompt is removed/replaced by file upload
 
     const removeAttachment = (index: number) => {
         setFormData({
@@ -167,15 +186,15 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
                                     value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} />
                             </div>
                             <div className={loginClasses.group}>
-                                <label className={loginClasses.label}>Cognome *</label>
-                                <input required className={loginClasses.input}
+                                <label className={loginClasses.label}>Cognome</label>
+                                <input className={loginClasses.input}
                                     value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} />
                             </div>
                         </div>
 
                         <div className={loginClasses.group} style={{ marginBottom: '1rem' }}>
-                            <label className={loginClasses.label}>Codice Fiscale *</label>
-                            <input required className={loginClasses.input} maxLength={16} pattern="[A-Z0-9]{16}"
+                            <label className={loginClasses.label}>Codice Fiscale</label>
+                            <input className={loginClasses.input} maxLength={16} pattern="[A-Z0-9]{16}"
                                 placeholder="RSSMRA80A01H501U"
                                 value={formData.fiscalCode}
                                 onChange={e => setFormData({ ...formData, fiscalCode: e.target.value.toUpperCase() })} />
@@ -183,13 +202,13 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <div className={loginClasses.group}>
-                                <label className={loginClasses.label}>Data di Nascita *</label>
-                                <input required type="date" className={loginClasses.input}
+                                <label className={loginClasses.label}>Data di Nascita</label>
+                                <input type="date" className={loginClasses.input}
                                     value={formData.birthDate} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} />
                             </div>
                             <div className={loginClasses.group}>
-                                <label className={loginClasses.label}>Luogo di Nascita *</label>
-                                <input required className={loginClasses.input} placeholder="Roma"
+                                <label className={loginClasses.label}>Luogo di Nascita</label>
+                                <input className={loginClasses.input} placeholder="Roma"
                                     value={formData.birthPlace} onChange={e => setFormData({ ...formData, birthPlace: e.target.value })} />
                             </div>
                         </div>
@@ -200,27 +219,27 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
                         <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-primary)' }}>Residenza</h3>
 
                         <div className={loginClasses.group} style={{ marginBottom: '1rem' }}>
-                            <label className={loginClasses.label}>Indirizzo *</label>
-                            <input required className={loginClasses.input} placeholder="Via Roma, 123"
+                            <label className={loginClasses.label}>Indirizzo</label>
+                            <input className={loginClasses.input} placeholder="Via Roma, 123"
                                 value={formData.street} onChange={e => setFormData({ ...formData, street: e.target.value })} />
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                             <div className={loginClasses.group}>
-                                <label className={loginClasses.label}>Città *</label>
-                                <input required className={loginClasses.input} placeholder="Milano"
+                                <label className={loginClasses.label}>Città</label>
+                                <input className={loginClasses.input} placeholder="Milano"
                                     value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} />
                             </div>
                             <div className={loginClasses.group}>
-                                <label className={loginClasses.label}>CAP *</label>
-                                <input required className={loginClasses.input} maxLength={5} pattern="[0-9]{5}" placeholder="20100"
+                                <label className={loginClasses.label}>CAP</label>
+                                <input className={loginClasses.input} maxLength={5} pattern="[0-9]{5}" placeholder="20100"
                                     value={formData.zip} onChange={e => setFormData({ ...formData, zip: e.target.value })} />
                             </div>
                         </div>
 
                         <div className={loginClasses.group}>
-                            <label className={loginClasses.label}>Comune *</label>
-                            <input required className={loginClasses.input} placeholder="Milano"
+                            <label className={loginClasses.label}>Comune</label>
+                            <input className={loginClasses.input} placeholder="Milano"
                                 value={formData.municipality} onChange={e => setFormData({ ...formData, municipality: e.target.value })} />
                         </div>
                     </div>
@@ -230,14 +249,14 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
                         <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-primary)' }}>Contatti</h3>
 
                         <div className={loginClasses.group} style={{ marginBottom: '1rem' }}>
-                            <label className={loginClasses.label}>Email *</label>
-                            <input required type="email" className={loginClasses.input} placeholder="nome@esempio.it"
+                            <label className={loginClasses.label}>Email</label>
+                            <input type="email" className={loginClasses.input} placeholder="nome@esempio.it"
                                 value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                         </div>
 
                         <div className={loginClasses.group}>
-                            <label className={loginClasses.label}>Numero di Telefono *</label>
-                            <input required type="tel" className={loginClasses.input} placeholder="+39 333 1234567"
+                            <label className={loginClasses.label}>Numero di Telefono</label>
+                            <input type="tel" className={loginClasses.input} placeholder="+39 333 1234567"
                                 value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                         </div>
                     </div>
@@ -361,16 +380,24 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
                     <div>
                         <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-primary)', marginTop: '1rem' }}>Allegati</h3>
 
-                        <button type="button" onClick={addAttachment}
+                        <label
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '0.5rem',
                                 padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.05)',
                                 border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-md)',
-                                color: 'var(--color-text-secondary)', cursor: 'pointer', marginBottom: '1rem'
+                                color: 'var(--color-text-secondary)', cursor: uploading ? 'wait' : 'pointer', marginBottom: '1rem',
+                                width: 'fit-content'
                             }}>
                             <Upload size={18} />
-                            Aggiungi Immagine/Documento
-                        </button>
+                            {uploading ? 'Caricamento...' : 'Carica Immagine/Documento'}
+                            <input
+                                type="file"
+                                disabled={uploading}
+                                onChange={handleFileUpload}
+                                style={{ display: 'none' }}
+                                accept="image/*,application/pdf"
+                            />
+                        </label>
 
                         {formData.attachments.length > 0 && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
@@ -387,7 +414,8 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
                                             style={{
                                                 position: 'absolute', top: '4px', right: '4px',
                                                 background: 'var(--color-error)', color: 'white',
-                                                padding: '4px', borderRadius: '4px', display: 'flex'
+                                                padding: '4px', borderRadius: '4px', display: 'flex',
+                                                cursor: 'pointer', border: 'none'
                                             }}>
                                             <Trash2 size={14} />
                                         </button>
@@ -398,7 +426,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: AddClientModalPro
                     </div>
 
                     <button type="submit" className={classes.addBtn}
-                        disabled={loading}
+                        disabled={loading || uploading}
                         style={{ justifyContent: 'center', marginTop: '1rem' }}>
                         {loading ? 'Salvataggio...' : 'Salva Cliente'}
                     </button>
