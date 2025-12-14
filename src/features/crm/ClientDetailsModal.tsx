@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { type Client, type TattooStyle } from '../../types';
-import { X, User, Mail, Phone, MapPin, Calendar, FileText, MessageSquare } from 'lucide-react';
+import { X, User, Mail, Phone, MapPin, Calendar, FileText, MessageSquare, Image as ImageIcon, Upload } from 'lucide-react';
 import classes from './ClientListPage.module.css';
 import { AVAILABLE_TATTOO_STYLES } from '../../lib/constants';
 
@@ -14,6 +14,7 @@ interface ClientDetailsModalProps {
 export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDetailsModalProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Client | null>(null);
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         if (client) {
@@ -390,6 +391,96 @@ export function ClientDetailsModal({ isOpen, onClose, client, onSave }: ClientDe
                             )}
                         </section>
                     )}
+
+                    {/* Gallery Section */}
+                    <section>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <ImageIcon size={18} />
+                            Galleria & Allegati
+                        </h3>
+
+                        {/* Grid */}
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                            gap: '10px',
+                            marginBottom: '1rem'
+                        }}>
+                            {formData.attachments?.map((url, index) => (
+                                <div key={index} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+                                    <img
+                                        src={url}
+                                        alt={`Attachment ${index}`}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                                        onClick={() => window.open(url, '_blank')}
+                                    />
+                                    {isEditing && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const newAtt = formData.attachments?.filter((_, i) => i !== index);
+                                                handleChange('attachments', newAtt);
+                                            }}
+                                            style={{
+                                                position: 'absolute', top: 4, right: 4,
+                                                background: 'rgba(0,0,0,0.5)', color: 'white',
+                                                border: 'none', borderRadius: '50%',
+                                                width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Upload Button */}
+                        {isEditing && (
+                            <div style={{ marginTop: '0.5rem' }}>
+                                <label style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                                    padding: '0.5rem 1rem',
+                                    background: 'var(--color-surface-hover)',
+                                    border: '1px dashed var(--color-border)',
+                                    borderRadius: 'var(--radius-md)',
+                                    cursor: uploading ? 'wait' : 'pointer',
+                                    fontSize: '0.9rem'
+                                }}>
+                                    <Upload size={16} />
+                                    {uploading ? 'Caricamento...' : 'Carica Nuova Immagine'}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        style={{ display: 'none' }}
+                                        disabled={uploading}
+                                        onChange={async (e) => {
+                                            if (!e.target.files || e.target.files.length === 0) return;
+                                            const file = e.target.files[0];
+                                            setUploading(true);
+                                            try {
+                                                const { storage } = await import('../../lib/storage');
+                                                const path = `clients/${client?.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                                                const url = await storage.uploadFile(file, path);
+
+                                                const current = formData.attachments || [];
+                                                handleChange('attachments', [...current, url]);
+                                            } catch (err: any) {
+                                                console.error(err);
+                                                alert("Errore upload: " + (err.message || 'Verifica Bucket client-attachments'));
+                                            } finally {
+                                                setUploading(false);
+                                            }
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                        )}
+                        {!isEditing && (!formData.attachments || formData.attachments.length === 0) && (
+                            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>Nessun allegato.</p>
+                        )}
+                    </section>
 
                     {/* Metadata */}
                     <section style={{ paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>

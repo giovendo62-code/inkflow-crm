@@ -451,6 +451,22 @@ export const storage = {
         if (error) throw error;
     },
 
+    uploadFile: async (file: File, path: string): Promise<string> => {
+        // 1. Upload
+        const { error: uploadError } = await supabase.storage
+            .from('client-attachments')
+            .upload(path, file, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        // 2. Get URL
+        const { data } = supabase.storage
+            .from('client-attachments')
+            .getPublicUrl(path);
+
+        return data.publicUrl;
+    },
+
     initialize: async () => {
         // No local init needed anymore
     }
