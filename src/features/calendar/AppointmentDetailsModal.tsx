@@ -453,55 +453,74 @@ export function AppointmentDetailsModal({ isOpen, onClose, onSave, appointment }
                     </div>
 
                     {/* Attachments */}
-                    {canEdit && (
+                    {/* Attachments Section - Visible if can edit OR has attachments */}
+                    {(canEdit || attachments.length > 0) && (
                         <div className={classes.group}>
                             <label className={classes.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Image size={16} /> Immagini
                             </label>
 
-                            <div style={{
-                                border: '2px dashed var(--color-border)',
-                                borderRadius: 'var(--radius-md)',
-                                padding: '1rem',
-                                textAlign: 'center',
-                                cursor: 'pointer',
-                                backgroundColor: 'var(--color-surface-hover)',
-                                position: 'relative'
-                            }}>
-                                <input
-                                    type="file"
-                                    multiple
-                                    accept="image/*"
-                                    onChange={handleFileChange}
-                                    style={{
-                                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                                        opacity: 0, cursor: 'pointer'
-                                    }}
-                                />
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-secondary)', pointerEvents: 'none' }}>
-                                    <Upload size={24} />
-                                    <span style={{ fontSize: '0.9rem' }}>Carica immagini</span>
+                            {canEdit && (
+                                <div style={{
+                                    border: '2px dashed var(--color-border)',
+                                    borderRadius: 'var(--radius-md)',
+                                    padding: '1rem',
+                                    textAlign: 'center',
+                                    cursor: 'pointer',
+                                    backgroundColor: 'var(--color-surface-hover)',
+                                    position: 'relative'
+                                }}>
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                        style={{
+                                            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                                            opacity: 0, cursor: 'pointer'
+                                        }}
+                                    />
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-secondary)', pointerEvents: 'none' }}>
+                                        <Upload size={24} />
+                                        <span style={{ fontSize: '0.9rem' }}>Carica immagini</span>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {attachments.length > 0 && (
                                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
                                     {attachments.map((src, index) => (
                                         <div key={index} style={{ position: 'relative', minWidth: '80px', width: '80px', height: '80px' }}>
-                                            <img src={src} alt="attachment" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-md)' }} />
-                                            <button
-                                                type="button"
-                                                onClick={() => removeAttachment(index)}
+                                            <img
+                                                src={src}
+                                                alt="attachment"
+                                                onClick={() => window.open(src, '_blank')}
+                                                title="Clicca per ingrandire"
                                                 style={{
-                                                    position: 'absolute', top: -5, right: -5,
-                                                    background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-                                                    borderRadius: '50%', width: '20px', height: '20px',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    cursor: 'pointer'
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                    borderRadius: 'var(--radius-md)',
+                                                    cursor: 'zoom-in',
+                                                    border: '1px solid var(--color-border)'
                                                 }}
-                                            >
-                                                <X size={12} />
-                                            </button>
+                                            />
+                                            {canEdit && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeAttachment(index)}
+                                                    style={{
+                                                        position: 'absolute', top: -5, right: -5,
+                                                        background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                                                        borderRadius: '50%', width: '20px', height: '20px',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        cursor: 'pointer',
+                                                        zIndex: 2
+                                                    }}
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            )}
                                         </div>
                                     ))}
                                 </div>

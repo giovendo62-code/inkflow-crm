@@ -168,7 +168,7 @@ export function SettingsPage() {
             </div>
 
             {/* Tenant Switcher / Creator */}
-            <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+            <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
                 <div style={{ padding: '0.75rem', background: 'var(--color-primary)', borderRadius: '50%', color: 'white' }}>
                     <Building2 size={24} />
                 </div>
@@ -202,7 +202,7 @@ export function SettingsPage() {
             {isCreating && (
                 <div style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--color-surface-hover)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-primary)' }}>
                     <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Crea Nuovo Studio</h3>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
                         <input
                             placeholder="Nome del nuovo studio..."
                             value={newTenantName}
@@ -262,7 +262,7 @@ export function SettingsPage() {
 
             {/* General Tab */}
             {activeTab === 'general' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
                     <div className={classes.tableWrapper} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Informazioni Studio</h2>
 
@@ -387,9 +387,8 @@ export function SettingsPage() {
                                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                                 }}>
                                     <img
-                                        src={qrCodeUrl}
                                         alt="QR Code Form Clienti"
-                                        style={{ display: 'block', width: '256px', height: '256px' }}
+                                        style={{ display: 'block', width: '256px', maxWidth: '100%', height: 'auto' }}
                                     />
                                 </div>
                                 <p style={{ marginTop: '1rem', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
@@ -506,7 +505,7 @@ export function SettingsPage() {
                                 Scegli tra tema scuro o chiaro per l'intera interfaccia
                             </p>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
                                 <button
                                     onClick={() => setTenant({
                                         ...tenant,
@@ -604,7 +603,7 @@ export function SettingsPage() {
                                 Personalizza l'aspetto della barra laterale
                             </p>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
                                 {[
                                     { value: 'dark', label: 'Scuro', desc: 'Sfondo nero' },
                                     { value: 'light', label: 'Chiaro', desc: 'Sfondo grigio' },

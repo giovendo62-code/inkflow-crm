@@ -4,10 +4,13 @@ import { type Tenant } from '../../types';
 import { LogOut, Bell, Building2 } from 'lucide-react';
 import classes from './Header.module.css';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export function Header() {
     const { user, logout } = useAuth();
     const [tenant, setTenant] = useState<Tenant | null>(null);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const loadTenant = async () => {
@@ -17,92 +20,87 @@ export function Header() {
                 setTenant(currentTenant);
             }
         };
+
+        const checkUnread = async () => {
+            if (user?.tenantId) {
+                const count = await storage.getUnreadMessagesCount(user.tenantId);
+                setUnreadCount(count);
+            }
+        };
+
         loadTenant();
+        checkUnread();
+
+        // Poll for unread messages every 30 seconds
+        const interval = setInterval(checkUnread, 30000);
+        return () => clearInterval(interval);
     }, [user]);
 
     return (
         <header className={classes.header}>
             {/* Studio Branding */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {/* Studio Branding - Cleaner & Bigger for Mobile */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 {tenant?.logo ? (
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.5rem 1rem',
-                        background: 'var(--color-surface)',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--color-border)'
-                    }}>
-                        <img
-                            src={tenant.logo}
-                            alt={tenant.name}
-                            style={{
-                                height: '32px',
-                                maxWidth: '120px',
-                                objectFit: 'contain'
-                            }}
-                        />
-                        <div style={{
-                            borderLeft: '1px solid var(--color-border)',
-                            paddingLeft: '0.75rem',
-                            display: 'flex',
-                            flexDirection: 'column'
-                        }}>
-                            <span style={{
-                                fontSize: '0.7rem',
-                                color: 'var(--color-text-muted)',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
-                            }}>
-                                Studio
-                            </span>
-                            <span style={{
-                                fontSize: '0.9rem',
-                                fontWeight: '600',
-                                color: 'var(--color-text-primary)'
-                            }}>
-                                {tenant.name}
-                            </span>
-                        </div>
-                    </div>
+                    <img
+                        src={tenant.logo}
+                        alt={tenant.name}
+                        style={{
+                            height: '42px', // Bigger logo
+                            maxWidth: '140px',
+                            objectFit: 'contain',
+                            borderRadius: '4px'
+                        }}
+                    />
                 ) : (
                     <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '8px',
+                        background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
-                        padding: '0.5rem 1rem',
-                        background: 'var(--color-surface)',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--color-border)'
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontWeight: 'bold'
                     }}>
-                        <Building2 size={24} style={{ color: 'var(--color-primary)' }} />
-                        <div>
-                            <div style={{
-                                fontSize: '0.7rem',
-                                color: 'var(--color-text-muted)',
-                                textTransform: 'uppercase'
-                            }}>
-                                Studio
-                            </div>
-                            <div style={{
-                                fontSize: '0.9rem',
-                                fontWeight: '600'
-                            }}>
-                                {tenant?.name || 'InkFlow Studio'}
-                            </div>
-                        </div>
+                        <Building2 size={20} />
                     </div>
                 )}
+
+                <div className={classes.brandText}>
+                    <span style={{
+                        fontSize: '1rem',
+                        fontWeight: '700',
+                        color: 'var(--color-text-primary)'
+                    }}>
+                        {tenant?.name || 'InkFlow'}
+                    </span>
+                    <span style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--color-text-muted)',
+                        textTransform: 'capitalize'
+                    }}>
+                        Studio Workspace
+                    </span>
+                </div>
             </div>
 
-            {/* User Info */}
-            <h2 className={classes.pageTitle}>Dashboard</h2>
+            {/* Title - Hidden on small mobile via CSS to save space for logo */}
+            <h2 className={classes.pageTitle}>
+                Dashboard
+            </h2>
 
             <div className={classes.actions}>
-                <button className={classes.iconBtn} aria-label="Notifications">
+                <button
+                    className={classes.iconBtn}
+                    aria-label="Notifications"
+                    onClick={() => navigate('/chat')}
+                >
                     <Bell size={20} />
-                    <span className={classes.badge}>2</span>
+                    {unreadCount > 0 && (
+                        <span className={classes.badge}>{unreadCount}</span>
+                    )}
                 </button>
 
                 <div className={classes.separator} />

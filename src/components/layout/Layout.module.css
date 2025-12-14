@@ -9,13 +9,20 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    /* Prevent flex overflow */
+    max-width: 100vw;
+    /* Prevent expanding beyond viewport */
+    overflow-x: hidden;
+    /* Force clip horizontal overflow */
+    position: relative;
 }
 
 .content {
     flex: 1;
     padding: var(--spacing-xl);
     overflow-y: auto;
+    overflow-x: hidden;
+    /* Double safety */
+    max-width: 100%;
 }
 
 @media (max-width: 768px) {
@@ -26,5 +33,7 @@
     .content {
         padding: 1rem;
         padding-bottom: 90px;
+        width: 100%;
+        /* Ensure fits width */
     }
 }

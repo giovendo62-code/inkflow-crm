@@ -35,16 +35,27 @@ export function DashboardPage() {
     const [yearlyTotals, setYearlyTotals] = useState({ revenue: 0, appointments: 0, currentMonthRevenue: 0 });
     const [styleStats, setStyleStats] = useState<{ name: string, value: number, color: string }[]>([]);
 
+    const [tenantName, setTenantName] = useState('InkFlow Studio');
+
     useEffect(() => {
         const loadDashboardData = async () => {
             if (!user?.tenantId) return;
 
             try {
                 setLoading(true);
+
+                // Load Tenant Info
+                const tenants = await storage.getTenants();
+                const myTenant = tenants.find(t => t.id === user.tenantId) || tenants[0];
+                if (myTenant) setTenantName(myTenant.name);
+
                 const [allAppointments, allClients] = await Promise.all([
                     storage.getAppointments(user.tenantId),
                     storage.getClients(user.tenantId)
                 ]);
+
+                // ... resto del codice invariato fino ai return ...
+
 
                 setClients(allClients); // Update clients state for getClientName
 
@@ -192,7 +203,10 @@ export function DashboardPage() {
     if (!isManager) {
         return (
             <div>
-                <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Benvenuto, {user?.name}</h1>
+                <h1 style={{ fontSize: '1.75rem', marginBottom: '0.5rem', lineHeight: '1.2' }}>
+                    Benvenuto a {tenantName},<br />
+                    <span style={{ color: 'var(--color-primary)' }}>{user?.name}</span>
+                </h1>
                 <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>
                     I tuoi appuntamenti di oggi
                 </p>
@@ -366,9 +380,12 @@ export function DashboardPage() {
 
     return (
         <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Benvenuto, {user?.name}</h1>
+            <h1 style={{ fontSize: '1.75rem', marginBottom: '0.5rem', lineHeight: '1.2' }}>
+                Benvenuto a {tenantName},<br />
+                <span style={{ color: 'var(--color-primary)' }}>{user?.name}</span>
+            </h1>
             <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>
-                Studio: InkFlow Main Studio
+                Panoramica Studio
             </p>
 
             {/* Stats Cards */}
@@ -430,7 +447,7 @@ export function DashboardPage() {
             {/* Charts Grid */}
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', // Changed from 500px to 300px to fit mobile
                 gap: '1rem'
             }}>
                 {/* Revenue Chart */}

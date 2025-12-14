@@ -12,6 +12,27 @@
     font-size: 1.25rem;
     font-weight: 600;
     color: var(--color-text-primary);
+    display: none;
+    /* Hidden on mobile */
+}
+
+.brandText {
+    display: none;
+    /* Hidden on mobile by default */
+}
+
+@media (min-width: 768px) {
+    .pageTitle {
+        display: block;
+        /* Visible on Tablet/Desktop */
+    }
+
+    .brandText {
+        display: flex;
+        /* Visible on Desktop */
+        flex-direction: column;
+        line-height: 1.2;
+    }
 }
 
 .actions {

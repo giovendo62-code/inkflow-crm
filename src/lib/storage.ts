@@ -176,7 +176,7 @@ const mapMessageFromDB = (data: any): ChatMessage => ({
     message: data.content,
     content: data.content,
     timestamp: data.timestamp,
-    read: false,
+    read: data.read || false,
     senderName: data.sender_name,
     senderAvatar: data.sender_avatar,
     type: data.type as any
@@ -190,7 +190,8 @@ const mapMessageToDB = (msg: ChatMessage) => ({
     sender_avatar: msg.senderAvatar,
     content: msg.content || msg.message,
     timestamp: msg.timestamp,
-    type: msg.type || 'chat'
+    type: msg.type || 'chat',
+    read: msg.read || false
 });
 
 export const storage = {
@@ -286,6 +287,31 @@ export const storage = {
             return [];
         }
         return data.map(mapMessageFromDB);
+    },
+
+    getUnreadMessagesCount: async (tenantId?: string): Promise<number> => {
+        let query = supabase.from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('read', false);
+
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+
+        const { count, error } = await query;
+        if (error) {
+            console.error('Error counting unread messages:', error);
+            return 0;
+        }
+        return count || 0;
+    },
+
+    markMessagesAsRead: async (tenantId?: string) => {
+        // Mark all unread messages as read for this tenant
+        // In a real app, you might filter by receiver_id
+        let query = supabase.from('messages').update({ read: true }).eq('read', false);
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+
+        const { error } = await query;
+        if (error) console.error('Error marking messages as read:', error);
     },
 
     saveClient: async (client: Client) => {

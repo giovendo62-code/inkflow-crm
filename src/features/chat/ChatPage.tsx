@@ -24,9 +24,16 @@ export function ChatPage() {
     };
 
     useEffect(() => {
-        loadMessages();
+        const fetchAndMark = async () => {
+            await loadMessages();
+            if (user?.tenantId) {
+                await storage.markMessagesAsRead(user.tenantId);
+            }
+        };
+
+        fetchAndMark();
         // Poll for new messages every 5 seconds (primitive real-time)
-        const interval = setInterval(loadMessages, 5000);
+        const interval = setInterval(fetchAndMark, 5000);
         return () => clearInterval(interval);
     }, [user]);
 
