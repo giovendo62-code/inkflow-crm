@@ -4,9 +4,10 @@ import classes from './PublicClientForm.module.css';
 import { v4 as uuidv4 } from 'uuid';
 import { storage } from '../../lib/storage';
 import { type Client, type TattooStyle, type Tenant } from '../../types';
-import { Building2, ShieldCheck, Lock } from 'lucide-react';
+import { Building2, ShieldCheck, PenTool } from 'lucide-react';
 import { getPrivacyText, getConsentText } from '../../lib/legalText';
 import { sendWelcomeEmail } from '../../lib/email';
+import { SignaturePadModal } from '../../components/SignaturePadModal';
 
 export function PublicClientForm() {
     const { tenantId } = useParams<{ tenantId: string }>();
@@ -15,10 +16,11 @@ export function PublicClientForm() {
     const [success, setSuccess] = useState(false);
     const [tenant, setTenant] = useState<Tenant | null>(null);
 
-    // OTP State
-    const [otpModalOpen, setOtpModalOpen] = useState(false);
-    const [generatedOtp, setGeneratedOtp] = useState('');
-    const [inputOtp, setInputOtp] = useState('');
+    // Signature State
+    const [signatureModalOpen, setSignatureModalOpen] = useState(false);
+    const [privacySignature, setPrivacySignature] = useState<string>('');
+    const [consentSignature, setConsentSignature] = useState<string>('');
+    const [currentSignatureType, setCurrentSignatureType] = useState<'PRIVACY' | 'CONSENT' | null>(null);
 
     // Document Preview State
     const [viewDoc, setViewDoc] = useState<'PRIVACY' | 'CONSENT' | null>(null);
@@ -77,27 +79,45 @@ export function PublicClientForm() {
             return alert('Devi accettare sia la Privacy che il Consenso Informato.');
         }
 
-        // Generate OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        setGeneratedOtp(otp);
+        // Check if both signatures are present
+        if (!privacySignature || !consentSignature) {
+            return alert('Devi firmare sia la Privacy che il Consenso Informato prima di procedere.');
+        }
 
-        // Simulate sending SMS/Email
-        alert(`🔒 SIMULAZIONE SMS/EMAIL (Codice ATP)\n\nIl tuo codice di firma è: ${otp}`);
-
-        setOtpModalOpen(true);
+        finalizeRegistration();
     };
 
-    const handleVerifyOtp = () => {
-        if (inputOtp === generatedOtp) {
-            setOtpModalOpen(false);
-            finalizeRegistration();
-        } else {
-            alert('Codice ATP non valido. Riprova.');
+    const handleSignRequest = (type: 'PRIVACY' | 'CONSENT') => {
+        setCurrentSignatureType(type);
+        setSignatureModalOpen(true);
+    };
+
+    const handleSignatureSave = (signatureData: string) => {
+        if (currentSignatureType === 'PRIVACY') {
+            setPrivacySignature(signatureData);
+            setFormData({ ...formData, privacyAccepted: true });
+        } else if (currentSignatureType === 'CONSENT') {
+            setConsentSignature(signatureData);
+            setFormData({ ...formData, informedConsentAccepted: true });
         }
+        setSignatureModalOpen(false);
+        setCurrentSignatureType(null);
     };
 
     const finalizeRegistration = async () => {
         setLoading(true);
+
+        // Detect device type
+        const getDeviceType = () => {
+            const ua = navigator.userAgent;
+            if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+                return 'tablet';
+            }
+            if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) {
+                return 'mobile';
+            }
+            return 'desktop';
+        };
 
         const newClient: Client = {
             id: uuidv4(),
@@ -123,7 +143,12 @@ export function PublicClientForm() {
                 privacy: formData.privacyAccepted,
                 informedConsent: formData.informedConsentAccepted,
                 privacyDate: new Date().toISOString(),
-                informedConsentDate: new Date().toISOString()
+                informedConsentDate: new Date().toISOString(),
+                privacySignature: privacySignature,
+                informedConsentSignature: consentSignature,
+                signatureTimestamp: new Date().toISOString(),
+                signatureDevice: getDeviceType(),
+                signatureIp: 'N/A' // IP detection would require backend
             },
             // Update root level flags as well
             privacyPolicyAccepted: formData.privacyAccepted,
@@ -177,7 +202,7 @@ export function PublicClientForm() {
                     )}
                     <ShieldCheck size={48} color="var(--color-success)" style={{ margin: '0 auto 1rem' }} />
                     <h1 className={classes.title} style={{ color: 'var(--color-success)' }}>Registrazione Firmata con Successo!</h1>
-                    <p className={classes.subtitle}>Il tuo profilo è stato creato e i consensi sono stati firmati digitalmente tramite codice ATP.</p>
+                    <p className={classes.subtitle}>Il tuo profilo è stato creato e i consensi sono stati firmati digitalmente con firma touch.</p>
                     <p style={{ marginTop: '1rem', color: 'var(--color-text-secondary)' }}>
                         {tenant?.name || 'Lo studio'} ti contatterà a breve.
                     </p>
@@ -345,43 +370,161 @@ export function PublicClientForm() {
                     </div>
 
                     {/* Consensi */}
-                    <h3 style={{ fontSize: '1rem', fontWeight: '600', marginTop: '1.5rem', color: 'var(--color-text-primary)' }}>Consensi & Firma Digitale (ATP)</h3>
+                    <h3 style={{ fontSize: '1rem', fontWeight: '600', marginTop: '1.5rem', color: 'var(--color-text-primary)' }}>Consensi & Firma Digitale Touch</h3>
 
+                    {/* Privacy Signature */}
                     <div className={classes.group}>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                            <input type="checkbox" checked={formData.privacyAccepted}
-                                onChange={e => setFormData({ ...formData, privacyAccepted: e.target.checked })}
-                                id="privacy-check"
-                                style={{ marginTop: '4px' }} />
-                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                                <label htmlFor="privacy-check" style={{ cursor: 'pointer' }}>Accetto l'<strong>Informativa Privacy</strong> e autorizzo il trattamento dati. *</label>
-                                <button type="button" onClick={() => openDocModal('PRIVACY')} style={{ display: 'block', background: 'none', border: 'none', color: 'var(--color-primary)', textDecoration: 'underline', padding: 0, cursor: 'pointer', marginTop: '0.2rem', fontSize: '0.8rem' }}>
-                                    Leggi Informativa Completa
-                                </button>
+                        <div style={{
+                            padding: '1rem',
+                            border: `2px solid ${privacySignature ? '#10b981' : 'var(--color-border)'}`,
+                            borderRadius: 'var(--radius-md)',
+                            backgroundColor: privacySignature ? '#f0fdf4' : 'var(--color-surface-hover)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                        <ShieldCheck size={20} color={privacySignature ? '#10b981' : '#6b7280'} />
+                                        <strong style={{ fontSize: '0.95rem', color: privacySignature ? '#10b981' : 'var(--color-text-primary)' }}>
+                                            Informativa Privacy
+                                        </strong>
+                                    </div>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', margin: '0.25rem 0' }}>
+                                        Leggi e firma l'informativa sul trattamento dei dati personali
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => openDocModal('PRIVACY')}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: 'var(--color-primary)',
+                                            textDecoration: 'underline',
+                                            padding: 0,
+                                            cursor: 'pointer',
+                                            marginTop: '0.25rem',
+                                            fontSize: '0.8rem'
+                                        }}
+                                    >
+                                        📄 Leggi Documento Completo
+                                    </button>
+                                </div>
+                                {privacySignature && (
+                                    <div style={{
+                                        padding: '0.5rem 1rem',
+                                        backgroundColor: '#10b981',
+                                        color: 'white',
+                                        borderRadius: '999px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: '600'
+                                    }}>
+                                        ✓ Firmato
+                                    </div>
+                                )}
                             </div>
+                            <button
+                                type="button"
+                                onClick={() => handleSignRequest('PRIVACY')}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    backgroundColor: privacySignature ? '#f3f4f6' : 'var(--color-primary)',
+                                    color: privacySignature ? '#6b7280' : 'white',
+                                    border: 'none',
+                                    borderRadius: 'var(--radius-md)',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem',
+                                    fontSize: '0.95rem'
+                                }}
+                            >
+                                <PenTool size={18} />
+                                {privacySignature ? 'Firma di Nuovo' : 'Firma con il Dito'}
+                            </button>
                         </div>
                     </div>
 
+                    {/* Informed Consent Signature */}
                     <div className={classes.group}>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                            <input type="checkbox" checked={formData.informedConsentAccepted}
-                                onChange={e => setFormData({ ...formData, informedConsentAccepted: e.target.checked })}
-                                id="consent-check"
-                                style={{ marginTop: '4px' }} />
-                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                                <label htmlFor="consent-check" style={{ cursor: 'pointer' }}>Accetto il <strong>Consenso Informato</strong> per le procedure di tatuaggio. *</label>
-                                <button type="button" onClick={() => openDocModal('CONSENT')} style={{ display: 'block', background: 'none', border: 'none', color: 'var(--color-primary)', textDecoration: 'underline', padding: 0, cursor: 'pointer', marginTop: '0.2rem', fontSize: '0.8rem' }}>
-                                    Leggi Consenso Completo
-                                </button>
+                        <div style={{
+                            padding: '1rem',
+                            border: `2px solid ${consentSignature ? '#10b981' : 'var(--color-border)'}`,
+                            borderRadius: 'var(--radius-md)',
+                            backgroundColor: consentSignature ? '#f0fdf4' : 'var(--color-surface-hover)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                        <ShieldCheck size={20} color={consentSignature ? '#10b981' : '#6b7280'} />
+                                        <strong style={{ fontSize: '0.95rem', color: consentSignature ? '#10b981' : 'var(--color-text-primary)' }}>
+                                            Consenso Informato
+                                        </strong>
+                                    </div>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', margin: '0.25rem 0' }}>
+                                        Leggi e firma il consenso per le procedure di tatuaggio
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => openDocModal('CONSENT')}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: 'var(--color-primary)',
+                                            textDecoration: 'underline',
+                                            padding: 0,
+                                            cursor: 'pointer',
+                                            marginTop: '0.25rem',
+                                            fontSize: '0.8rem'
+                                        }}
+                                    >
+                                        📄 Leggi Documento Completo
+                                    </button>
+                                </div>
+                                {consentSignature && (
+                                    <div style={{
+                                        padding: '0.5rem 1rem',
+                                        backgroundColor: '#10b981',
+                                        color: 'white',
+                                        borderRadius: '999px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: '600'
+                                    }}>
+                                        ✓ Firmato
+                                    </div>
+                                )}
                             </div>
+                            <button
+                                type="button"
+                                onClick={() => handleSignRequest('CONSENT')}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    backgroundColor: consentSignature ? '#f3f4f6' : 'var(--color-primary)',
+                                    color: consentSignature ? '#6b7280' : 'white',
+                                    border: 'none',
+                                    borderRadius: 'var(--radius-md)',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem',
+                                    fontSize: '0.95rem'
+                                }}
+                            >
+                                <PenTool size={18} />
+                                {consentSignature ? 'Firma di Nuovo' : 'Firma con il Dito'}
+                            </button>
                         </div>
                     </div>
 
-                    <button type="submit" className={classes.button} disabled={loading} style={{ marginTop: '2rem' }}>
-                        {loading ? 'Elaborazione...' : 'Richiedi Codice ATP & Firma'}
+                    <button type="submit" className={classes.button} disabled={loading || !privacySignature || !consentSignature} style={{ marginTop: '2rem' }}>
+                        {loading ? 'Elaborazione...' : 'Completa Registrazione'}
                     </button>
                     <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
-                        Riceverai un codice via SMS al numero inserito per apporre la Firma Elettronica Avanzata (FEA).
+                        ✍️ Firma digitale touch - Firma Elettronica Semplice (FES) conforme al Regolamento eIDAS
                     </p>
                 </form>
             </div>
@@ -459,63 +602,17 @@ export function PublicClientForm() {
                 </div>
             )}
 
-            {/* OTP Modal */}
-            {otpModalOpen && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-                }}>
-                    <div style={{
-                        backgroundColor: 'var(--color-surface)', padding: '2rem', borderRadius: 'var(--radius-lg)',
-                        width: '100%', maxWidth: '400px', border: '1px solid var(--color-border)', textAlign: 'center'
-                    }}>
-                        <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
-                            <div style={{ padding: '1rem', borderRadius: '50%', backgroundColor: 'rgba(66, 133, 244, 0.1)' }}>
-                                <Lock size={32} color="#4285F4" />
-                            </div>
-                        </div>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Verifica Codice ATP</h2>
-                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                            Inserisci il codice di 6 cifre che abbiamo appena inviato a <strong>{formData.phone}</strong>
-                        </p>
 
-                        <input
-                            type="text"
-                            maxLength={6}
-                            placeholder="000000"
-                            style={{
-                                width: '100%', padding: '1rem', fontSize: '1.5rem', textAlign: 'center',
-                                letterSpacing: '0.5rem', borderRadius: 'var(--radius-md)',
-                                border: '1px solid var(--color-border)', marginBottom: '1.5rem',
-                                color: 'var(--color-text-primary)', backgroundColor: 'var(--color-background)'
-                            }}
-                            value={inputOtp}
-                            onChange={e => setInputOtp(e.target.value.replace(/[^0-9]/g, ''))}
-                        />
-
-                        <button
-                            onClick={handleVerifyOtp}
-                            style={{
-                                width: '100%', padding: '1rem', backgroundColor: 'var(--color-primary)',
-                                color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
-                                fontWeight: '600', cursor: 'pointer', fontSize: '1rem'
-                            }}
-                        >
-                            Verifica & Firma
-                        </button>
-                        <button
-                            onClick={() => setOtpModalOpen(false)}
-                            style={{
-                                width: '100%', padding: '0.5rem', backgroundColor: 'transparent',
-                                color: 'var(--color-text-muted)', border: 'none', marginTop: '1rem',
-                                cursor: 'pointer', fontSize: '0.9rem'
-                            }}
-                        >
-                            Annulla
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Signature Pad Modal */}
+            <SignaturePadModal
+                isOpen={signatureModalOpen}
+                onClose={() => {
+                    setSignatureModalOpen(false);
+                    setCurrentSignatureType(null);
+                }}
+                onSave={handleSignatureSave}
+                title={currentSignatureType === 'PRIVACY' ? 'Firma Privacy Policy' : 'Firma Consenso Informato'}
+            />
         </div>
     );
 }

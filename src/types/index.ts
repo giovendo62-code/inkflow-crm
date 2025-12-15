@@ -86,6 +86,11 @@ export interface Client {
     informedConsent: boolean;
     privacyDate?: string;
     informedConsentDate?: string;
+    privacySignature?: string; // Base64 PNG signature image
+    informedConsentSignature?: string; // Base64 PNG signature image
+    signatureTimestamp?: string; // ISO timestamp of signature
+    signatureDevice?: string; // Device type (mobile/tablet/desktop)
+    signatureIp?: string; // IP address for legal traceability
   };
   notes?: string;
   privacyPolicyAccepted?: boolean;
