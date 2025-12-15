@@ -2,8 +2,9 @@ import { useAuth } from '../../features/auth/AuthContext';
 import { storage } from '../../lib/storage';
 import { supabase } from '../../lib/supabase';
 import { type Tenant } from '../../types';
-import { LogOut, Bell, Building2, RotateCw } from 'lucide-react';
+import { LogOut, Bell, Building2, RotateCw, QrCode, X } from 'lucide-react';
 import classes from './Header.module.css';
+import QRCode from 'react-qr-code';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +12,7 @@ export function Header() {
     const { user, logout } = useAuth();
     const [tenant, setTenant] = useState<Tenant | null>(null);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [showQR, setShowQR] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -113,6 +115,14 @@ export function Header() {
                 </button>
                 <button
                     className={classes.iconBtn}
+                    aria-label="QR Code"
+                    onClick={() => setShowQR(true)}
+                    title="Mostra QR per aprire su mobile"
+                >
+                    <QrCode size={20} />
+                </button>
+                <button
+                    className={classes.iconBtn}
                     aria-label="Notifications"
                     onClick={() => navigate('/chat')}
                 >
@@ -138,9 +148,87 @@ export function Header() {
                     </div>
                 </div>
 
-                <button onClick={logout} className={classes.logoutBtn} title="Sign Out">
-                    <LogOut size={18} />
-                </button>
+                <button onClick={logout} className={classes.logoutBtn} title="Sign Out"><LogOut size={18} /></button>
+                {showQR && (
+                    <div
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: '#000000',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 9999
+                        }}
+                        onClick={() => setShowQR(false)}
+                    >
+                        <div
+                            style={{
+                                background: '#ffffff',
+                                padding: '2rem',
+                                borderRadius: '24px',
+                                textAlign: 'center',
+                                maxWidth: '400px',
+                                position: 'relative',
+                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                            }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <button
+                                onClick={() => setShowQR(false)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '1rem',
+                                    top: '1rem',
+                                    background: '#1f2937',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '36px',
+                                    height: '36px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = '#ef4444')}
+                                onMouseLeave={e => (e.currentTarget.style.background = '#1f2937')}
+                            >
+                                <X size={20} />
+                            </button>
+                            <h3 style={{ margin: '0 0 1.5rem 0', color: '#111827', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                                📱 Apri su Mobile
+                            </h3>
+                            <div
+                                style={{
+                                    background: '#ffffff',
+                                    padding: '1.5rem',
+                                    borderRadius: '16px',
+                                    border: '4px solid #ffffff',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                                }}
+                            >
+                                <QRCode
+                                    value="https://inkflow-crm-4bau.vercel.app/login"
+                                    size={256}
+                                    level="H"
+                                    style={{ height: 'auto', maxWidth: '100%', width: '100%', display: 'block' }}
+                                    viewBox={`0 0 256 256`}
+                                    fgColor="#000000"
+                                    bgColor="#ffffff"
+                                />
+                            </div>
+                            <p style={{ marginTop: '1.5rem', color: '#374151', fontSize: '0.95rem', lineHeight: '1.6', fontWeight: '500' }}>
+                                Inquadra questo codice con la fotocamera<br />
+                                per aprire InkFlow sul tuo dispositivo.
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
         </header>
     );
