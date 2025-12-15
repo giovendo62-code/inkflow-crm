@@ -366,6 +366,11 @@ export const storage = {
         return mapClientFromDB(data[0]);
     },
 
+    deleteClient: async (clientId: string) => {
+        const { error } = await supabase.from('clients').delete().eq('id', clientId);
+        if (error) throw error;
+    },
+
     saveAppointment: async (apt: Appointment) => {
         const dbApt = mapAppointmentToDB(apt);
         const { data, error } = await supabase.from('appointments').upsert(dbApt).select();

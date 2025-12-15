@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { storage } from '../../lib/storage';
 import { type Client, type TattooStyle } from '../../types';
-import { Search, Plus, User as UserIcon, Upload, Filter, ArrowUpDown, FileSpreadsheet } from 'lucide-react';
+import { Search, Plus, User as UserIcon, Upload, Filter, ArrowUpDown, FileSpreadsheet, Trash2 } from 'lucide-react';
 import classes from './ClientListPage.module.css';
 import { AddClientModal } from './AddClientModal';
 import { ImportCSVModal } from './ImportCSVModal';
@@ -75,6 +75,28 @@ export function ClientListPage() {
             setClients(clients.map(c => c.id === savedClient.id ? savedClient : c));
         } catch (error) {
             console.error('Failed to save client:', error);
+        }
+    };
+
+    const handleDeleteClient = async (clientId: string, clientName: string) => {
+        const confirmed = window.confirm(
+            `Sei sicuro di voler eliminare ${clientName}?\n\nQuesta azione è irreversibile e eliminerà:\n- Tutti i dati del cliente\n- Appuntamenti associati\n- Consensi firmati\n\nConfermi?`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            await storage.deleteClient(clientId);
+            setClients(clients.filter(c => c.id !== clientId));
+
+            // Close modal if the deleted client was being viewed
+            if (selectedClient?.id === clientId) {
+                setIsDetailsModalOpen(false);
+                setSelectedClient(null);
+            }
+        } catch (error) {
+            console.error('Failed to delete client:', error);
+            alert('Errore durante l\'eliminazione del cliente. Riprova.');
         }
     };
 
@@ -415,12 +437,26 @@ export function ClientListPage() {
                                     </td>
                                     <td style={{ color: 'var(--color-text-muted)' }}>-</td>
                                     <td>
-                                        <button
-                                            className={classes.actionBtn}
-                                            onClick={() => handleViewClient(client)}
-                                        >
-                                            View
-                                        </button>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button
+                                                className={classes.actionBtn}
+                                                onClick={() => handleViewClient(client)}
+                                            >
+                                                View
+                                            </button>
+                                            <button
+                                                className={classes.actionBtn}
+                                                onClick={() => handleDeleteClient(client.id, `${client.firstName} ${client.lastName}`)}
+                                                style={{
+                                                    background: 'rgba(239, 68, 68, 0.1)',
+                                                    color: '#ef4444',
+                                                    border: '1px solid rgba(239, 68, 68, 0.3)'
+                                                }}
+                                                title="Elimina cliente"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))
@@ -491,6 +527,27 @@ export function ClientListPage() {
                                     }}
                                 >
                                     Modifica / Dettagli
+                                </button>
+
+                                <button
+                                    onClick={() => handleDeleteClient(client.id, `${client.firstName} ${client.lastName}`)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        background: 'rgba(239, 68, 68, 0.1)',
+                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                        color: '#ef4444',
+                                        borderRadius: 'var(--radius-md)',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.5rem'
+                                    }}
+                                >
+                                    <Trash2 size={16} />
+                                    Elimina Cliente
                                 </button>
                             </div>
                         ))}
