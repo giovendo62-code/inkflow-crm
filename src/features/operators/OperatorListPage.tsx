@@ -712,74 +712,54 @@ export function OperatorListPage() {
                                     </div>
                                 </div>
 
-                                {/* Contract Details - Commission is MANDATORY */}
+                                {/* Contract Section */}
                                 <div style={{
                                     background: 'var(--color-surface-hover)',
-                                    padding: '1rem',
+                                    padding: '1.5rem',
                                     borderRadius: 'var(--radius-md)',
                                     marginBottom: '1rem',
                                     border: '1px solid var(--color-border)'
                                 }}>
-                                    <h3 style={{ fontSize: '0.95rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-text-primary)' }}>
-                                        💰 Dati Contratto
+                                    <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1.5rem', color: 'var(--color-text-primary)' }}>
+                                        💼 Dati Contratto
                                     </h3>
 
-                                    {/* MANDATORY Commission */}
-                                    <div className={classes.group} style={{ marginBottom: '1rem' }}>
-                                        <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            Commissione (%) <span style={{ color: 'var(--color-error)', fontSize: '1rem' }}>*</span>
-                                        </label>
-                                        <input
-                                            required
-                                            type="number"
-                                            className={classes.searchInput}
-                                            style={{ width: '100%' }}
-                                            value={formData.profile?.commissionRate ?? ''}
-                                            placeholder="Es. 50"
-                                            min="0"
-                                            max="100"
-                                            onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, commissionRate: parseInt(e.target.value) || 0 } })}
-                                        />
-                                        <small style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.25rem', display: 'block' }}>
-                                            Percentuale obbligatoria su ogni lavoro
-                                        </small>
-                                    </div>
-
-                                    {/* OPTIONAL Rent Modes */}
-                                    <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '1rem' }}>
-                                        <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.75rem', display: 'block' }}>
-                                            Modalità Affitto Aggiuntive (Opzionali)
+                                    {/* 1. Rent Mode Selection */}
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.75rem', display: 'block', fontWeight: '500' }}>
+                                            Modalità Affitto Postazione
                                         </label>
 
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
-                                            {/* Monthly Rent Checkbox */}
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                            {/* No Rent */}
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: !formData.profile?.contractType ? 'var(--color-surface)' : 'transparent' }}>
                                                 <input
-                                                    type="checkbox"
+                                                    type="radio"
+                                                    name="rentMode"
+                                                    checked={!formData.profile?.contractType}
+                                                    onChange={() => setFormData({ ...formData, profile: { ...formData.profile!, contractType: undefined, rentAmount: undefined, rentRenewalDate: undefined, rentPackPresences: undefined, rentUsedPresences: undefined } })}
+                                                />
+                                                <span style={{ fontSize: '0.875rem' }}>Nessun Affitto</span>
+                                            </label>
+
+                                            {/* Monthly Rent */}
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: formData.profile?.contractType === 'RENT_MONTHLY' ? 'var(--color-surface)' : 'transparent' }}>
+                                                <input
+                                                    type="radio"
+                                                    name="rentMode"
                                                     checked={formData.profile?.contractType === 'RENT_MONTHLY'}
-                                                    onChange={e => {
-                                                        if (e.target.checked) {
-                                                            setFormData({ ...formData, profile: { ...formData.profile!, contractType: 'RENT_MONTHLY' } });
-                                                        } else if (formData.profile?.contractType === 'RENT_MONTHLY') {
-                                                            setFormData({ ...formData, profile: { ...formData.profile!, contractType: undefined } });
-                                                        }
-                                                    }}
+                                                    onChange={() => setFormData({ ...formData, profile: { ...formData.profile!, contractType: 'RENT_MONTHLY' } })}
                                                 />
                                                 <span style={{ fontSize: '0.875rem' }}>Affitto Mensile</span>
                                             </label>
 
-                                            {/* Pack Rent Checkbox */}
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                            {/* Pack Rent */}
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: formData.profile?.contractType === 'RENT_PACK' ? 'var(--color-surface)' : 'transparent' }}>
                                                 <input
-                                                    type="checkbox"
+                                                    type="radio"
+                                                    name="rentMode"
                                                     checked={formData.profile?.contractType === 'RENT_PACK'}
-                                                    onChange={e => {
-                                                        if (e.target.checked) {
-                                                            setFormData({ ...formData, profile: { ...formData.profile!, contractType: 'RENT_PACK' } });
-                                                        } else if (formData.profile?.contractType === 'RENT_PACK') {
-                                                            setFormData({ ...formData, profile: { ...formData.profile!, contractType: undefined } });
-                                                        }
-                                                    }}
+                                                    onChange={() => setFormData({ ...formData, profile: { ...formData.profile!, contractType: 'RENT_PACK' } })}
                                                 />
                                                 <span style={{ fontSize: '0.875rem' }}>Pacchetto Presenze</span>
                                             </label>
@@ -795,7 +775,6 @@ export function OperatorListPage() {
                                                 marginTop: '0.75rem',
                                                 display: 'grid',
                                                 gridTemplateColumns: '1fr 1fr',
-                                                gap: '1rem'
                                             }}>
                                                 <div className={classes.group}>
                                                     <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Importo Mensile (€)</label>
@@ -847,6 +826,66 @@ export function OperatorListPage() {
                                                             onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, rentUsedPresences: parseInt(e.target.value) } })} />
                                                     </div>
                                                 )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 2. Commission Clause - Optional, can be combined with any rent mode */}
+                                    <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.75rem', borderRadius: 'var(--radius-md)', background: (formData.profile?.commissionRate || 0) > 0 ? 'var(--color-surface)' : 'transparent', border: '1px solid var(--color-border)' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={(formData.profile?.commissionRate || 0) > 0}
+                                                    onChange={e => {
+                                                        if (e.target.checked) {
+                                                            setFormData({ ...formData, profile: { ...formData.profile!, commissionRate: 50 } });
+                                                        } else {
+                                                            setFormData({ ...formData, profile: { ...formData.profile!, commissionRate: 0 } });
+                                                        }
+                                                    }}
+                                                />
+                                                <div style={{ flex: 1 }}>
+                                                    <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>Commissione sui Lavori</span>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
+                                                        Percentuale aggiuntiva su ogni tatuaggio realizzato
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        {/* Commission Rate Input - Shows only if checkbox is enabled */}
+                                        {(formData.profile?.commissionRate || 0) > 0 && (
+                                            <div className={classes.group} style={{
+                                                background: 'var(--color-surface)',
+                                                padding: '1rem',
+                                                borderRadius: 'var(--radius-md)',
+                                                border: '1px solid var(--color-border)'
+                                            }}>
+                                                <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'block' }}>
+                                                    Percentuale Commissione
+                                                </label>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="100"
+                                                        step="5"
+                                                        value={formData.profile?.commissionRate || 50}
+                                                        onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, commissionRate: parseInt(e.target.value) } })}
+                                                        style={{ flex: 1 }}
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        className={classes.searchInput}
+                                                        style={{ width: '80px', textAlign: 'center', fontWeight: 'bold', fontSize: '1.1rem' }}
+                                                        value={formData.profile?.commissionRate || 50}
+                                                        min="0"
+                                                        max="100"
+                                                        onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, commissionRate: parseInt(e.target.value) || 0 } })}
+                                                    />
+                                                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>%</span>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
