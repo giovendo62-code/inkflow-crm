@@ -14,16 +14,21 @@ import {
     FileText,
     Send,
     GraduationCap,
-    Clock
+    Clock,
+    LogOut
 } from 'lucide-react';
 import classes from './Sidebar.module.css';
 import { cn } from '../../lib/utils';
 
 export function Sidebar() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const isManager = user?.role === 'MANAGER';
     const isStudent = user?.role === 'STUDENT';
     const [tenant, setTenant] = useState<Tenant | null>(null);
+
+    const handleLogout = () => {
+        logout();
+    };
 
     useEffect(() => {
         const loadTenant = async () => {
@@ -156,16 +161,21 @@ export function Sidebar() {
                         <span>{item.label}</span>
                     </NavLink>
                 ))}
+                <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textAlign: 'center', marginBottom: '0.5rem' }}>
+                        InkFlow CRM v2.0
+                    </p>
+                    <button
+                        onClick={handleLogout}
+                        className={classes.navItem}
+                        style={{ width: '100%', justifyContent: 'flex-start', color: 'var(--color-error)' }}
+                    >
+                        <LogOut size={20} />
+                        <span>Logout</span>
+                    </button>
+                </div>
             </nav>
 
-            <div className={classes.footer}>
-                <div className={classes.studio}>
-                    <div className={classes.studioIcon}>
-                        {tenant?.name?.charAt(0) || 'I'}
-                    </div>
-                    <span>{tenant?.name || 'Loading...'}</span>
-                </div>
-            </div>
         </aside>
     );
 }
