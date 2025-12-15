@@ -111,20 +111,20 @@ const mapAppointmentToDB = (apt: Appointment) => ({
 const mapCourseFromDB = (data: any): Course => ({
     id: data.id,
     tenantId: data.tenant_id,
-    name: data.name,
+    name: data.name || 'Corso Senza Nome',
     description: data.description,
     startDate: data.start_date || undefined,
     endDate: data.end_date || undefined,
-    totalHours: data.total_hours || 0,
-    totalLessons: data.total_lessons || 0,
+    totalHours: Number(data.total_hours) || 0,
+    totalLessons: Number(data.total_lessons) || 0,
     schedule: data.schedule,
     program: data.program,
-    price: data.price || 0,
+    price: Number(data.price) || 0,
     attachments: data.attachments || [],
-    instructorId: 'user-manager', // Default or fetch
-    status: 'ACTIVE', // Default or fetch
-    createdAt: data.created_at,
-    updatedAt: data.updated_at || data.created_at
+    instructorId: 'user-manager',
+    status: 'ACTIVE',
+    createdAt: data.created_at || new Date().toISOString(),
+    updatedAt: data.updated_at || data.created_at || new Date().toISOString()
 });
 
 const mapCourseToDB = (course: Course) => ({
@@ -146,15 +146,15 @@ const mapStudentFromDB = (data: any): Student => ({
     id: data.id,
     tenantId: data.tenant_id,
     courseId: data.course_id,
-    firstName: data.first_name,
-    lastName: data.last_name,
-    email: data.email,
-    phone: data.phone,
-    totalPaid: data.total_paid,
-    enrollmentDate: data.created_at, // Use created_at as enrollment
+    firstName: data.first_name || '',
+    lastName: data.last_name || '',
+    email: data.email || '',
+    phone: data.phone || '',
+    totalPaid: Number(data.total_paid) || 0,
+    enrollmentDate: data.created_at || new Date().toISOString(), // Use created_at as enrollment
     status: 'ACTIVE',
-    createdAt: data.created_at,
-    updatedAt: data.created_at
+    createdAt: data.created_at || new Date().toISOString(),
+    updatedAt: data.updated_at || data.created_at || new Date().toISOString()
 });
 
 const mapStudentToDB = (student: Student) => ({

@@ -256,7 +256,9 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
         }
     };
 
-    const remainingAmount = course ? course.price - formData.totalPaid : 0;
+    const safeTotalPaid = Number(formData.totalPaid) || 0;
+    const safeCoursePrice = course ? (Number(course.price) || 0) : 0;
+    const remainingAmount = safeCoursePrice - safeTotalPaid;
 
     return (
         <div
@@ -640,13 +642,13 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
                                         <div>
                                             <p style={{ fontSize: '0.75rem', opacity: 0.8 }}>Totale</p>
                                             <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                                                €{course?.price.toLocaleString() || 0}
+                                                €{safeCoursePrice.toLocaleString()}
                                             </p>
                                         </div>
                                         <div>
                                             <p style={{ fontSize: '0.75rem', opacity: 0.8 }}>Pagato</p>
                                             <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4ade80' }}>
-                                                €{formData.totalPaid.toLocaleString()}
+                                                €{safeTotalPaid.toLocaleString()}
                                             </p>
                                         </div>
                                         <div>
@@ -666,7 +668,7 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
                                         overflow: 'hidden'
                                     }}>
                                         <div style={{
-                                            width: `${course ? (formData.totalPaid / course.price) * 100 : 0}% `,
+                                            width: `${safeCoursePrice > 0 ? (safeTotalPaid / safeCoursePrice) * 100 : 0}% `,
                                             height: '100%',
                                             background: '#4ade80',
                                             transition: 'width 0.3s'
