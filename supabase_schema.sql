@@ -200,15 +200,26 @@ ALTER TABLE course_payments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow read tenants" ON tenants FOR SELECT USING (true);
 CREATE POLICY "Allow insert tenants" ON tenants FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
--- USERS: Vedere solo utenti del proprio tenant
+-- Helper function to avoid infinite recursion in RLS policies
+CREATE OR REPLACE FUNCTION get_my_tenant_id()
+RETURNS uuid
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT tenant_id FROM users WHERE id = auth.uid() LIMIT 1;
+$$;
+
+-- USERS: Vedere solo utenti del proprio tenant (Optimized)
 CREATE POLICY "Users see own tenant" ON users FOR SELECT
-  USING (tenant_id IN (SELECT tenant_id FROM users WHERE id = auth.uid()));
+  USING (tenant_id = get_my_tenant_id());
 
 CREATE POLICY "Users insert own tenant" ON users FOR INSERT
-  WITH CHECK (tenant_id IN (SELECT tenant_id FROM users WHERE id = auth.uid()));
+  WITH CHECK (tenant_id = get_my_tenant_id());
 
 CREATE POLICY "Users update own tenant" ON users FOR UPDATE
-  USING (tenant_id IN (SELECT tenant_id FROM users WHERE id = auth.uid()));
+  USING (tenant_id = get_my_tenant_id());
 
 -- CLIENTS: Vedere solo clienti del proprio tenant
 CREATE POLICY "Clients see own tenant" ON clients FOR SELECT

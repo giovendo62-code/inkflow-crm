@@ -178,7 +178,7 @@ export function Sidebar() {
                 color: 'var(--color-text-muted)',
                 textAlign: 'center'
             }}>
-                InkFlow CRM v2.6
+                InkFlow CRM v2.7
             </div>
         </aside>
     );
