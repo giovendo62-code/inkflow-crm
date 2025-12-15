@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../../lib/storage';
 import { type User, type Appointment } from '../../types';
 import { useAuth } from '../auth/AuthContext';
-import { ArrowLeft, Calendar, Euro, User as UserIcon, MessageCircle, Mail, MapPin, Lock, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Calendar, Euro, User as UserIcon, MessageCircle, Mail, MapPin, Lock, Eye, EyeOff, FileText, CreditCard } from 'lucide-react';
 import { usePrivacy } from '../context/PrivacyContext';
 import classes from '../crm/ClientListPage.module.css';
 
@@ -43,6 +43,61 @@ export function OperatorDetailsPage() {
         } catch (error) {
             console.error("Failed to update password:", error);
             alert("Errore aggiornamento password");
+        }
+    };
+
+    // Contract Management State
+    const [isEditingContract, setIsEditingContract] = useState(false);
+    const [tempContract, setTempContract] = useState<{
+        contractType: 'COMMISSION' | 'RENT_MONTHLY' | 'RENT_PACK';
+        commissionRate: number;
+        rentAmount: number;
+        rentPackPresences: number;
+        rentRenewalDate: string;
+    }>({
+        contractType: 'COMMISSION',
+        commissionRate: 50,
+        rentAmount: 0,
+        rentPackPresences: 10,
+        rentRenewalDate: ''
+    });
+
+    useEffect(() => {
+        if (operator?.profile) {
+            setTempContract({
+                contractType: operator.profile.contractType || 'COMMISSION',
+                commissionRate: operator.profile.commissionRate || 50,
+                rentAmount: operator.profile.rentAmount || 0,
+                rentPackPresences: operator.profile.rentPackPresences || 10,
+                rentRenewalDate: operator.profile.rentRenewalDate || new Date().toISOString().split('T')[0]
+            });
+        }
+    }, [operator]);
+
+    const handleSaveContract = async () => {
+        if (!operator || !currentUser?.tenantId) return;
+
+        try {
+            const updatedUser: User = {
+                ...operator,
+                profile: {
+                    ...operator.profile,
+                    contractType: tempContract.contractType,
+                    commissionRate: tempContract.commissionRate,
+                    rentAmount: tempContract.rentAmount,
+                    rentPackPresences: tempContract.rentPackPresences,
+                    rentRenewalDate: tempContract.rentRenewalDate,
+                    rentPackStartDate: tempContract.contractType === 'RENT_PACK' ? new Date().toISOString() : undefined
+                }
+            };
+
+            await storage.saveUser(updatedUser);
+            setOperator(updatedUser);
+            setIsEditingContract(false);
+            alert("Contratto aggiornato con successo!");
+        } catch (error) {
+            console.error("Failed to update contract:", error);
+            alert("Errore aggiornamento contratto");
         }
     };
 
@@ -234,6 +289,127 @@ export function OperatorDetailsPage() {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Contract Section (Editable) */}
+                            {currentUser?.role === 'MANAGER' && (
+                                <div style={{
+                                    marginTop: '1rem',
+                                    borderTop: '1px solid var(--color-border)',
+                                    paddingTop: '1rem',
+                                    width: '100%',
+                                    maxWidth: '400px'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                        <span style={{ fontSize: '0.875rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <FileText size={14} /> Dati Contratto
+                                        </span>
+                                        {!isEditingContract ? (
+                                            <button
+                                                onClick={() => setIsEditingContract(true)}
+                                                style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                                            >
+                                                Modifica
+                                            </button>
+                                        ) : (
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button
+                                                    onClick={() => setIsEditingContract(false)}
+                                                    style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                                                >
+                                                    Annulla
+                                                </button>
+                                                <button
+                                                    onClick={handleSaveContract}
+                                                    style={{ fontSize: '0.75rem', color: 'var(--color-success)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                                                >
+                                                    Salva
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {isEditingContract ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--color-surface-hover)', padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
+                                            <div>
+                                                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Tipo Contratto</label>
+                                                <select
+                                                    value={tempContract.contractType}
+                                                    onChange={(e) => setTempContract({ ...tempContract, contractType: e.target.value as any })}
+                                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                                                >
+                                                    <option value="COMMISSION">Commissione %</option>
+                                                    <option value="RENT_MONTHLY">Affitto Fisso Mensile</option>
+                                                    <option value="RENT_PACK">Pacchetto Presenze</option>
+                                                </select>
+                                            </div>
+
+                                            {tempContract.contractType === 'COMMISSION' && (
+                                                <div>
+                                                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Commissione (%)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={tempContract.commissionRate}
+                                                        onChange={(e) => setTempContract({ ...tempContract, commissionRate: Number(e.target.value) })}
+                                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {tempContract.contractType === 'RENT_MONTHLY' && (
+                                                <>
+                                                    <div>
+                                                        <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Importo Mensile (€)</label>
+                                                        <input
+                                                            type="number"
+                                                            value={tempContract.rentAmount}
+                                                            onChange={(e) => setTempContract({ ...tempContract, rentAmount: Number(e.target.value) })}
+                                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Prossimo Rinnovo</label>
+                                                        <input
+                                                            type="date"
+                                                            value={tempContract.rentRenewalDate}
+                                                            onChange={(e) => setTempContract({ ...tempContract, rentRenewalDate: e.target.value })}
+                                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                                                        />
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {tempContract.contractType === 'RENT_PACK' && (
+                                                <>
+                                                    <div>
+                                                        <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Importo Pacchetto (€)</label>
+                                                        <input
+                                                            type="number"
+                                                            value={tempContract.rentAmount}
+                                                            onChange={(e) => setTempContract({ ...tempContract, rentAmount: Number(e.target.value) })}
+                                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Numero Presenze Incluse</label>
+                                                        <input
+                                                            type="number"
+                                                            value={tempContract.rentPackPresences}
+                                                            onChange={(e) => setTempContract({ ...tempContract, rentPackPresences: Number(e.target.value) })}
+                                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                                                        />
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
+                                            {operator.profile?.contractType === 'RENT_MONTHLY' && 'Affitto Mensile'}
+                                            {operator.profile?.contractType === 'RENT_PACK' && 'Pacchetto Presenze'}
+                                            {(!operator.profile?.contractType || operator.profile?.contractType === 'COMMISSION') && 'Percentuale'}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -241,11 +417,52 @@ export function OperatorDetailsPage() {
                         background: 'var(--color-card)',
                         padding: '1.5rem',
                         borderRadius: 'var(--radius-md)',
-                        minWidth: '200px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        minWidth: '220px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center'
                     }}>
-                        <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Commissione</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{commissionRate}%</div>
+                        <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <CreditCard size={16} /> Contratto Attivo
+                        </div>
+
+                        {(!operator.profile?.contractType || operator.profile.contractType === 'COMMISSION') && (
+                            <>
+                                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                                    {operator.profile?.commissionRate || 50}%
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Commissione su lavori</div>
+                            </>
+                        )}
+
+                        {operator.profile?.contractType === 'RENT_MONTHLY' && (
+                            <>
+                                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                                    €{operator.profile?.rentAmount || 0}
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>/ mese</div>
+                                {operator.profile?.rentRenewalDate && (
+                                    <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--color-border)', fontSize: '0.8rem' }}>
+                                        Scadenza: <strong>{new Date(operator.profile.rentRenewalDate).toLocaleDateString()}</strong>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {operator.profile?.contractType === 'RENT_PACK' && (
+                            <>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                                    {operator.profile?.rentUsedPresences || 0} / {operator.profile?.rentPackPresences || 0}
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Presenze Utilizzate</div>
+                                {operator.profile?.rentAmount && (
+                                    <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                        Valore Pacchetto: €{operator.profile.rentAmount}
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

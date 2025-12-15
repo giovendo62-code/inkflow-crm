@@ -14,6 +14,27 @@ export interface Tenant {
   };
 }
 
+export interface UserProfile {
+  bio?: string;
+  taxId?: string; // Partita IVA
+  phone?: string;
+  address?: string;
+  commissionRate?: number; // Percentage (0-100)
+  color?: string; // Calendar color (made optional as per UserProfile snippet)
+  googleCalendarId?: string; // ID of the specific calendar (e.g., 'primary' or specific ID)
+  googleCalendarConnected?: boolean;
+  googleCalendarLastSync?: string;
+  password?: string; // Stored locally for custom auth flow (Temporary/Demo)
+  preferences?: any; // Generic preferences object (theme, notifications, etc)
+  // Rent Chair Contract Fields
+  contractType?: 'COMMISSION' | 'RENT_MONTHLY' | 'RENT_PACK';
+  rentAmount?: number; // Cost (Monthly or Pack Price)
+  rentPackPresences?: number; // Total presences in Pack
+  rentRenewalDate?: string; // Next renewal date (Monthly)
+  rentUsedPresences?: number; // Used presences in current Pack
+  rentPackStartDate?: string; // Pack activation date
+}
+
 export interface User {
   id: string;
   tenantId: string;
@@ -22,19 +43,7 @@ export interface User {
   role: UserRole;
   avatarUrl?: string; // Operator photo
   createdAt?: string; // Registration date
-  profile?: {
-    bio?: string;
-    taxId?: string; // Partita IVA
-    phone?: string;
-    address?: string;
-    commissionRate?: number; // Percentage (0-100)
-    color: string; // Calendar color
-    googleCalendarId?: string; // ID of the specific calendar (e.g., 'primary' or specific ID)
-    googleCalendarConnected?: boolean;
-    googleCalendarLastSync?: string;
-    password?: string; // Stored locally for custom auth flow (Temporary/Demo)
-    preferences?: any; // Generic preferences object (theme, notifications, etc)
-  };
+  profile?: UserProfile;
 }
 
 export type TattooStyle =
