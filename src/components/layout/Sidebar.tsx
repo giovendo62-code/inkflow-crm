@@ -161,21 +161,25 @@ export function Sidebar() {
                         <span>{item.label}</span>
                     </NavLink>
                 ))}
-                <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textAlign: 'center', marginBottom: '0.5rem' }}>
-                        InkFlow CRM v2.0
-                    </p>
-                    <button
-                        onClick={handleLogout}
-                        className={classes.navItem}
-                        style={{ width: '100%', justifyContent: 'flex-start', color: 'var(--color-error)' }}
-                    >
-                        <LogOut size={20} />
-                        <span>Logout</span>
-                    </button>
-                </div>
+                <button
+                    onClick={handleLogout}
+                    className={classes.link}
+                    style={{ width: '100%', justifyContent: 'flex-start', color: 'var(--color-error)', marginTop: 'auto' }}
+                >
+                    <LogOut size={20} />
+                    <span>Logout</span>
+                </button>
             </nav>
 
+            <div style={{
+                padding: '1rem',
+                borderTop: '1px solid var(--color-border)',
+                fontSize: '0.7rem',
+                color: 'var(--color-text-muted)',
+                textAlign: 'center'
+            }}>
+                InkFlow CRM v2.1
+            </div>
         </aside>
     );
 }
