@@ -24,7 +24,7 @@ export function Header() {
 
         const checkUnread = async () => {
             if (user?.tenantId) {
-                const count = await storage.getUnreadMessagesCount(user.tenantId);
+                const count = await storage.getUnreadMessagesCount(user.tenantId, user.id);
                 setUnreadCount(count);
             }
         };

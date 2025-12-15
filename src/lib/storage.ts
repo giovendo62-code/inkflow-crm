@@ -329,12 +329,13 @@ export const storage = {
         return data.map(mapMessageFromDB);
     },
 
-    getUnreadMessagesCount: async (tenantId?: string): Promise<number> => {
+    getUnreadMessagesCount: async (tenantId?: string, currentUserId?: string): Promise<number> => {
         let query = supabase.from('messages')
             .select('*', { count: 'exact', head: true })
             .eq('read', false);
 
         if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (currentUserId) query = query.neq('sender_id', currentUserId); // Don't count own messages
 
         const { count, error } = await query;
         if (error) {
