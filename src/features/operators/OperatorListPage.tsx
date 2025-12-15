@@ -745,7 +745,7 @@ export function OperatorListPage() {
                                             style={{ width: '100%' }}
                                             value={formData.profile?.contractType || ''}
                                             onChange={e => {
-                                                const value = e.target.value;
+                                                const value = e.target.value as 'COMMISSION' | 'RENT_MONTHLY' | 'RENT_PACK' | '';
                                                 setFormData({
                                                     ...formData,
                                                     profile: {
