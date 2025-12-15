@@ -41,7 +41,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (stored) {
                     const parsedUser = JSON.parse(stored);
                     setUser(parsedUser);
-                    console.log('🔄 Sessione ripristinata:', parsedUser.email);
+                    console.log('🔄 Sessione locale ripristinata:', parsedUser.email);
+
+                    // Verify and refresh from DB to get latest profile (e.g. contract changes)
+                    try {
+                        const users = await storage.getUsers();
+                        const freshUser = users.find(u => u.id === parsedUser.id);
+                        if (freshUser) {
+                            console.log('🔄 Dati utente aggiornati dal DB');
+                            setUser(freshUser);
+                            localStorage.setItem('inkflow_session', JSON.stringify(freshUser));
+                        } else {
+                            // User deleted or invalid?
+                            console.warn('Utente non trovato nel DB, logout forzato.');
+                            // localStorage.removeItem('inkflow_session');
+                            // setUser(null); 
+                        }
+                    } catch (dbError) {
+                        console.error('Errore refresh utente background:', dbError);
+                    }
                 }
             } catch (e) {
                 console.error('Session restore failed', e);

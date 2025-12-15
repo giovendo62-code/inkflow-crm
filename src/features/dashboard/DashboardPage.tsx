@@ -284,7 +284,7 @@ export function DashboardPage() {
                     gap: '1rem',
                     marginBottom: '2rem'
                 }}>
-                    {/* Contract Status Card (Rent Mode) */}
+                    {/* 1. Rent Contract Status Card */}
                     {(user?.profile?.contractType === 'RENT_MONTHLY' || user?.profile?.contractType === 'RENT_PACK') && (
                         (() => {
                             let statusColor = 'var(--color-border)';
@@ -292,18 +292,21 @@ export function DashboardPage() {
                             let statusText = '';
                             let mainValue = '';
                             let subText = '';
+                            let detailText = '';
                             let showButton = false;
 
                             if (user.profile.contractType === 'RENT_MONTHLY') {
                                 const renewalDate = user.profile.rentRenewalDate ? new Date(user.profile.rentRenewalDate) : null;
+                                const amount = user.profile.rentAmount || 0;
+
                                 if (renewalDate) {
                                     const daysLeft = Math.ceil((renewalDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
                                     if (daysLeft < 0) {
                                         statusColor = 'var(--color-error)';
                                         statusText = 'Scaduto';
-                                        mainValue = `${Math.abs(daysLeft)} Giorni`;
-                                        subText = `Scaduto dal ${renewalDate.toLocaleDateString()}`;
+                                        mainValue = `${Math.abs(daysLeft)} Giorni fa`;
+                                        subText = `Scaduto il ${renewalDate.toLocaleDateString()}`;
                                     } else {
                                         mainValue = `${daysLeft} Giorni`;
                                         subText = `al rinnovo (${renewalDate.toLocaleDateString()})`;
@@ -315,9 +318,11 @@ export function DashboardPage() {
                                             statusText = 'Attivo';
                                         }
                                     }
+                                    detailText = `Canone: €${amount}`;
                                 } else {
                                     mainValue = 'N/A';
                                     subText = 'Data mancante';
+                                    statusText = 'Dati incompleti';
                                 }
                             } else {
                                 // RENT_PACK
@@ -326,6 +331,7 @@ export function DashboardPage() {
                                 const remaining = total - used;
                                 mainValue = `${remaining}`;
                                 subText = 'Ingressi Rimanenti';
+                                detailText = `Usati: ${used} / ${total}`;
                                 showButton = remaining > 0;
 
                                 if (remaining <= 0) {
@@ -335,7 +341,8 @@ export function DashboardPage() {
                                     statusColor = '#FFD700';
                                     statusText = 'In esaurimento';
                                 } else {
-                                    statusText = `${used} utilizzati su ${total}`;
+                                    statusColor = 'var(--color-success)';
+                                    statusText = 'Attivo';
                                 }
                             }
 
@@ -372,9 +379,14 @@ export function DashboardPage() {
                                         <div style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: '1.2', marginBottom: '0.25rem' }}>
                                             {mainValue}
                                         </div>
-                                        <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                                        <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
                                             {subText}
                                         </div>
+                                        {detailText && (
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', background: 'var(--color-surface-hover)', padding: '4px 8px', borderRadius: '4px', display: 'inline-block' }}>
+                                                {detailText}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {showButton && (
@@ -396,12 +408,52 @@ export function DashboardPage() {
                                                 gap: '0.5rem'
                                             }}
                                         >
-                                            <CheckCircle size={18} /> Segna Presenza
+                                            <CheckCircle size={18} /> Check-in Giornaliero
                                         </button>
                                     )}
                                 </div>
                             );
                         })()
+                    )}
+
+                    {/* 2. Commission Rate Card - Always show if Rate > 0 */}
+                    {(user?.profile?.commissionRate || 0) > 0 && (
+                        <div style={{
+                            background: 'var(--color-surface)',
+                            padding: '1.5rem',
+                            borderRadius: 'var(--radius-lg)',
+                            border: '1px solid var(--color-primary)', // Highlight border for money
+                            boxShadow: '0 0 10px rgba(var(--color-primary-rgb), 0.1)',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between'
+                        }}>
+                            <div style={{
+                                position: 'absolute',
+                                top: 0, left: 0, width: '4px', height: '100%',
+                                background: 'var(--color-primary)'
+                            }} />
+
+                            <div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <DollarSign size={20} color="var(--color-primary)" />
+                                        Commissione
+                                    </div>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                                        Percentuale
+                                    </span>
+                                </div>
+                                <div style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: '1.2', marginBottom: '0.25rem' }}>
+                                    {user?.profile?.commissionRate}%
+                                </div>
+                                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
+                                    Su ogni lavoro
+                                </div>
+                            </div>
+                        </div>
                     )}
                     <div style={{
                         background: 'var(--color-surface)',
