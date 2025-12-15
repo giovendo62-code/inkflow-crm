@@ -72,16 +72,25 @@ export function FinancialsPage() {
                 setAppointments(periodFilteredAppointments);
 
                 // Calculate totals
+                // Calculate totals
                 const completed = periodFilteredAppointments.filter(a => a.status === 'COMPLETED');
-                const earnings = completed.reduce((sum, a) => sum + (a.financials?.priceQuote || 0), 0);
-                setTotalEarnings(earnings);
+                let earnings = completed.reduce((sum, a) => sum + (a.financials?.priceQuote || 0), 0);
 
-                const pending = periodFilteredAppointments.reduce((sum, a) => {
+                let pending = periodFilteredAppointments.reduce((sum, a) => {
                     if (!a.financials?.depositPaid && a.financials?.depositAmount) {
                         return sum + a.financials.depositAmount;
                     }
                     return sum;
                 }, 0);
+
+                // Apply Commission for Artists (Show Net Earnings)
+                if (!isManager && user?.profile?.commissionRate) {
+                    const rate = user.profile.commissionRate / 100;
+                    earnings = earnings * rate;
+                    pending = pending * rate;
+                }
+
+                setTotalEarnings(earnings);
                 setPendingDeposits(pending);
             } catch (error) {
                 console.error("Error loading financials:", error);
@@ -273,7 +282,7 @@ export function FinancialsPage() {
                         marginBottom: '0.5rem',
                         fontSize: '0.9rem'
                     }}>
-                        Total Earnings (Completed)
+                        Total Earnings {(!isManager && user?.profile?.commissionRate) ? '(Net)' : '(Completed)'}
                     </h3>
                     <p style={{
                         fontSize: '2.5rem',
