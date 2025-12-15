@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../../lib/storage';
 import { type User, type Appointment } from '../../types';
 import { useAuth } from '../auth/AuthContext';
-import { ArrowLeft, Calendar, Euro, User as UserIcon, MessageCircle, Mail, MapPin } from 'lucide-react';
+import { ArrowLeft, Calendar, Euro, User as UserIcon, MessageCircle, Mail, MapPin, Lock, Eye, EyeOff } from 'lucide-react';
 import { usePrivacy } from '../context/PrivacyContext';
 import classes from '../crm/ClientListPage.module.css';
 
@@ -18,6 +18,33 @@ export function OperatorDetailsPage() {
     const [loading, setLoading] = useState(true);
 
     const { showFinancials } = usePrivacy();
+
+    // Password Management State
+    const [isEditingPassword, setIsEditingPassword] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+
+    const handleSavePassword = async () => {
+        if (!operator || !currentUser?.tenantId) return;
+
+        try {
+            const updatedUser: User = {
+                ...operator,
+                profile: {
+                    ...operator.profile,
+                    password: newPassword
+                }
+            };
+
+            await storage.saveUser(updatedUser);
+            setOperator(updatedUser);
+            setIsEditingPassword(false);
+            alert("Password aggiornata con successo!");
+        } catch (error) {
+            console.error("Failed to update password:", error);
+            alert("Errore aggiornamento password");
+        }
+    };
 
     useEffect(() => {
         const loadData = async () => {
@@ -137,6 +164,76 @@ export function OperatorDetailsPage() {
                                     <MapPin size={16} /> {operator.profile.address}
                                 </div>
                             )}
+
+                            {/* Password Section */}
+                            <div style={{
+                                marginTop: '1rem',
+                                borderTop: '1px solid var(--color-border)',
+                                paddingTop: '1rem',
+                                width: '100%',
+                                maxWidth: '400px'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                    <span style={{ fontSize: '0.875rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <Lock size={14} /> Password Accesso
+                                    </span>
+                                    {!isEditingPassword ? (
+                                        <button
+                                            onClick={() => setIsEditingPassword(true)}
+                                            style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                                        >
+                                            Modifica
+                                        </button>
+                                    ) : (
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button
+                                                onClick={() => {
+                                                    setNewPassword((operator.profile as any)?.password || '');
+                                                    setIsEditingPassword(false);
+                                                }}
+                                                style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                Annulla
+                                            </button>
+                                            <button
+                                                onClick={handleSavePassword}
+                                                style={{ fontSize: '0.75rem', color: 'var(--color-success)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                                            >
+                                                Salva
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {isEditingPassword ? (
+                                    <input
+                                        type="text"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.5rem',
+                                            borderRadius: 'var(--radius-md)',
+                                            border: '1px solid var(--color-primary)',
+                                            fontSize: '0.9rem'
+                                        }}
+                                        placeholder="Nuova password..."
+                                    />
+                                ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.5rem' }}>
+                                        <code style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                                            {showPassword ? ((operator.profile as any)?.password || '••••••••') : '••••••••'}
+                                        </code>
+                                        <button
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+                                            title={showPassword ? "Nascondi" : "Mostra"}
+                                        >
+                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
