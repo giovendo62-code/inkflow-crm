@@ -309,8 +309,10 @@ export function OperatorDetailsPage() {
                     </div>
 
                     {/* CONTRACTS / SETTINGS (Right Column) */}
-                    <div style={{ flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <div style={{ flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+                        {/* HEADER & ACTIONS */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
                                 <FileText size={18} /> Gestione Contratti
                             </h3>
@@ -330,140 +332,154 @@ export function OperatorDetailsPage() {
                             )}
                         </div>
 
-                        {/* EDIT MODE */}
-                        {isEditingContract && currentUser?.role === 'MANAGER' ? (
-                            <div style={{ background: 'var(--color-surface-hover)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                                {/* Rent Mode Dropdown */}
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
-                                        Modalità Affitto Postazione
-                                    </label>
+                        {/* 1. RENT SECTION */}
+                        <div style={{
+                            background: isEditingContract ? 'var(--color-surface-hover)' : 'var(--color-background)',
+                            padding: '1rem',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid var(--color-border)'
+                        }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: '600', marginBottom: '1rem', textTransform: 'uppercase' }}>
+                                Modalità Affitto
+                            </div>
+
+                            {isEditingContract ? (
+                                /* EDIT MODE - RENT */
+                                <div>
                                     <select
                                         value={tempProfile.contractType || ''}
                                         onChange={e => setTempProfile({ ...tempProfile, contractType: (e.target.value as any) || undefined })}
-                                        style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}
+                                        style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', marginBottom: '1rem' }}
                                     >
                                         <option value="">Nessun Affitto</option>
                                         <option value="RENT_MONTHLY">Affitto Mensile</option>
                                         <option value="RENT_PACK">Pacchetto Presenze</option>
                                     </select>
-                                </div>
 
-                                {/* Conditional Rent Fields */}
-                                {tempProfile.contractType === 'RENT_MONTHLY' && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
-                                        <div>
-                                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Importo (€)</label>
-                                            <input type="number" value={tempProfile.rentAmount || ''} onChange={e => setTempProfile({ ...tempProfile, rentAmount: parseFloat(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                    {tempProfile.contractType === 'RENT_MONTHLY' && (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                            <div>
+                                                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Importo (€)</label>
+                                                <input type="number" value={tempProfile.rentAmount || ''} onChange={e => setTempProfile({ ...tempProfile, rentAmount: parseFloat(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                            </div>
+                                            <div>
+                                                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Rinnovo</label>
+                                                <input type="date" value={tempProfile.rentRenewalDate || ''} onChange={e => setTempProfile({ ...tempProfile, rentRenewalDate: e.target.value })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Rinnovo</label>
-                                            <input type="date" value={tempProfile.rentRenewalDate || ''} onChange={e => setTempProfile({ ...tempProfile, rentRenewalDate: e.target.value })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
-                                        </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {tempProfile.contractType === 'RENT_PACK' && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
-                                        <div>
-                                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Importo (€)</label>
-                                            <input type="number" value={tempProfile.rentAmount || ''} onChange={e => setTempProfile({ ...tempProfile, rentAmount: parseFloat(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
-                                        </div>
-                                        <div>
-                                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Totale Pres.</label>
-                                            <input type="number" value={tempProfile.rentPackPresences || ''} onChange={e => setTempProfile({ ...tempProfile, rentPackPresences: parseInt(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
-                                        </div>
-                                        <div>
-                                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Già Usate</label>
-                                            <input type="number" value={tempProfile.rentUsedPresences || 0} onChange={e => setTempProfile({ ...tempProfile, rentUsedPresences: parseInt(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Dedicated Commission Section */}
-                                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '1rem' }}>
-                                    <label style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'block' }}>
-                                        Commissione sui Lavori
-                                    </label>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={(tempProfile.commissionRate || 0) > 0}
-                                            onChange={e => setTempProfile({ ...tempProfile, commissionRate: e.target.checked ? 50 : 0 })}
-                                        />
-                                        <span style={{ fontSize: '0.875rem' }}>Attiva Commissione</span>
-                                    </div>
-                                    {((tempProfile.commissionRate || 0) > 0) && (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <input
-                                                type="number"
-                                                value={tempProfile.commissionRate || ''}
-                                                onChange={(e) => setTempProfile({ ...tempProfile, commissionRate: parseInt(e.target.value) || 0 })}
-                                                style={{ width: '80px', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-                                            />
-                                            <span style={{ fontSize: '0.875rem' }}>%</span>
+                                    {tempProfile.contractType === 'RENT_PACK' && (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                                            <div>
+                                                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Importo (€)</label>
+                                                <input type="number" value={tempProfile.rentAmount || ''} onChange={e => setTempProfile({ ...tempProfile, rentAmount: parseFloat(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                            </div>
+                                            <div>
+                                                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Totale Pres.</label>
+                                                <input type="number" value={tempProfile.rentPackPresences || ''} onChange={e => setTempProfile({ ...tempProfile, rentPackPresences: parseInt(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                            </div>
+                                            <div>
+                                                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Già Usate</label>
+                                                <input type="number" value={tempProfile.rentUsedPresences || 0} onChange={e => setTempProfile({ ...tempProfile, rentUsedPresences: parseInt(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                            </div>
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        ) : (
-                            /* VIEW MODE */
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {/* Rent Card */}
-                                {(operator.profile?.contractType === 'RENT_MONTHLY' || operator.profile?.contractType === 'RENT_PACK') ? (
-                                    <div style={{ background: 'var(--color-background)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: '600', marginBottom: '0.5rem' }}>
-                                            AFFITTO POSTAZIONE
+                            ) : (
+                                /* VIEW MODE - RENT */
+                                <div>
+                                    {operator.profile?.contractType === 'RENT_MONTHLY' ? (
+                                        <div>
+                                            <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>€{operator.profile.rentAmount} <span style={{ fontSize: '0.8rem', fontWeight: 'normal' }}>/ mese</span></div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Prossimo rinnovo: {operator.profile.rentRenewalDate ? new Date(operator.profile.rentRenewalDate).toLocaleDateString() : 'N/D'}</div>
                                         </div>
-                                        {operator.profile.contractType === 'RENT_MONTHLY' ? (
-                                            <div>
-                                                <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>€{operator.profile.rentAmount} <span style={{ fontSize: '0.8rem', fontWeight: 'normal' }}>/ mese</span></div>
-                                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Prossimo rinnovo: {operator.profile.rentRenewalDate ? new Date(operator.profile.rentRenewalDate).toLocaleDateString() : 'N/D'}</div>
-                                            </div>
-                                        ) : (
-                                            <div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                                                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
-                                                        {operator.profile.rentUsedPresences || 0} <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 'normal' }}>/ {operator.profile.rentPackPresences || 0} pr.</span>
-                                                    </div>
-                                                    <div style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>€{operator.profile.rentAmount}</div>
+                                    ) : operator.profile?.contractType === 'RENT_PACK' ? (
+                                        <div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                                <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
+                                                    {operator.profile.rentUsedPresences || 0} <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 'normal' }}>/ {operator.profile.rentPackPresences || 0} pr.</span>
                                                 </div>
-                                                <div style={{ width: '100%', height: '6px', background: 'var(--color-border)', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
-                                                    <div style={{
-                                                        width: `${Math.min(100, ((operator.profile.rentUsedPresences || 0) / (operator.profile.rentPackPresences || 1)) * 100)}%`,
-                                                        height: '100%',
-                                                        background: 'var(--color-primary)'
-                                                    }} />
-                                                </div>
-                                                <button onClick={handleAddPresence} className={classes.primaryButton} style={{ marginTop: '0.75rem', width: '100%', justifyContent: 'center', padding: '0.5rem', fontSize: '0.8rem' }}>
-                                                    <CheckCircle size={14} /> Segna Presenza
-                                                </button>
+                                                <div style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>€{operator.profile.rentAmount}</div>
                                             </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div style={{ padding: '1rem', border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-text-muted)', textAlign: 'center', fontSize: '0.875rem' }}>
-                                        Nessun contratto di affitto attivo
-                                    </div>
-                                )}
+                                            <div style={{ width: '100%', height: '6px', background: 'var(--color-border)', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
+                                                <div style={{
+                                                    width: `${Math.min(100, ((operator.profile.rentUsedPresences || 0) / (operator.profile.rentPackPresences || 1)) * 100)}%`,
+                                                    height: '100%',
+                                                    background: 'var(--color-primary)'
+                                                }} />
+                                            </div>
+                                            <button onClick={handleAddPresence} className={classes.primaryButton} style={{ marginTop: '0.75rem', width: '100%', justifyContent: 'center', padding: '0.5rem', fontSize: '0.8rem' }}>
+                                                <CheckCircle size={14} /> Segna Presenza
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', fontStyle: 'italic' }}>
+                                            Nessun contratto di affitto attivo.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
 
-                                {/* Commission Card */}
-                                {((operator.profile?.commissionRate || 0) > 0) ? (
-                                    <div style={{ background: 'var(--color-background)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: '600', marginBottom: '0.5rem' }}>
-                                            COMMISSIONE SUI LAVORI
-                                        </div>
-                                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                                            {operator.profile?.commissionRate}%
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div style={{ padding: '1rem', border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-text-muted)', textAlign: 'center', fontSize: '0.875rem' }}>
-                                        Nessuna commissione attiva
-                                    </div>
-                                )}
+                        {/* 2. COMMISSION SECTION - SEPARATE BOX */}
+                        <div style={{
+                            background: isEditingContract ? 'var(--color-surface-hover)' : 'var(--color-background)',
+                            padding: '1rem',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid var(--color-border)'
+                        }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: '600', marginBottom: '1rem', textTransform: 'uppercase' }}>
+                                Commissione
                             </div>
-                        )}
+
+                            {isEditingContract ? (
+                                /* EDIT MODE - COMMISSION */
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input
+                                            type="checkbox"
+                                            id="edit-commission-check"
+                                            checked={(tempProfile.commissionRate || 0) > 0}
+                                            onChange={e => setTempProfile({ ...tempProfile, commissionRate: e.target.checked ? 50 : 0 })}
+                                            style={{ width: '16px', height: '16px' }}
+                                        />
+                                        <label htmlFor="edit-commission-check" style={{ fontSize: '0.9rem', fontWeight: '500' }}>Attiva Commissione sui Lavori</label>
+                                    </div>
+
+                                    {((tempProfile.commissionRate || 0) > 0) && (
+                                        <div style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
+                                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '0.25rem' }}>Percentuale (%)</label>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <input
+                                                    type="number"
+                                                    value={tempProfile.commissionRate || ''}
+                                                    onChange={(e) => setTempProfile({ ...tempProfile, commissionRate: parseInt(e.target.value) || 0 })}
+                                                    style={{ width: '80px', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                                                />
+                                                <span style={{ fontSize: '0.875rem' }}>%</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                /* VIEW MODE - COMMISSION */
+                                <div>
+                                    {((operator.profile?.commissionRate || 0) > 0) ? (
+                                        <div>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                                                {operator.profile?.commissionRate}%
+                                            </div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>su ogni servizio completato</div>
+                                        </div>
+                                    ) : (
+                                        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', fontStyle: 'italic' }}>
+                                            Nessuna commissione attiva.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
