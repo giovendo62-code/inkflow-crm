@@ -396,22 +396,34 @@ export function OperatorDetailsPage() {
                                         </div>
                                     ) : operator.profile?.contractType === 'RENT_PACK' ? (
                                         <div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                                                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
                                                     {operator.profile.rentUsedPresences || 0} <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 'normal' }}>/ {operator.profile.rentPackPresences || 0} pr.</span>
                                                 </div>
-                                                <div style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>€{operator.profile.rentAmount}</div>
+                                                <button
+                                                    onClick={handleAddPresence}
+                                                    className={classes.primaryButton}
+                                                    style={{
+                                                        padding: '0.4rem 0.8rem',
+                                                        fontSize: '0.75rem',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        whiteSpace: 'nowrap'
+                                                    }}
+                                                >
+                                                    <CheckCircle size={14} /> Segna Presenza
+                                                </button>
                                             </div>
-                                            <div style={{ width: '100%', height: '6px', background: 'var(--color-border)', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
+                                            <div style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>€{operator.profile.rentAmount} <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>(valore pacchetto)</span></div>
+
+                                            <div style={{ width: '100%', height: '6px', background: 'var(--color-border)', borderRadius: '3px', marginTop: '0.75rem', overflow: 'hidden' }}>
                                                 <div style={{
                                                     width: `${Math.min(100, ((operator.profile.rentUsedPresences || 0) / (operator.profile.rentPackPresences || 1)) * 100)}%`,
                                                     height: '100%',
                                                     background: 'var(--color-primary)'
                                                 }} />
                                             </div>
-                                            <button onClick={handleAddPresence} className={classes.primaryButton} style={{ marginTop: '0.75rem', width: '100%', justifyContent: 'center', padding: '0.5rem', fontSize: '0.8rem' }}>
-                                                <CheckCircle size={14} /> Segna Presenza
-                                            </button>
                                         </div>
                                     ) : (
                                         <div style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', fontStyle: 'italic' }}>
