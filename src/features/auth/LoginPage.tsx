@@ -402,10 +402,10 @@ export function LoginPage() {
 
                             <div style={{
                                 background: '#ffffff',
-                                padding: '1.5rem',
+                                padding: '2rem',
                                 borderRadius: '16px',
-                                border: '3px solid #1f2937',
-                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                                border: '4px solid #ffffff',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                             }}>
                                 <QRCode
                                     value="https://inkflow-crm-4bau.vercel.app/login"
