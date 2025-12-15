@@ -68,12 +68,32 @@ export function OperatorDetailsPage() {
         if (!operator || !currentUser?.tenantId) return;
 
         try {
+            // Parse numeric values from input strings if necessary
+            const rentAmount = tempProfile.rentAmount !== undefined
+                ? (typeof tempProfile.rentAmount === 'string' && tempProfile.rentAmount === '' ? 0 : parseFloat(tempProfile.rentAmount as any))
+                : 0;
+
+            const rentPackPresences = tempProfile.rentPackPresences !== undefined
+                ? (typeof tempProfile.rentPackPresences === 'string' && tempProfile.rentPackPresences === '' ? 0 : parseInt(tempProfile.rentPackPresences as any))
+                : 0;
+
+            const rentUsedPresences = tempProfile.rentUsedPresences !== undefined
+                ? (typeof tempProfile.rentUsedPresences === 'string' && tempProfile.rentUsedPresences === '' ? 0 : parseInt(tempProfile.rentUsedPresences as any))
+                : 0;
+
+            const commissionRate = tempProfile.commissionRate !== undefined
+                ? (typeof tempProfile.commissionRate === 'string' && tempProfile.commissionRate === '' ? 0 : parseInt(tempProfile.commissionRate as any))
+                : 0;
+
             const updatedUser: User = {
                 ...operator,
                 profile: {
                     ...operator.profile,
                     ...tempProfile,
-                    commissionRate: tempProfile.commissionRate || 0
+                    rentAmount: isNaN(rentAmount) ? 0 : rentAmount,
+                    rentPackPresences: isNaN(rentPackPresences) ? 0 : rentPackPresences,
+                    rentUsedPresences: isNaN(rentUsedPresences) ? 0 : rentUsedPresences,
+                    commissionRate: isNaN(commissionRate) ? 0 : commissionRate
                 }
             };
 
@@ -86,6 +106,7 @@ export function OperatorDetailsPage() {
             alert("Errore aggiornamento contratto");
         }
     };
+
 
     // ... (useEffect for loadData remains same) ...
 
@@ -369,7 +390,7 @@ export function OperatorDetailsPage() {
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                                             <div>
                                                 <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Importo (€)</label>
-                                                <input type="number" value={tempProfile.rentAmount || ''} onChange={e => setTempProfile({ ...tempProfile, rentAmount: parseFloat(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                                <input type="number" value={tempProfile.rentAmount || ''} onChange={e => setTempProfile({ ...tempProfile, rentAmount: e.target.value as any })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
                                             </div>
                                             <div>
                                                 <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Rinnovo</label>
@@ -382,15 +403,15 @@ export function OperatorDetailsPage() {
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
                                             <div>
                                                 <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Importo (€)</label>
-                                                <input type="number" value={tempProfile.rentAmount || ''} onChange={e => setTempProfile({ ...tempProfile, rentAmount: parseFloat(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                                <input type="number" value={tempProfile.rentAmount || ''} onChange={e => setTempProfile({ ...tempProfile, rentAmount: e.target.value as any })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
                                             </div>
                                             <div>
                                                 <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Totale Pres.</label>
-                                                <input type="number" value={tempProfile.rentPackPresences || ''} onChange={e => setTempProfile({ ...tempProfile, rentPackPresences: parseInt(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                                <input type="number" value={tempProfile.rentPackPresences || ''} onChange={e => setTempProfile({ ...tempProfile, rentPackPresences: e.target.value as any })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
                                             </div>
                                             <div>
                                                 <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Già Usate</label>
-                                                <input type="number" value={tempProfile.rentUsedPresences || 0} onChange={e => setTempProfile({ ...tempProfile, rentUsedPresences: parseInt(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                                <input type="number" value={tempProfile.rentUsedPresences || 0} onChange={e => setTempProfile({ ...tempProfile, rentUsedPresences: e.target.value as any })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
                                             </div>
                                         </div>
                                     )}
@@ -475,7 +496,7 @@ export function OperatorDetailsPage() {
                                                 <input
                                                     type="number"
                                                     value={tempProfile.commissionRate || ''}
-                                                    onChange={(e) => setTempProfile({ ...tempProfile, commissionRate: parseInt(e.target.value) || 0 })}
+                                                    onChange={(e) => setTempProfile({ ...tempProfile, commissionRate: e.target.value as any })}
                                                     style={{ width: '80px', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                                                 />
                                                 <span style={{ fontSize: '0.875rem' }}>%</span>
