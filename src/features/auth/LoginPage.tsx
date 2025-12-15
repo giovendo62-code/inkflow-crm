@@ -369,7 +369,7 @@ export function LoginPage() {
                         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                         backgroundColor: '#000000',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        zIndex: 200
+                        zIndex: 9999
                     }} onClick={() => setShowQR(false)}>
                         <div style={{
                             background: '#ffffff',
@@ -408,7 +408,7 @@ export function LoginPage() {
                                 boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                             }}>
                                 <QRCode
-                                    value={window.location.href}
+                                    value="https://inkflow-crm-4bau.vercel.app/login"
                                     size={256}
                                     level="H"
                                     style={{ height: "auto", maxWidth: "100%", width: "100%", display: 'block' }}
