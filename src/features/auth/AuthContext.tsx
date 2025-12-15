@@ -21,6 +21,7 @@ interface AuthContextType {
     login: (email: string, password?: string, requiredRole?: UserRole) => Promise<void>;
     register: (email: string, password: string, name: string, role: string) => Promise<void>;
     logout: () => void;
+    refreshUser: () => Promise<void>;
     loading: boolean;
     error: string | null;
 }
@@ -198,8 +199,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Opzionale: supabase.auth.signOut() se usassimo auth nativa
     };
 
+    const refreshUser = async () => {
+        if (!user) return;
+
+        try {
+            const users = await storage.getUsers();
+            const updatedUser = users.find(u => u.id === user.id);
+
+            if (updatedUser) {
+                setUser(updatedUser);
+                localStorage.setItem('inkflow_session', JSON.stringify(updatedUser));
+            }
+        } catch (error) {
+            console.error('Failed to refresh user:', error);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout, loading, error }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout, refreshUser, loading, error }}>
             {children}
         </AuthContext.Provider>
     );

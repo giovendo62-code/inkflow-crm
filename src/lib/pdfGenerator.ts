@@ -127,8 +127,28 @@ export async function generateConsentPDF(
     // Add signature image if available
     if (signatureImage) {
         try {
-            const signatureWidth = 80;
-            const signatureHeight = 40;
+            // Load image to get original dimensions
+            const img = new Image();
+            await new Promise<void>((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = reject;
+                img.src = signatureImage;
+            });
+
+            // Calculate dimensions maintaining aspect ratio
+            const maxSignatureWidth = 100; // Max width in mm
+            const maxSignatureHeight = 50; // Max height in mm
+
+            const imgAspectRatio = img.width / img.height;
+
+            let signatureWidth = maxSignatureWidth;
+            let signatureHeight = maxSignatureWidth / imgAspectRatio;
+
+            // If height exceeds max, scale down based on height
+            if (signatureHeight > maxSignatureHeight) {
+                signatureHeight = maxSignatureHeight;
+                signatureWidth = maxSignatureHeight * imgAspectRatio;
+            }
 
             // Check if we need a new page for signature
             if (yPosition + signatureHeight > pageHeight - margin) {
@@ -140,7 +160,7 @@ export async function generateConsentPDF(
             doc.setDrawColor(0, 0, 0);
             doc.rect(margin, yPosition, signatureWidth, signatureHeight);
 
-            // Add signature image
+            // Add signature image with correct aspect ratio
             doc.addImage(signatureImage, 'PNG', margin + 2, yPosition + 2, signatureWidth - 4, signatureHeight - 4);
 
             yPosition += signatureHeight + 5;

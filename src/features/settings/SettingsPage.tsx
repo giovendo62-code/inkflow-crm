@@ -7,7 +7,7 @@ import QRCode from 'qrcode';
 import { useAuth } from '../auth/AuthContext';
 
 export function SettingsPage() {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const [tenant, setTenant] = useState<Tenant | null>(null);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'general' | 'appearance'>('general');
@@ -51,6 +51,7 @@ export function SettingsPage() {
                 }
             };
             await storage.saveUser(updatedUser);
+            await refreshUser(); // Refresh user context to sync across devices
             alert('Profilo manager aggiornato con successo!');
         } catch (e) {
             console.error(e);
