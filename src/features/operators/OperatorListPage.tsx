@@ -102,11 +102,22 @@ export function OperatorListPage() {
     const handleOpenEditModal = (user: User) => {
         setEditMode(true);
         setCurrentUserId(user.id);
+
+        // Migrate legacy 'COMMISSION' contractType to new system
+        let migratedProfile = { ...user.profile };
+        if (user.profile?.contractType === 'COMMISSION') {
+            migratedProfile = {
+                ...user.profile,
+                contractType: undefined, // Remove old COMMISSION type
+                commissionRate: user.profile.commissionRate || 50
+            };
+        }
+
         setFormData({
             ...user,
             profile: {
-                ...user.profile,
-                commissionRate: user.profile?.commissionRate || 50
+                ...migratedProfile,
+                commissionRate: migratedProfile.commissionRate || 0
             }
         });
         setCreatedCredentials(null); // Fix: Ensure credentials overlay is hidden
@@ -712,7 +723,7 @@ export function OperatorListPage() {
                                     </div>
                                 </div>
 
-                                {/* Contract Section */}
+                                {/* CONTRACT DATA - Simplified */}
                                 <div style={{
                                     background: 'var(--color-surface-hover)',
                                     padding: '1.5rem',
@@ -724,171 +735,227 @@ export function OperatorListPage() {
                                         💼 Dati Contratto
                                     </h3>
 
-                                    {/* 1. Rent Mode Selection */}
-                                    <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.75rem', display: 'block', fontWeight: '500' }}>
+                                    {/* Rent Mode Dropdown */}
+                                    <div className={classes.group} style={{ marginBottom: '1.5rem' }}>
+                                        <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'block', fontWeight: '500' }}>
                                             Modalità Affitto Postazione
                                         </label>
-
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
-                                            {/* No Rent */}
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: !formData.profile?.contractType ? 'var(--color-surface)' : 'transparent' }}>
-                                                <input
-                                                    type="radio"
-                                                    name="rentMode"
-                                                    checked={!formData.profile?.contractType}
-                                                    onChange={() => setFormData({ ...formData, profile: { ...formData.profile!, contractType: undefined, rentAmount: undefined, rentRenewalDate: undefined, rentPackPresences: undefined, rentUsedPresences: undefined } })}
-                                                />
-                                                <span style={{ fontSize: '0.875rem' }}>Nessun Affitto</span>
-                                            </label>
-
-                                            {/* Monthly Rent */}
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: formData.profile?.contractType === 'RENT_MONTHLY' ? 'var(--color-surface)' : 'transparent' }}>
-                                                <input
-                                                    type="radio"
-                                                    name="rentMode"
-                                                    checked={formData.profile?.contractType === 'RENT_MONTHLY'}
-                                                    onChange={() => setFormData({ ...formData, profile: { ...formData.profile!, contractType: 'RENT_MONTHLY' } })}
-                                                />
-                                                <span style={{ fontSize: '0.875rem' }}>Affitto Mensile</span>
-                                            </label>
-
-                                            {/* Pack Rent */}
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: formData.profile?.contractType === 'RENT_PACK' ? 'var(--color-surface)' : 'transparent' }}>
-                                                <input
-                                                    type="radio"
-                                                    name="rentMode"
-                                                    checked={formData.profile?.contractType === 'RENT_PACK'}
-                                                    onChange={() => setFormData({ ...formData, profile: { ...formData.profile!, contractType: 'RENT_PACK' } })}
-                                                />
-                                                <span style={{ fontSize: '0.875rem' }}>Pacchetto Presenze</span>
-                                            </label>
-                                        </div>
-
-                                        {/* Monthly Rent Fields */}
-                                        {formData.profile?.contractType === 'RENT_MONTHLY' && (
-                                            <div style={{
-                                                background: 'var(--color-surface)',
-                                                padding: '1rem',
-                                                borderRadius: 'var(--radius-md)',
-                                                border: '1px solid var(--color-border)',
-                                                marginTop: '0.75rem',
-                                                display: 'grid',
-                                                gridTemplateColumns: '1fr 1fr',
-                                            }}>
-                                                <div className={classes.group}>
-                                                    <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Importo Mensile (€)</label>
-                                                    <input type="number" className={classes.searchInput} style={{ width: '100%' }}
-                                                        value={formData.profile?.rentAmount || ''}
-                                                        placeholder="Es. 500"
-                                                        onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, rentAmount: parseFloat(e.target.value) } })} />
-                                                </div>
-                                                <div className={classes.group}>
-                                                    <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Prossimo Rinnovo</label>
-                                                    <input type="date" className={classes.searchInput} style={{ width: '100%' }}
-                                                        value={formData.profile?.rentRenewalDate || ''}
-                                                        onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, rentRenewalDate: e.target.value } })} />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Pack Rent Fields */}
-                                        {formData.profile?.contractType === 'RENT_PACK' && (
-                                            <div style={{
-                                                background: 'var(--color-surface)',
-                                                padding: '1rem',
-                                                borderRadius: 'var(--radius-md)',
-                                                border: '1px solid var(--color-border)',
-                                                marginTop: '0.75rem',
-                                                display: 'grid',
-                                                gridTemplateColumns: editMode ? '1fr 1fr 1fr' : '1fr 1fr',
-                                                gap: '1rem'
-                                            }}>
-                                                <div className={classes.group}>
-                                                    <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Importo Pacchetto (€)</label>
-                                                    <input type="number" className={classes.searchInput} style={{ width: '100%' }}
-                                                        value={formData.profile?.rentAmount || ''}
-                                                        placeholder="Es. 300"
-                                                        onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, rentAmount: parseFloat(e.target.value) } })} />
-                                                </div>
-                                                <div className={classes.group}>
-                                                    <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Totale Presenze</label>
-                                                    <input type="number" className={classes.searchInput} style={{ width: '100%' }}
-                                                        value={formData.profile?.rentPackPresences || ''}
-                                                        placeholder="Es. 10"
-                                                        onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, rentPackPresences: parseInt(e.target.value) } })} />
-                                                </div>
-                                                {editMode && (
-                                                    <div className={classes.group}>
-                                                        <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Già Usate</label>
-                                                        <input type="number" className={classes.searchInput} style={{ width: '100%' }}
-                                                            value={formData.profile?.rentUsedPresences || 0}
-                                                            onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, rentUsedPresences: parseInt(e.target.value) } })} />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
+                                        <select
+                                            className={classes.searchInput}
+                                            style={{ width: '100%' }}
+                                            value={formData.profile?.contractType || ''}
+                                            onChange={e => {
+                                                const value = e.target.value;
+                                                setFormData({
+                                                    ...formData,
+                                                    profile: {
+                                                        ...formData.profile!,
+                                                        contractType: value || undefined
+                                                    }
+                                                });
+                                            }}
+                                        >
+                                            <option value="">Nessun Affitto</option>
+                                            <option value="RENT_MONTHLY">Affitto Mensile</option>
+                                            <option value="RENT_PACK">Pacchetto Presenze</option>
+                                        </select>
                                     </div>
 
-                                    {/* 2. Commission Clause - Optional, can be combined with any rent mode */}
-                                    <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
-                                        <div style={{ marginBottom: '1rem' }}>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.75rem', borderRadius: 'var(--radius-md)', background: (formData.profile?.commissionRate || 0) > 0 ? 'var(--color-surface)' : 'transparent', border: '1px solid var(--color-border)' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={(formData.profile?.commissionRate || 0) > 0}
-                                                    onChange={e => {
-                                                        if (e.target.checked) {
-                                                            setFormData({ ...formData, profile: { ...formData.profile!, commissionRate: 50 } });
-                                                        } else {
-                                                            setFormData({ ...formData, profile: { ...formData.profile!, commissionRate: 0 } });
-                                                        }
-                                                    }}
-                                                />
-                                                <div style={{ flex: 1 }}>
-                                                    <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>Commissione sui Lavori</span>
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
-                                                        Percentuale aggiuntiva su ogni tatuaggio realizzato
-                                                    </div>
-                                                </div>
-                                            </label>
-                                        </div>
-
-                                        {/* Commission Rate Input - Shows only if checkbox is enabled */}
-                                        {(formData.profile?.commissionRate || 0) > 0 && (
-                                            <div className={classes.group} style={{
-                                                background: 'var(--color-surface)',
-                                                padding: '1rem',
-                                                borderRadius: 'var(--radius-md)',
-                                                border: '1px solid var(--color-border)'
-                                            }}>
-                                                <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'block' }}>
-                                                    Percentuale Commissione
+                                    {/* Monthly Rent Fields */}
+                                    {formData.profile?.contractType === 'RENT_MONTHLY' && (
+                                        <div style={{
+                                            background: 'var(--color-surface)',
+                                            padding: '1rem',
+                                            borderRadius: 'var(--radius-md)',
+                                            border: '1px solid var(--color-border)',
+                                            marginBottom: '1.5rem',
+                                            display: 'grid',
+                                            gridTemplateColumns: '1fr 1fr',
+                                            gap: '1rem'
+                                        }}>
+                                            <div className={classes.group}>
+                                                <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
+                                                    Importo Mensile (€)
                                                 </label>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                    <input
-                                                        type="range"
-                                                        min="0"
-                                                        max="100"
-                                                        step="5"
-                                                        value={formData.profile?.commissionRate || 50}
-                                                        onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, commissionRate: parseInt(e.target.value) } })}
-                                                        style={{ flex: 1 }}
-                                                    />
+                                                <input
+                                                    type="number"
+                                                    className={classes.searchInput}
+                                                    style={{ width: '100%' }}
+                                                    value={formData.profile?.rentAmount || ''}
+                                                    placeholder="Es. 500"
+                                                    onChange={e => setFormData({
+                                                        ...formData,
+                                                        profile: {
+                                                            ...formData.profile!,
+                                                            rentAmount: parseFloat(e.target.value) || undefined
+                                                        }
+                                                    })}
+                                                />
+                                            </div>
+                                            <div className={classes.group}>
+                                                <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
+                                                    Prossimo Rinnovo
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    className={classes.searchInput}
+                                                    style={{ width: '100%' }}
+                                                    value={formData.profile?.rentRenewalDate || ''}
+                                                    onChange={e => setFormData({
+                                                        ...formData,
+                                                        profile: {
+                                                            ...formData.profile!,
+                                                            rentRenewalDate: e.target.value
+                                                        }
+                                                    })}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Pack Rent Fields */}
+                                    {formData.profile?.contractType === 'RENT_PACK' && (
+                                        <div style={{
+                                            background: 'var(--color-surface)',
+                                            padding: '1rem',
+                                            borderRadius: 'var(--radius-md)',
+                                            border: '1px solid var(--color-border)',
+                                            marginBottom: '1.5rem',
+                                            display: 'grid',
+                                            gridTemplateColumns: editMode ? '1fr 1fr 1fr' : '1fr 1fr',
+                                            gap: '1rem'
+                                        }}>
+                                            <div className={classes.group}>
+                                                <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
+                                                    Importo Pacchetto (€)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    className={classes.searchInput}
+                                                    style={{ width: '100%' }}
+                                                    value={formData.profile?.rentAmount || ''}
+                                                    placeholder="Es. 300"
+                                                    onChange={e => setFormData({
+                                                        ...formData,
+                                                        profile: {
+                                                            ...formData.profile!,
+                                                            rentAmount: parseFloat(e.target.value) || undefined
+                                                        }
+                                                    })}
+                                                />
+                                            </div>
+                                            <div className={classes.group}>
+                                                <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
+                                                    Totale Presenze
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    className={classes.searchInput}
+                                                    style={{ width: '100%' }}
+                                                    value={formData.profile?.rentPackPresences || ''}
+                                                    placeholder="Es. 10"
+                                                    onChange={e => setFormData({
+                                                        ...formData,
+                                                        profile: {
+                                                            ...formData.profile!,
+                                                            rentPackPresences: parseInt(e.target.value) || undefined
+                                                        }
+                                                    })}
+                                                />
+                                            </div>
+                                            {editMode && (
+                                                <div className={classes.group}>
+                                                    <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>
+                                                        Già Usate
+                                                    </label>
                                                     <input
                                                         type="number"
                                                         className={classes.searchInput}
-                                                        style={{ width: '80px', textAlign: 'center', fontWeight: 'bold', fontSize: '1.1rem' }}
-                                                        value={formData.profile?.commissionRate || 50}
-                                                        min="0"
-                                                        max="100"
-                                                        onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, commissionRate: parseInt(e.target.value) || 0 } })}
+                                                        style={{ width: '100%' }}
+                                                        value={formData.profile?.rentUsedPresences || 0}
+                                                        onChange={e => setFormData({
+                                                            ...formData,
+                                                            profile: {
+                                                                ...formData.profile!,
+                                                                rentUsedPresences: parseInt(e.target.value) || 0
+                                                            }
+                                                        })}
                                                     />
-                                                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>%</span>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* COMMISSION SECTION - Separate and Independent */}
+                                <div style={{
+                                    background: 'var(--color-surface-hover)',
+                                    padding: '1.5rem',
+                                    borderRadius: 'var(--radius-md)',
+                                    marginBottom: '1rem',
+                                    border: '1px solid var(--color-border)'
+                                }}>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1.5rem', color: 'var(--color-text-primary)' }}>
+                                        💰 Commissione sui Lavori
+                                    </h3>
+
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.75rem',
+                                            cursor: 'pointer',
+                                            fontSize: '0.875rem',
+                                            fontWeight: '500'
+                                        }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={(formData.profile?.commissionRate || 0) > 0}
+                                                onChange={e => {
+                                                    setFormData({
+                                                        ...formData,
+                                                        profile: {
+                                                            ...formData.profile!,
+                                                            commissionRate: e.target.checked ? 50 : 0
+                                                        }
+                                                    });
+                                                }}
+                                            />
+                                            <span>Attiva Commissione</span>
+                                        </label>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.5rem', marginLeft: '2rem' }}>
+                                            Percentuale aggiuntiva su ogni tatuaggio realizzato (combinabile con affitto)
+                                        </p>
                                     </div>
+
+                                    {(formData.profile?.commissionRate || 0) > 0 && (
+                                        <div style={{
+                                            background: 'var(--color-surface)',
+                                            padding: '1rem',
+                                            borderRadius: 'var(--radius-md)',
+                                            border: '1px solid var(--color-border)'
+                                        }}>
+                                            <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'block' }}>
+                                                Percentuale Commissione (%)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                className={classes.searchInput}
+                                                style={{ width: '100%', fontSize: '1.1rem', fontWeight: 'bold' }}
+                                                value={formData.profile?.commissionRate || 50}
+                                                min="0"
+                                                max="100"
+                                                placeholder="50"
+                                                onChange={e => setFormData({
+                                                    ...formData,
+                                                    profile: {
+                                                        ...formData.profile!,
+                                                        commissionRate: parseInt(e.target.value) || 0
+                                                    }
+                                                })}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
