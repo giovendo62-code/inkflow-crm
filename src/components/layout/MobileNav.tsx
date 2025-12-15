@@ -1,13 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../features/auth/AuthContext';
 import { X, LayoutDashboard, Calendar, Users, MessageSquare, FileText, Settings, GraduationCap, MoreHorizontal, DollarSign, Palette, Send, Clock } from 'lucide-react';
 import classes from './MobileNav.module.css';
 
 export function MobileNav() {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const location = useLocation();
     const [showMoreMenu, setShowMoreMenu] = useState(false);
+
+    // Refresh user data when page becomes visible
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden && user) {
+                refreshUser();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [user?.id, refreshUser]);
 
     const isManager = user?.role === 'MANAGER';
     const isStudent = user?.role === 'STUDENT';

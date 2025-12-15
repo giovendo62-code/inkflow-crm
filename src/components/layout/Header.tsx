@@ -9,11 +9,31 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export function Header() {
-    const { user, logout } = useAuth();
+    const { user, logout, refreshUser } = useAuth();
     const [tenant, setTenant] = useState<Tenant | null>(null);
     const [unreadCount, setUnreadCount] = useState(0);
     const [showQR, setShowQR] = useState(false);
     const navigate = useNavigate();
+
+    // Refresh user data when page becomes visible (for avatar sync across devices)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden && user) {
+                refreshUser();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // Also refresh on mount
+        if (user) {
+            refreshUser();
+        }
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [user?.id, refreshUser]);
 
     useEffect(() => {
         const loadTenant = async () => {
