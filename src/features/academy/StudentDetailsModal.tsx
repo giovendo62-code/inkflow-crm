@@ -42,6 +42,7 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
     // Materials State
     const [materials, setMaterials] = useState<TeachingMaterial[]>([]);
     const [showMaterialForm, setShowMaterialForm] = useState(false);
+    const [isSavingMaterial, setIsSavingMaterial] = useState(false); // Moved here correctly
     const [newMaterial, setNewMaterial] = useState<{
         title: string;
         url: string;
@@ -139,7 +140,7 @@ export function StudentDetailsModal({ isOpen, onClose, student, course, onSave, 
         }
     };
 
-    const [isSavingMaterial, setIsSavingMaterial] = useState(false);
+
 
     const handleDeleteMaterial = async (id: string) => {
         if (confirm('Eliminare questo materiale?')) {
