@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import { usePrivacy } from '../context/PrivacyContext';
 import { storage } from '../../lib/storage';
 import { type Appointment, type Client, type TattooStyle, type Tenant } from '../../types';
-import { Calendar as CalendarIcon, User as UserIcon, MessageCircle, Bell, Eye, EyeOff, DollarSign } from 'lucide-react';
+import { Calendar as CalendarIcon, User as UserIcon, MessageCircle, Bell, Eye, EyeOff, DollarSign, CreditCard, Wallet } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { StudentDashboard } from '../academy/StudentDashboard';
 import { AppointmentDetailsModal } from '../calendar/AppointmentDetailsModal';
@@ -253,6 +253,90 @@ export function DashboardPage() {
                     gap: '1rem',
                     marginBottom: '2rem'
                 }}>
+                    {/* Contract Status Card (Rent Mode) */}
+                    {(user?.profile?.contractType === 'RENT_MONTHLY' || user?.profile?.contractType === 'RENT_PACK') && (
+                        (() => {
+                            let statusColor = 'var(--color-border)';
+                            let bgColor = 'var(--color-surface)';
+                            let statusText = '';
+                            let mainValue = '';
+                            let subText = '';
+
+                            if (user.profile.contractType === 'RENT_MONTHLY') {
+                                const renewalDate = user.profile.rentRenewalDate ? new Date(user.profile.rentRenewalDate) : null;
+                                if (renewalDate) {
+                                    mainValue = renewalDate.toLocaleDateString();
+                                    subText = 'Prossimo Rinnovo';
+                                    const daysLeft = Math.ceil((renewalDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+
+                                    if (daysLeft < 0) {
+                                        statusColor = 'var(--color-error)';
+                                        statusText = `Scaduto da ${Math.abs(daysLeft)} giorni`;
+                                    } else if (daysLeft <= 5) {
+                                        statusColor = '#FFD700'; // Gold/Warning
+                                        statusText = `Scade tra ${daysLeft} giorni`;
+                                    } else {
+                                        statusText = 'Attivo';
+                                    }
+                                } else {
+                                    mainValue = 'N/A';
+                                    subText = 'Data mancante';
+                                }
+                            } else {
+                                // RENT_PACK
+                                const total = user.profile.rentPackPresences || 0;
+                                const used = user.profile.rentUsedPresences || 0;
+                                const remaining = total - used;
+                                mainValue = `${remaining}`;
+                                subText = 'Ingressi Rimanenti';
+
+                                if (remaining <= 0) {
+                                    statusColor = 'var(--color-error)';
+                                    statusText = 'Esaurito';
+                                } else if (remaining <= 2) {
+                                    statusColor = '#FFD700';
+                                    statusText = 'In esaurimento';
+                                } else {
+                                    statusText = `${used} utilizzati su ${total}`;
+                                }
+                            }
+
+                            return (
+                                <div style={{
+                                    background: bgColor,
+                                    padding: '1.5rem',
+                                    borderRadius: 'var(--radius-lg)',
+                                    border: `1px solid ${statusColor === 'var(--color-border)' ? statusColor : statusColor}`,
+                                    boxShadow: statusColor !== 'var(--color-border)' ? `0 0 10px ${statusColor}20` : 'none',
+                                    position: 'relative',
+                                    overflow: 'hidden'
+                                }}>
+                                    {statusColor !== 'var(--color-border)' && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: 0, left: 0, width: '4px', height: '100%',
+                                            background: statusColor
+                                        }} />
+                                    )}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <Wallet size={20} color={statusColor !== 'var(--color-border)' ? statusColor : 'currentColor'} />
+                                            Stato Contratto
+                                        </div>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: statusColor !== 'var(--color-border)' ? statusColor : 'var(--color-text-muted)' }}>
+                                            {statusText}
+                                        </span>
+                                    </div>
+                                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                                        {mainValue}
+                                    </div>
+                                    <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                                        {subText}
+                                    </div>
+                                </div>
+                            );
+                        })()
+                    )}
                     <div style={{
                         background: 'var(--color-surface)',
                         padding: '1.5rem',
