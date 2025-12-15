@@ -185,9 +185,9 @@ export function OperatorDetailsPage() {
 
                 await storage.saveUser(updatedOp);
                 setOperator(updatedOp);
-            } catch (e) {
-                console.error(e);
-                alert("Errore durante il salvataggio della presenza.");
+            } catch (e: any) {
+                console.error("Add Presence Error:", e);
+                alert(`Errore salvataggio: ${e.message || JSON.stringify(e)}`);
             }
         }, 100);
     };
@@ -216,9 +216,9 @@ export function OperatorDetailsPage() {
                 await storage.saveUser(updatedOp);
                 setOperator(updatedOp);
                 alert("Contatore presenze azzerato!");
-            } catch (e) {
-                console.error(e);
-                alert("Errore durante l'azzeramento.");
+            } catch (e: any) {
+                console.error("Reset Presence Error:", e);
+                alert(`Errore reset: ${e.message || JSON.stringify(e)}`);
             }
         }, 100);
     };
