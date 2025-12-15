@@ -133,33 +133,42 @@ export function OperatorDetailsPage() {
         return client ? `${client.firstName} ${client.lastName}` : 'Sconosciuto';
     };
 
-    const handleAddPresence = async () => {
+    const handleAddPresence = async (e?: React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
         if (!operator) return;
-        if (!confirm("Confermi di voler segnare una presenza?")) return;
 
-        const currentUsed = operator.profile?.rentUsedPresences || 0;
-        const total = operator.profile?.rentPackPresences || 0;
+        // Small timeout to ensure UI is stable before alert
+        setTimeout(async () => {
+            if (!confirm("Confermi di voler segnare una presenza?")) return;
 
-        if (total > 0 && currentUsed >= total) {
-            alert("Attenzione: Il pacchetto di presenze è esaurito!");
-            return;
-        }
+            const currentUsed = operator.profile?.rentUsedPresences || 0;
+            const total = operator.profile?.rentPackPresences || 0;
 
-        try {
-            const updatedOp: User = {
-                ...operator,
-                profile: {
-                    ...operator.profile,
-                    rentUsedPresences: currentUsed + 1
-                }
-            };
+            if (total > 0 && currentUsed >= total) {
+                alert("Attenzione: Il pacchetto di presenze è esaurito!");
+                return;
+            }
 
-            await storage.saveUser(updatedOp);
-            setOperator(updatedOp);
-        } catch (e) {
-            console.error(e);
-            alert("Errore durante il salvataggio della presenza.");
-        }
+            try {
+                const updatedOp: User = {
+                    ...operator,
+                    profile: {
+                        ...operator.profile,
+                        rentUsedPresences: currentUsed + 1
+                    }
+                };
+
+                await storage.saveUser(updatedOp);
+                setOperator(updatedOp);
+            } catch (e) {
+                console.error(e);
+                alert("Errore durante il salvataggio della presenza.");
+            }
+        }, 100);
     };
 
     return (
