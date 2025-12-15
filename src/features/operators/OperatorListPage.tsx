@@ -700,7 +700,7 @@ export function OperatorListPage() {
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                                     <div className={classes.group}>
                                         <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Ruolo</label>
                                         <select className={classes.searchInput} style={{ width: '100%' }}
@@ -711,11 +711,76 @@ export function OperatorListPage() {
                                         </select>
                                     </div>
                                     <div className={classes.group}>
-                                        <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Commissione (%)</label>
-                                        <input type="number" className={classes.searchInput} style={{ width: '100%' }}
-                                            value={formData.profile?.commissionRate || ''}
-                                            onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, commissionRate: parseInt(e.target.value) } })} />
+                                        <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Tipo Contratto</label>
+                                        <select className={classes.searchInput} style={{ width: '100%' }}
+                                            value={formData.profile?.contractType || 'COMMISSION'}
+                                            onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, contractType: e.target.value as any } })}>
+                                            <option value="COMMISSION">Commissione %</option>
+                                            <option value="RENT_MONTHLY">Affitto Mensile</option>
+                                            <option value="RENT_PACK">Pacchetto Presenze</option>
+                                        </select>
                                     </div>
+                                </div>
+
+                                {/* Contract Details Conditional */}
+                                <div style={{
+                                    background: 'var(--color-surface-hover)',
+                                    padding: '1rem',
+                                    borderRadius: 'var(--radius-md)',
+                                    marginBottom: '1rem',
+                                    border: '1px solid var(--color-border)',
+                                    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'
+                                }}>
+                                    {(!formData.profile?.contractType || formData.profile.contractType === 'COMMISSION') && (
+                                        <div className={classes.group}>
+                                            <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Commissione (%)</label>
+                                            <input type="number" className={classes.searchInput} style={{ width: '100%' }}
+                                                value={formData.profile?.commissionRate || ''}
+                                                onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, commissionRate: parseInt(e.target.value) } })} />
+                                        </div>
+                                    )}
+
+                                    {formData.profile?.contractType === 'RENT_MONTHLY' && (
+                                        <>
+                                            <div className={classes.group}>
+                                                <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Importo Mensile (€)</label>
+                                                <input type="number" className={classes.searchInput} style={{ width: '100%' }}
+                                                    value={formData.profile?.rentAmount || ''}
+                                                    onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, rentAmount: parseFloat(e.target.value) } })} />
+                                            </div>
+                                            <div className={classes.group}>
+                                                <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Prossimo Rinnovo</label>
+                                                <input type="date" className={classes.searchInput} style={{ width: '100%' }}
+                                                    value={formData.profile?.rentRenewalDate || ''}
+                                                    onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, rentRenewalDate: e.target.value } })} />
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {formData.profile?.contractType === 'RENT_PACK' && (
+                                        <>
+                                            <div className={classes.group}>
+                                                <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Importo Pacchetto (€)</label>
+                                                <input type="number" className={classes.searchInput} style={{ width: '100%' }}
+                                                    value={formData.profile?.rentAmount || ''}
+                                                    onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, rentAmount: parseFloat(e.target.value) } })} />
+                                            </div>
+                                            <div className={classes.group}>
+                                                <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Totale Presenze</label>
+                                                <input type="number" className={classes.searchInput} style={{ width: '100%' }}
+                                                    value={formData.profile?.rentPackPresences || ''}
+                                                    onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, rentPackPresences: parseInt(e.target.value) } })} />
+                                            </div>
+                                            {editMode && (
+                                                <div className={classes.group}>
+                                                    <label style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Già Usate</label>
+                                                    <input type="number" className={classes.searchInput} style={{ width: '100%' }}
+                                                        value={formData.profile?.rentUsedPresences || 0}
+                                                        onChange={e => setFormData({ ...formData, profile: { ...formData.profile!, rentUsedPresences: parseInt(e.target.value) } })} />
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

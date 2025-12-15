@@ -154,12 +154,16 @@ export function Header() {
 
                 <div className={classes.separator} />
 
-                <div className={classes.user}>
+                <div
+                    className={classes.user}
+                    onClick={() => user?.id && navigate(`/artists/${user.id}`)}
+                    style={{ cursor: 'pointer' }}
+                >
                     <div className={classes.avatar}>
                         {user?.avatarUrl ? (
                             <img src={user.avatarUrl} alt={user.name} />
                         ) : (
-                            <div className={classes.avatarPlaceholder}>{user?.name[0]}</div>
+                            <div className={classes.avatarPlaceholder}>{user?.name?.[0]}</div>
                         )}
                     </div>
                     <div className={classes.userInfo}>

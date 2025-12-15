@@ -73,7 +73,7 @@ function App() {
                 </RoleGuard>
               } />
               <Route path="/artists/:id" element={
-                <RoleGuard allowedRoles={['MANAGER']}>
+                <RoleGuard allowedRoles={['MANAGER', 'ARTIST']}>
                   <OperatorDetailsPage />
                 </RoleGuard>
               } />
