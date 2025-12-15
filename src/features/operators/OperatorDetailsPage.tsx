@@ -290,8 +290,8 @@ export function OperatorDetailsPage() {
                                 )}
                             </div>
 
-                            {/* Contract Section (Editable) */}
-                            {currentUser?.role === 'MANAGER' && (
+                            {/* Contract Section (Visible to Manager or if Rent Contract active) */}
+                            {(currentUser?.role === 'MANAGER' || (operator.profile?.contractType && operator.profile.contractType !== 'COMMISSION')) && (
                                 <div style={{
                                     marginTop: '1rem',
                                     borderTop: '1px solid var(--color-border)',
@@ -303,32 +303,34 @@ export function OperatorDetailsPage() {
                                         <span style={{ fontSize: '0.875rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                             <FileText size={14} /> Dati Contratto
                                         </span>
-                                        {!isEditingContract ? (
-                                            <button
-                                                onClick={() => setIsEditingContract(true)}
-                                                style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
-                                            >
-                                                Modifica
-                                            </button>
-                                        ) : (
-                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        {currentUser?.role === 'MANAGER' && (
+                                            !isEditingContract ? (
                                                 <button
-                                                    onClick={() => setIsEditingContract(false)}
-                                                    style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                                                    onClick={() => setIsEditingContract(true)}
+                                                    style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
                                                 >
-                                                    Annulla
+                                                    Modifica
                                                 </button>
-                                                <button
-                                                    onClick={handleSaveContract}
-                                                    style={{ fontSize: '0.75rem', color: 'var(--color-success)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
-                                                >
-                                                    Salva
-                                                </button>
-                                            </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <button
+                                                        onClick={() => setIsEditingContract(false)}
+                                                        style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                                                    >
+                                                        Annulla
+                                                    </button>
+                                                    <button
+                                                        onClick={handleSaveContract}
+                                                        style={{ fontSize: '0.75rem', color: 'var(--color-success)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                                                    >
+                                                        Salva
+                                                    </button>
+                                                </div>
+                                            )
                                         )}
                                     </div>
 
-                                    {isEditingContract ? (
+                                    {isEditingContract && currentUser?.role === 'MANAGER' ? (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--color-surface-hover)', padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
                                             <div>
                                                 <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Tipo Contratto</label>
@@ -403,9 +405,23 @@ export function OperatorDetailsPage() {
                                         </div>
                                     ) : (
                                         <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-                                            {operator.profile?.contractType === 'RENT_MONTHLY' && 'Affitto Mensile'}
-                                            {operator.profile?.contractType === 'RENT_PACK' && 'Pacchetto Presenze'}
-                                            {(!operator.profile?.contractType || operator.profile?.contractType === 'COMMISSION') && 'Percentuale'}
+                                            {(!operator.profile?.contractType || operator.profile?.contractType === 'COMMISSION') && (
+                                                <div>Commissione: <strong>{operator.profile?.commissionRate || 50}%</strong></div>
+                                            )}
+                                            {operator.profile?.contractType === 'RENT_MONTHLY' && (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                    <div style={{ fontWeight: '500', color: 'var(--color-text-primary)' }}>Affitto Mensile</div>
+                                                    <div>Importo: €{operator.profile.rentAmount} / mese</div>
+                                                    <div>Rinnovo: <strong>{operator.profile.rentRenewalDate ? new Date(operator.profile.rentRenewalDate).toLocaleDateString() : 'N/D'}</strong></div>
+                                                </div>
+                                            )}
+                                            {operator.profile?.contractType === 'RENT_PACK' && (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                    <div style={{ fontWeight: '500', color: 'var(--color-text-primary)' }}>Pacchetto Presenze</div>
+                                                    <div>Utilizzato: <strong>{operator.profile.rentUsedPresences || 0}</strong> / {operator.profile.rentPackPresences || 0}</div>
+                                                    <div>Valore Pack: €{operator.profile.rentAmount}</div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
