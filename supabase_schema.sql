@@ -207,6 +207,9 @@ CREATE POLICY "Users see own tenant" ON users FOR SELECT
 CREATE POLICY "Users insert own tenant" ON users FOR INSERT
   WITH CHECK (tenant_id IN (SELECT tenant_id FROM users WHERE id = auth.uid()));
 
+CREATE POLICY "Users update own tenant" ON users FOR UPDATE
+  USING (tenant_id IN (SELECT tenant_id FROM users WHERE id = auth.uid()));
+
 -- CLIENTS: Vedere solo clienti del proprio tenant
 CREATE POLICY "Clients see own tenant" ON clients FOR SELECT
   USING (tenant_id IN (SELECT tenant_id FROM users WHERE id = auth.uid()));
