@@ -562,7 +562,8 @@ export function OperatorListPage() {
                 isModalOpen && (
                     <div style={{
                         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100
+                        backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
+                        padding: '1rem' // Ensure some spacing on mobile edges
                     }}>
                         {/* Modal Content */}
                         <div style={{
@@ -570,18 +571,20 @@ export function OperatorListPage() {
                             padding: '2rem',
                             borderRadius: 'var(--radius-lg)',
                             width: '100%',
-                            maxWidth: '600px',
+                            maxWidth: '600px', // On desktop
                             border: '1px solid var(--color-border)',
                             maxHeight: '90vh',
                             overflowY: 'auto',
-                            position: 'relative' // Per posizionare la X assoluta
+                            overflowX: 'hidden', // Prevent horizontal scroll
+                            position: 'relative',
+                            boxSizing: 'border-box' // Include padding in width
                         }}>
                             <button
                                 onClick={() => setIsModalOpen(false)}
                                 style={{
                                     position: 'absolute',
-                                    top: '1.5rem',
-                                    right: '1.5rem',
+                                    top: '1rem',
+                                    right: '1rem', // Tighter positioning on mobile matching padding
                                     background: 'var(--color-surface-hover)',
                                     border: '1px solid var(--color-border)',
                                     color: 'var(--color-text-primary)',

@@ -10,12 +10,33 @@
 
 @media (max-width: 768px) {
     .header {
-        padding: 0 12px;
+        padding: 0 16px;
+        /* Slightly more breathing room than 12px */
     }
 
+    /* On mobile, we show the avatar and name but compact */
     .userInfo {
+        display: flex;
+        /* Restore display */
+        max-width: 100px;
+        /* Limit width */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .userName {
+        font-size: 0.8rem;
+    }
+
+    .userRole {
         display: none;
-        /* Hide name/role on mobile - safest for space */
+        /* Hide role on mobile to save space */
+    }
+
+    .brandText {
+        display: none;
+        /* Keep brand text hidden on mobile as per previous step */
     }
 }
 
@@ -50,7 +71,8 @@
 .actions {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: 1rem;
+    /* Consistent gap using rem */
 }
 
 .iconBtn {

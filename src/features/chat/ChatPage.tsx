@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import { storage } from '../../lib/storage';
 import { supabase } from '../../lib/supabase';
 import { type ChatMessage } from '../../types';
-import { Send, Info, MessageSquare } from 'lucide-react';
+import { Send, Info, MessageSquare, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export function ChatPage() {
@@ -28,7 +28,7 @@ export function ChatPage() {
         const fetchAndMark = async () => {
             await loadMessages();
             if (user?.tenantId) {
-                await storage.markMessagesAsRead(user.tenantId);
+                await storage.markMessagesAsRead(user.tenantId, user.id);
             }
         };
 
@@ -93,6 +93,17 @@ export function ChatPage() {
         }
     };
 
+    const handleDeleteMessage = async (msgId: string) => {
+        if (!confirm('Vuoi davvero cancellare questo messaggio?')) return;
+        try {
+            await storage.deleteMessage(msgId);
+            setMessages(prev => prev.filter(m => m.id !== msgId));
+        } catch (error) {
+            console.error("Failed to delete message:", error);
+            alert("Errore eliminazione messaggio");
+        }
+    };
+
     return (
         <div style={{
             height: 'calc(100vh - 2rem)',
@@ -138,8 +149,32 @@ export function ChatPage() {
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: isSystemInfo ? 'center' : (isMe ? 'flex-end' : 'flex-start'),
-                            width: '100%'
+                            width: '100%',
+                            position: 'relative'
                         }}>
+                            {/* Delete Button for Manager */}
+                            {user?.role === 'MANAGER' && (
+                                <button
+                                    onClick={() => handleDeleteMessage(msg.id)}
+                                    style={{
+                                        position: 'absolute',
+                                        // Align opposite to the bubble side or just outside it
+                                        [isMe ? 'left' : 'right']: '10px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--color-text-muted)',
+                                        cursor: 'pointer',
+                                        padding: '4px',
+                                        opacity: 0.6
+                                    }}
+                                    title="Cancella messaggio"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            )}
+
                             {/* Avatar/Name only if not me and not info */}
                             {!isMe && !isSystemInfo && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', marginLeft: '0.5rem' }}>

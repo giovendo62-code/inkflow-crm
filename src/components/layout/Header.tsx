@@ -43,7 +43,7 @@ export function Header() {
                 .on(
                     'postgres_changes',
                     {
-                        event: 'INSERT',
+                        event: '*',
                         schema: 'public',
                         table: 'messages',
                         filter: `tenant_id=eq.${user.tenantId}`

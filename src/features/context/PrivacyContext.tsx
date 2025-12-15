@@ -9,8 +9,15 @@ const PrivacyContext = createContext<PrivacyContextType | undefined>(undefined);
 
 export function PrivacyProvider({ children }: { children: ReactNode }) {
     const [showFinancials, setShowFinancials] = useState(() => {
-        const saved = localStorage.getItem('inkflow_show_financials');
-        return saved !== null ? JSON.parse(saved) : true;
+        try {
+            const saved = localStorage.getItem('inkflow_show_financials');
+            // Check strictly for "undefined" string which can happen with bad saves
+            if (saved === 'undefined') return true;
+            return saved !== null ? JSON.parse(saved) : true;
+        } catch (e) {
+            console.warn('PrivacyContext: Failed to parse inkflow_show_financials, defaulting to true', e);
+            return true;
+        }
     });
 
     const toggleFinancials = () => {

@@ -1,98 +1,113 @@
-import React, { useState } from 'react';
-import { useAuth } from './AuthContext';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Palette, GraduationCap, ArrowLeft, LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from './AuthContext';
+import QRCode from 'react-qr-code';
+import { User, Palette, GraduationCap, ArrowLeft, LogIn, UserPlus, Eye, EyeOff, QrCode as QrIcon, X } from 'lucide-react';
 import classes from './LoginPage.module.css';
-import type { UserRole } from '../../types';
+
+type AuthMode = 'LOGIN' | 'REGISTER';
 
 export function LoginPage() {
-    // STATE GESTIONE UI
-    const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
-    const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
+    const navigate = useNavigate();
+    const { login, register } = useAuth();
 
-    // FORM INPUTS
+    // State
+    const [selectedRole, setSelectedRole] = useState<string | null>(null);
+    const [authMode, setAuthMode] = useState<AuthMode>('LOGIN');
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
     const [name, setName] = useState('');
 
-    // AUTH HOOKS
-    const { login, register, error } = useAuth();
-    const navigate = useNavigate();
+    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [formError, setFormError] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [showQR, setShowQR] = useState(false);
 
-    // DEFINIZIONE CARD RUOLI
     const roleOptions = [
         {
-            role: 'MANAGER' as UserRole,
-            icon: User,
+            role: 'MANAGER',
             title: 'Manager Studio',
-            description: 'Registra il tuo Studio e gestisci il team.',
+            description: 'Gestisci il tuo studio, gli artisti e le finanze.',
+            icon: User,
             color: '#FF6B35',
             enableRegister: true
         },
         {
-            role: 'ARTIST' as UserRole,
+            role: 'ARTIST',
+            title: 'Tatuatore',
+            description: 'Gestisci i tuoi appuntamenti e vedi le tue commissioni.',
             icon: Palette,
-            title: 'Tatuatore / Staff',
-            description: 'Accedi al CRM del tuo studio.',
             color: '#00CC66',
-            enableRegister: false // Solo Login
+            enableRegister: false
         },
         {
-            role: 'STUDENT' as UserRole,
+            role: 'STUDENT',
+            title: 'Studente Academy',
+            description: 'Accedi ai tuoi corsi e visualizza i progressi.',
             icon: GraduationCap,
-            title: 'Corsista Academy',
-            description: 'Accedi ai corsi e materiali.',
             color: '#4285F4',
-            enableRegister: false // Solo Login
+            enableRegister: false
         }
     ];
 
-    // HANDLERS
-    const handleRoleSelect = (role: UserRole) => {
+    const handleRoleSelect = (role: string) => {
         setSelectedRole(role);
         setAuthMode('LOGIN'); // Default to login
-        setFormError('');
-        setEmail('');
-        setPassword('');
+        setError(null);
+        // Optional: Pre-fill demo credentials if wanted, but clean implies empty
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setFormError('');
         setIsLoading(true);
+        setError(null);
 
         try {
             if (authMode === 'LOGIN') {
-                // LOGIN (Generico per tutti i ruoli)
-                await login(email, password);
-                // NOTA: Il controllo del ruolo avviene dopo il login se necessario, 
-                // ma per ora lasciamo che AuthContext rediriga o accetti chiunque sia valido.
+                await login(email, password, selectedRole as any);
             } else {
-                // REGISTRAZIONE (Solo Manager)
-                if (selectedRole === 'MANAGER') {
-                    await register(email, password, name, 'MANAGER');
-                } else {
-                    throw new Error("La registrazione pubblica è disponibile solo per i Manager.");
-                }
+                await register(email, password, name, selectedRole as any);
             }
+            // Navigation handled by auth state change usually, but safe to push
             navigate('/');
         } catch (err: any) {
-            setFormError(err.message || 'Errore durante l\'operazione.');
+            setError(err.message || 'Errore durante l\'autenticazione');
         } finally {
             setIsLoading(false);
         }
     };
 
-    // RENDER
     return (
         <div className={classes.container}>
             <div className={classes.card} style={{
                 maxWidth: selectedRole ? '480px' : '900px',
-                transition: 'all 0.4s ease'
+                transition: 'all 0.4s ease',
+                position: 'relative'
             }}>
+                {/* QR Code Toggle Button */}
+                <button
+                    onClick={() => setShowQR(true)}
+                    style={{
+                        position: 'absolute',
+                        top: '1.5rem',
+                        right: '1.5rem',
+                        background: 'transparent',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '50%',
+                        width: '40px',
+                        height: '40px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--color-text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                    }}
+                    title="Mostra QR Code App"
+                >
+                    <QrIcon size={20} />
+                </button>
 
                 {/* HEADER LOGO */}
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
@@ -106,8 +121,8 @@ export function LoginPage() {
                             marginBottom: '1rem',
                             border: '4px solid white',
                             boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
-                            display: 'block',     // Assicura comportamento a blocco
-                            margin: '0 auto 1rem auto' // Centratura esplicita
+                            display: 'block',
+                            margin: '0 auto 1rem auto'
                         }}
                     />
                     <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#1a1a1a' }}>
@@ -124,9 +139,9 @@ export function LoginPage() {
                 </div>
 
                 {/* ALERT ERRORI */}
-                {(formError || error) && (
+                {error && (
                     <div className={classes.error} style={{ marginBottom: '1.5rem' }}>
-                        {formError || error}
+                        {error}
                     </div>
                 )}
 
@@ -198,7 +213,7 @@ export function LoginPage() {
                             })()}
                         </div>
 
-                        {/* Tabs Login/Register (Solo per chi ha register abilitato, es. Manager) */}
+                        {/* Tabs Login/Register */}
                         {roleOptions.find(r => r.role === selectedRole)?.enableRegister && (
                             <div style={{ display: 'flex', borderBottom: '2px solid #eee', marginBottom: '2rem' }}>
                                 <button
@@ -264,7 +279,7 @@ export function LoginPage() {
                                         onChange={e => setPassword(e.target.value)}
                                         placeholder="••••••••"
                                         style={{ paddingRight: '40px' }}
-                                        required={authMode === 'REGISTER' || !['manager@inkflow.com'].includes(email)}
+                                        required
                                     />
                                     <button
                                         type="button"
@@ -285,31 +300,19 @@ export function LoginPage() {
                                                 const emailReq = prompt("Inserisci la tua email di registrazione:");
                                                 if (emailReq) {
                                                     try {
-                                                        // Lazy import storage to avoid top-level issues if any
                                                         const { storage } = await import('../../lib/storage');
                                                         const users = await storage.getUsers();
-
-                                                        // Cerca utente (Manager o Artist, se vogliamo aiutare anche loro)
                                                         const found = users.find(u => u.email.toLowerCase() === emailReq.toLowerCase());
 
                                                         if (found && (found.profile as any).password) {
                                                             const pass = (found.profile as any).password;
-                                                            if (pass.length > 2) {
-                                                                const start = pass.substring(0, 3);
-                                                                const end = pass.substring(pass.length - 2);
-                                                                alert(`Suggerimento Password per ${found.name}:\n\nInizia con "${start}..." e finisce con "...${end}"`);
-                                                                return;
-                                                            } else {
-                                                                alert(`Suggerimento Password: La tua password è molto breve (${pass.length} caratteri). Prova a ricordarla!`);
-                                                                return;
-                                                            }
+                                                            alert(`Suggerimento Password: La tua password inizia con "${pass.substring(0, 3)}..."`);
                                                         } else {
-                                                            // Utente non trovato o senza password salvata
-                                                            alert("Nessun suggerimento disponibile per questa email.\nContatta l'amministratore del sistema.");
+                                                            alert("Utente non trovato.");
                                                         }
                                                     } catch (e) {
                                                         console.error(e);
-                                                        alert("Errore durante il recupero. Riprova.");
+                                                        alert("Errore ricerca.");
                                                     }
                                                 }
                                             }}
@@ -339,7 +342,6 @@ export function LoginPage() {
                                 )}
                             </button>
 
-                            {/* Pulsante Indietro extra */}
                             <button
                                 type="button"
                                 onClick={() => setSelectedRole(null)}
@@ -362,6 +364,67 @@ export function LoginPage() {
                 textAlign: 'center', color: '#888', fontSize: '0.8rem', opacity: 0.6
             }}>
                 InkFlow CRM v2.0 &bull; Secure Cloud
+                {showQR && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: '#000000',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 200
+                    }} onClick={() => setShowQR(false)}>
+                        <div style={{
+                            background: '#ffffff',
+                            padding: '2.5rem',
+                            borderRadius: '24px',
+                            textAlign: 'center',
+                            maxWidth: '400px',
+                            position: 'relative',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                        }} onClick={e => e.stopPropagation()}>
+                            <button
+                                onClick={() => setShowQR(false)}
+                                style={{
+                                    position: 'absolute', right: '1rem', top: '1rem',
+                                    background: '#1f2937', border: 'none', borderRadius: '50%',
+                                    width: '36px', height: '36px', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'white',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = '#ef4444'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = '#1f2937'}
+                            >
+                                <X size={20} />
+                            </button>
+
+                            <h3 style={{ margin: '0 0 1.5rem 0', color: '#111827', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                                📱 Apri su Mobile
+                            </h3>
+
+                            <div style={{
+                                background: '#ffffff',
+                                padding: '1.5rem',
+                                borderRadius: '16px',
+                                border: '3px solid #1f2937',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                            }}>
+                                <QRCode
+                                    value={window.location.href}
+                                    size={256}
+                                    level="H"
+                                    style={{ height: "auto", maxWidth: "100%", width: "100%", display: 'block' }}
+                                    viewBox={`0 0 256 256`}
+                                    fgColor="#000000"
+                                    bgColor="#ffffff"
+                                />
+                            </div>
+
+                            <p style={{ marginTop: '1.5rem', color: '#374151', fontSize: '0.95rem', lineHeight: '1.6', fontWeight: '500' }}>
+                                Inquadra questo codice con la fotocamera<br />
+                                per aprire InkFlow sul tuo dispositivo.
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

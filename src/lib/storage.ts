@@ -345,11 +345,15 @@ export const storage = {
         return count || 0;
     },
 
-    markMessagesAsRead: async (tenantId?: string) => {
-        // Mark all unread messages as read for this tenant
-        // In a real app, you might filter by receiver_id
-        let query = supabase.from('messages').update({ read: true }).eq('read', false);
-        if (tenantId) query = query.eq('tenant_id', tenantId);
+    markMessagesAsRead: async (tenantId: string, currentUserId: string) => {
+        // Mark unread messages as read ONLY IF they were NOT sent by the current user
+        // This prevents the sender from marking their own message as read immediately,
+        // allowing the recipient to see the notification.
+        let query = supabase.from('messages')
+            .update({ read: true })
+            .eq('read', false)
+            .eq('tenant_id', tenantId)
+            .neq('sender_id', currentUserId);
 
         const { error } = await query;
         if (error) console.error('Error marking messages as read:', error);
@@ -377,6 +381,11 @@ export const storage = {
     saveMessage: async (msg: ChatMessage) => {
         const dbMsg = mapMessageToDB(msg);
         const { error } = await supabase.from('messages').upsert(dbMsg);
+        if (error) throw error;
+    },
+
+    deleteMessage: async (messageId: string) => {
+        const { error } = await supabase.from('messages').delete().eq('id', messageId);
         if (error) throw error;
     },
 
