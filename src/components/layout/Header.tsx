@@ -94,22 +94,7 @@ export function Header() {
                     </div>
                 )}
 
-                <div className={classes.brandText}>
-                    <span style={{
-                        fontSize: '1rem',
-                        fontWeight: '700',
-                        color: 'var(--color-text-primary)'
-                    }}>
-                        {tenant?.name || 'InkFlow'}
-                    </span>
-                    <span style={{
-                        fontSize: '0.7rem',
-                        color: 'var(--color-text-muted)',
-                        textTransform: 'capitalize'
-                    }}>
-                        Studio Workspace
-                    </span>
-                </div>
+
             </div>
 
             {/* Title - Hidden on small mobile via CSS to save space for logo */}

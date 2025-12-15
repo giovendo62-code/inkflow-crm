@@ -94,7 +94,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
 
             setUser(userWithRole);
-            localStorage.setItem('inkflow_session', JSON.stringify(userWithRole));
+            try {
+                localStorage.setItem('inkflow_session', JSON.stringify(userWithRole));
+            } catch (e: any) {
+                console.warn('Storage Quota Exceeded. Attempting cleanup...', e);
+                try {
+                    localStorage.clear(); // Emergency cleanup
+                    localStorage.setItem('inkflow_session', JSON.stringify(userWithRole));
+                } catch (retryError) {
+                    console.error('Unable to persist session to LocalStorage. User will be logged out on refresh.', retryError);
+                }
+            }
 
         } catch (error: any) {
             console.error('Login error:', error);

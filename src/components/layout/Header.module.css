@@ -8,6 +8,17 @@
     background-color: var(--color-background);
 }
 
+@media (max-width: 768px) {
+    .header {
+        padding: 0 12px;
+    }
+
+    .userInfo {
+        display: none;
+        /* Hide name/role on mobile - safest for space */
+    }
+}
+
 .pageTitle {
     font-size: 1.25rem;
     font-weight: 600;

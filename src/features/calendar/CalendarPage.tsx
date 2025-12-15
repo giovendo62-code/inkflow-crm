@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, dateFnsLocalizer, type View, Views, type Event as CalendarEvent } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
-import { enUS } from 'date-fns/locale';
+import { it } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './CalendarTheme.css';
 
@@ -12,7 +12,7 @@ import { AppointmentDetailsModal } from './AppointmentDetailsModal';
 import { NewAppointmentModal } from './NewAppointmentModal';
 
 const locales = {
-    'en-US': enUS,
+    'it': it,
 };
 
 const localizer = dateFnsLocalizer({
@@ -23,10 +23,26 @@ const localizer = dateFnsLocalizer({
     locales,
 });
 
+const messages = {
+    allDay: 'Tutto il giorno',
+    previous: 'Indietro',
+    next: 'Avanti',
+    today: 'Oggi',
+    month: 'Mese',
+    week: 'Settimana',
+    day: 'Giorno',
+    agenda: 'Agenda',
+    date: 'Data',
+    time: 'Ora',
+    event: 'Evento',
+    noEventsInRange: 'Nessun evento in questo periodo.',
+    showMore: (total) => `+${total} vedi altro`,
+};
+
 export function CalendarPage() {
     const { user } = useAuth();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [view, setView] = useState<View>(Views.MONTH);
+    const [view, setView] = useState<View>(Views.WEEK); // Default to Week view for better mobile UX
     const [allUsers, setAllUsers] = useState<User[]>([]); // New state for all users
     const [artists, setArtists] = useState<User[]>([]);
     const [selectedArtistId, setSelectedArtistId] = useState<string>('all');
@@ -121,7 +137,7 @@ export function CalendarPage() {
         <div style={{ padding: '2rem', height: '100%' }}>
             {/* ... header ... */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold' }}>Calendar</h1>
+                <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold' }}>Calendario</h1>
 
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     {user?.role === 'MANAGER' && (
@@ -136,7 +152,7 @@ export function CalendarPage() {
                                 color: 'var(--color-text-primary)'
                             }}
                         >
-                            <option value="all">All Artists</option>
+                            <option value="all">Tutti gli Artisti</option>
                             {artists.map(a => (
                                 <option key={a.id} value={a.id}>{a.name}</option>
                             ))}
@@ -172,7 +188,7 @@ export function CalendarPage() {
                         }}
                         className="add-appt-btn"
                     >
-                        <span className="desktop-text">+ New Appointment</span>
+                        <span className="desktop-text">+ Nuovo Appuntamento</span>
                         <span className="mobile-text">
                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5v14" /></svg>
                         </span>
@@ -195,6 +211,8 @@ export function CalendarPage() {
                     selectable
                     onSelectEvent={handleEventClick}
                     onSelectSlot={handleSelectSlot}
+                    culture='it'
+                    messages={messages as any}
                     eventPropGetter={(event) => {
                         const apt = (event as CustomEvent).resource;
                         return {
