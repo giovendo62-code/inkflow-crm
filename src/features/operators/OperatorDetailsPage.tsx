@@ -48,28 +48,18 @@ export function OperatorDetailsPage() {
 
     // Contract Management State
     const [isEditingContract, setIsEditingContract] = useState(false);
-    const [tempContract, setTempContract] = useState<{
-        contractType: 'COMMISSION' | 'RENT_MONTHLY' | 'RENT_PACK';
-        commissionRate: number;
-        rentAmount: number;
-        rentPackPresences: number;
-        rentRenewalDate: string;
-    }>({
-        contractType: 'COMMISSION',
-        commissionRate: 50,
-        rentAmount: 0,
-        rentPackPresences: 10,
-        rentRenewalDate: ''
-    });
+    // Simplified temp state mimicking the OperatorListPage structure
+    const [tempProfile, setTempProfile] = useState<Partial<User['profile']>>({});
 
     useEffect(() => {
         if (operator?.profile) {
-            setTempContract({
-                contractType: operator.profile.contractType || 'COMMISSION',
-                commissionRate: operator.profile.commissionRate || 50,
-                rentAmount: operator.profile.rentAmount || 0,
-                rentPackPresences: operator.profile.rentPackPresences || 10,
-                rentRenewalDate: operator.profile.rentRenewalDate || new Date().toISOString().split('T')[0]
+            setTempProfile({
+                contractType: operator.profile.contractType || undefined, // undefined = Nessun Affitto
+                rentAmount: operator.profile.rentAmount,
+                rentPackPresences: operator.profile.rentPackPresences,
+                rentUsedPresences: operator.profile.rentUsedPresences,
+                rentRenewalDate: operator.profile.rentRenewalDate,
+                commissionRate: operator.profile.commissionRate || 0
             });
         }
     }, [operator]);
@@ -82,12 +72,8 @@ export function OperatorDetailsPage() {
                 ...operator,
                 profile: {
                     ...operator.profile,
-                    contractType: tempContract.contractType,
-                    commissionRate: tempContract.commissionRate,
-                    rentAmount: tempContract.rentAmount,
-                    rentPackPresences: tempContract.rentPackPresences,
-                    rentRenewalDate: tempContract.rentRenewalDate,
-                    rentPackStartDate: tempContract.contractType === 'RENT_PACK' ? new Date().toISOString() : undefined
+                    ...tempProfile,
+                    commissionRate: tempProfile.commissionRate || 0
                 }
             };
 
@@ -100,6 +86,8 @@ export function OperatorDetailsPage() {
             alert("Errore aggiornamento contratto");
         }
     };
+
+    // ... (useEffect for loadData remains same) ...
 
     useEffect(() => {
         const loadData = async () => {
@@ -137,9 +125,7 @@ export function OperatorDetailsPage() {
     const totalAppointments = appointments.length;
     const completedAppointments = appointments.filter(a => a.status === 'COMPLETED');
     const totalEarnings = completedAppointments.reduce((sum, a) => sum + (a.financials?.priceQuote || 0), 0);
-
-    // Calculate Commission (mock logic, if operator has rate)
-    const commissionRate = operator.profile?.commissionRate || 50;
+    const commissionRate = operator.profile?.commissionRate || 0;
     const estimatedCommission = (totalEarnings * commissionRate) / 100;
 
     const getClientName = (clientId: string) => {
@@ -160,7 +146,7 @@ export function OperatorDetailsPage() {
         }
 
         try {
-            const updatedOp = {
+            const updatedOp: User = {
                 ...operator,
                 profile: {
                     ...operator.profile,
@@ -170,7 +156,6 @@ export function OperatorDetailsPage() {
 
             await storage.saveUser(updatedOp);
             setOperator(updatedOp);
-            // alert("Presenza aggiunta con successo!");
         } catch (e) {
             console.error(e);
             alert("Errore durante il salvataggio della presenza.");
@@ -198,130 +183,57 @@ export function OperatorDetailsPage() {
                     padding: '2rem',
                     background: `linear-gradient(to right, ${operator.profile?.color || 'var(--color-primary)'}20, transparent)`,
                     display: 'flex',
-                    alignItems: 'center',
+                    alignItems: 'flex-start', // Changed to flex-start for better alignment with multiple cards
                     gap: '2rem',
                     flexWrap: 'wrap'
                 }}>
-                    <div style={{
-                        width: '120px',
-                        height: '120px',
-                        borderRadius: '50%',
-                        border: `4px solid ${operator.profile?.color || 'var(--color-primary)'}`,
-                        overflow: 'hidden',
-                        background: 'var(--color-background)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        {operator.avatarUrl ? (
-                            <img src={operator.avatarUrl} alt={operator.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                            <UserIcon size={60} color="var(--color-text-secondary)" />
-                        )}
-                    </div>
-
-                    <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-                            <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>{operator.name}</h1>
-                            <span style={{
-                                padding: '0.25rem 0.75rem',
-                                borderRadius: '999px',
-                                fontSize: '0.875rem',
-                                fontWeight: '600',
-                                background: 'var(--color-surface)',
-                                border: '1px solid var(--color-border)'
-                            }}>
-                                {operator.role}
-                            </span>
+                    {/* AVATAR & INFO (Left Column) */}
+                    <div style={{ display: 'flex', gap: '2rem', flex: 1, minWidth: '300px' }}>
+                        <div style={{
+                            width: '120px',
+                            height: '120px',
+                            borderRadius: '50%',
+                            border: `4px solid ${operator.profile?.color || 'var(--color-primary)'}`,
+                            overflow: 'hidden',
+                            background: 'var(--color-background)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                        }}>
+                            {operator.avatarUrl ? (
+                                <img src={operator.avatarUrl} alt={operator.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                                <UserIcon size={60} color="var(--color-text-secondary)" />
+                            )}
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--color-text-secondary)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Mail size={16} /> {operator.email}
+                        <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                                <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>{operator.name}</h1>
+                                <span style={{
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '999px',
+                                    fontSize: '0.875rem',
+                                    fontWeight: '600',
+                                    background: 'var(--color-surface)',
+                                    border: '1px solid var(--color-border)'
+                                }}>
+                                    {operator.role}
+                                </span>
                             </div>
-                            {operator.profile?.phone && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <MessageCircle size={16} /> {operator.profile.phone}
-                                </div>
-                            )}
-                            {operator.profile?.address && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <MapPin size={16} /> {operator.profile.address}
-                                </div>
-                            )}
 
-                            {/* Password Section */}
-                            <div style={{
-                                marginTop: '1rem',
-                                borderTop: '1px solid var(--color-border)',
-                                paddingTop: '1rem',
-                                width: '100%',
-                                maxWidth: '400px'
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                    <span style={{ fontSize: '0.875rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Lock size={14} /> Password Accesso
-                                    </span>
-                                    {!isEditingPassword ? (
-                                        <button
-                                            onClick={() => setIsEditingPassword(true)}
-                                            style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
-                                        >
-                                            Modifica
-                                        </button>
-                                    ) : (
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <button
-                                                onClick={() => {
-                                                    setNewPassword((operator.profile as any)?.password || '');
-                                                    setIsEditingPassword(false);
-                                                }}
-                                                style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
-                                            >
-                                                Annulla
-                                            </button>
-                                            <button
-                                                onClick={handleSavePassword}
-                                                style={{ fontSize: '0.75rem', color: 'var(--color-success)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
-                                            >
-                                                Salva
-                                            </button>
-                                        </div>
-                                    )}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--color-text-secondary)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Mail size={16} /> {operator.email}
                                 </div>
-
-                                {isEditingPassword ? (
-                                    <input
-                                        type="text"
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            padding: '0.5rem',
-                                            borderRadius: 'var(--radius-md)',
-                                            border: '1px solid var(--color-primary)',
-                                            fontSize: '0.9rem'
-                                        }}
-                                        placeholder="Nuova password..."
-                                    />
-                                ) : (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.5rem' }}>
-                                        <code style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.9rem' }}>
-                                            {showPassword ? ((operator.profile as any)?.password || '••••••••') : '••••••••'}
-                                        </code>
-                                        <button
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
-                                            title={showPassword ? "Nascondi" : "Mostra"}
-                                        >
-                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                        </button>
+                                {operator.profile?.phone && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <MessageCircle size={16} /> {operator.profile.phone}
                                     </div>
                                 )}
-                            </div>
 
-                            {/* Contract Section (Visible to Manager or if Rent Contract active) */}
-                            {(currentUser?.role === 'MANAGER' || (operator.profile?.contractType && operator.profile.contractType !== 'COMMISSION')) && (
+                                {/* Password Section */}
                                 <div style={{
                                     marginTop: '1rem',
                                     borderTop: '1px solid var(--color-border)',
@@ -331,203 +243,226 @@ export function OperatorDetailsPage() {
                                 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                         <span style={{ fontSize: '0.875rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <FileText size={14} /> Dati Contratto
+                                            <Lock size={14} /> Password Accesso
                                         </span>
-                                        {currentUser?.role === 'MANAGER' && (
-                                            !isEditingContract ? (
+                                        {!isEditingPassword ? (
+                                            currentUser?.role === 'MANAGER' && (
                                                 <button
-                                                    onClick={() => setIsEditingContract(true)}
+                                                    onClick={() => setIsEditingPassword(true)}
                                                     style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
                                                 >
                                                     Modifica
                                                 </button>
-                                            ) : (
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button
-                                                        onClick={() => setIsEditingContract(false)}
-                                                        style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
-                                                    >
-                                                        Annulla
-                                                    </button>
-                                                    <button
-                                                        onClick={handleSaveContract}
-                                                        style={{ fontSize: '0.75rem', color: 'var(--color-success)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
-                                                    >
-                                                        Salva
-                                                    </button>
-                                                </div>
                                             )
+                                        ) : (
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button
+                                                    onClick={() => {
+                                                        setNewPassword((operator.profile as any)?.password || '');
+                                                        setIsEditingPassword(false);
+                                                    }}
+                                                    style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                                                >
+                                                    Annulla
+                                                </button>
+                                                <button
+                                                    onClick={handleSavePassword}
+                                                    style={{ fontSize: '0.75rem', color: 'var(--color-success)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                                                >
+                                                    Salva
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
 
-                                    {isEditingContract && currentUser?.role === 'MANAGER' ? (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--color-surface-hover)', padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
-                                            <div>
-                                                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Tipo Contratto</label>
-                                                <select
-                                                    value={tempContract.contractType}
-                                                    onChange={(e) => setTempContract({ ...tempContract, contractType: e.target.value as any })}
-                                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-                                                >
-                                                    <option value="COMMISSION">Commissione %</option>
-                                                    <option value="RENT_MONTHLY">Affitto Fisso Mensile</option>
-                                                    <option value="RENT_PACK">Pacchetto Presenze</option>
-                                                </select>
-                                            </div>
-
-                                            {tempContract.contractType === 'COMMISSION' && (
-                                                <div>
-                                                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Commissione (%)</label>
-                                                    <input
-                                                        type="number"
-                                                        value={tempContract.commissionRate}
-                                                        onChange={(e) => setTempContract({ ...tempContract, commissionRate: Number(e.target.value) })}
-                                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {tempContract.contractType === 'RENT_MONTHLY' && (
-                                                <>
-                                                    <div>
-                                                        <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Importo Mensile (€)</label>
-                                                        <input
-                                                            type="number"
-                                                            value={tempContract.rentAmount}
-                                                            onChange={(e) => setTempContract({ ...tempContract, rentAmount: Number(e.target.value) })}
-                                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Prossimo Rinnovo</label>
-                                                        <input
-                                                            type="date"
-                                                            value={tempContract.rentRenewalDate}
-                                                            onChange={(e) => setTempContract({ ...tempContract, rentRenewalDate: e.target.value })}
-                                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-                                                        />
-                                                    </div>
-                                                </>
-                                            )}
-
-                                            {tempContract.contractType === 'RENT_PACK' && (
-                                                <>
-                                                    <div>
-                                                        <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Importo Pacchetto (€)</label>
-                                                        <input
-                                                            type="number"
-                                                            value={tempContract.rentAmount}
-                                                            onChange={(e) => setTempContract({ ...tempContract, rentAmount: Number(e.target.value) })}
-                                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'block' }}>Numero Presenze Incluse</label>
-                                                        <input
-                                                            type="number"
-                                                            value={tempContract.rentPackPresences}
-                                                            onChange={(e) => setTempContract({ ...tempContract, rentPackPresences: Number(e.target.value) })}
-                                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-                                                        />
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
+                                    {isEditingPassword ? (
+                                        <input
+                                            type="text"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            style={{
+                                                width: '100%',
+                                                padding: '0.5rem',
+                                                borderRadius: 'var(--radius-md)',
+                                                border: '1px solid var(--color-primary)',
+                                                fontSize: '0.9rem'
+                                            }}
+                                            placeholder="Nuova password..."
+                                        />
                                     ) : (
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-                                            {(!operator.profile?.contractType || operator.profile?.contractType === 'COMMISSION') && (
-                                                <div>Commissione: <strong>{operator.profile?.commissionRate || 50}%</strong></div>
-                                            )}
-                                            {operator.profile?.contractType === 'RENT_MONTHLY' && (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                    <div style={{ fontWeight: '500', color: 'var(--color-text-primary)' }}>Affitto Mensile</div>
-                                                    <div>Importo: €{operator.profile.rentAmount} / mese</div>
-                                                    <div>Rinnovo: <strong>{operator.profile.rentRenewalDate ? new Date(operator.profile.rentRenewalDate).toLocaleDateString() : 'N/D'}</strong></div>
-                                                </div>
-                                            )}
-                                            {operator.profile?.contractType === 'RENT_PACK' && (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                    <div style={{ fontWeight: '500', color: 'var(--color-text-primary)' }}>Pacchetto Presenze</div>
-                                                    <div>Utilizzato: <strong>{operator.profile.rentUsedPresences || 0}</strong> / {operator.profile.rentPackPresences || 0}</div>
-                                                    <div>Valore Pack: €{operator.profile.rentAmount}</div>
-                                                    <button
-                                                        onClick={handleAddPresence}
-                                                        style={{
-                                                            marginTop: '0.5rem',
-                                                            background: 'var(--color-primary)',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            borderRadius: '4px',
-                                                            padding: '0.5rem',
-                                                            cursor: 'pointer',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            gap: '0.5rem',
-                                                            fontSize: '0.8rem',
-                                                            fontWeight: '600'
-                                                        }}
-                                                    >
-                                                        <CheckCircle size={14} /> Segna Presenza
-                                                    </button>
-                                                </div>
-                                            )}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.5rem' }}>
+                                            <code style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                                                {showPassword ? ((operator.profile as any)?.password || '••••••••') : '••••••••'}
+                                            </code>
+                                            <button
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+                                                title={showPassword ? "Nascondi" : "Mostra"}
+                                            >
+                                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            </button>
                                         </div>
                                     )}
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
 
-                    <div style={{
-                        background: 'var(--color-card)',
-                        padding: '1.5rem',
-                        borderRadius: 'var(--radius-md)',
-                        minWidth: '220px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center'
-                    }}>
-                        <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <CreditCard size={16} /> Contratto Attivo
+                    {/* CONTRACTS / SETTINGS (Right Column) */}
+                    <div style={{ flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                                <FileText size={18} /> Gestione Contratti
+                            </h3>
+                            {currentUser?.role === 'MANAGER' && !isEditingContract && (
+                                <button
+                                    onClick={() => setIsEditingContract(true)}
+                                    style={{ fontSize: '0.875rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontWeight: '500' }}
+                                >
+                                    Modifica Impostazioni
+                                </button>
+                            )}
+                            {isEditingContract && (
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button onClick={() => setIsEditingContract(false)} className={classes.secondaryButton} style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>Annulla</button>
+                                    <button onClick={handleSaveContract} className={classes.primaryButton} style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>Salva</button>
+                                </div>
+                            )}
                         </div>
 
-                        {(!operator.profile?.contractType || operator.profile.contractType === 'COMMISSION') && (
-                            <>
-                                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                                    {operator.profile?.commissionRate || 50}%
+                        {/* EDIT MODE */}
+                        {isEditingContract && currentUser?.role === 'MANAGER' ? (
+                            <div style={{ background: 'var(--color-surface-hover)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                                {/* Rent Mode Dropdown */}
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '0.25rem', display: 'block' }}>
+                                        Modalità Affitto Postazione
+                                    </label>
+                                    <select
+                                        value={tempProfile.contractType || ''}
+                                        onChange={e => setTempProfile({ ...tempProfile, contractType: (e.target.value as any) || undefined })}
+                                        style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}
+                                    >
+                                        <option value="">Nessun Affitto</option>
+                                        <option value="RENT_MONTHLY">Affitto Mensile</option>
+                                        <option value="RENT_PACK">Pacchetto Presenze</option>
+                                    </select>
                                 </div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Commissione su lavori</div>
-                            </>
-                        )}
 
-                        {operator.profile?.contractType === 'RENT_MONTHLY' && (
-                            <>
-                                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                                    €{operator.profile?.rentAmount || 0}
-                                </div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>/ mese</div>
-                                {operator.profile?.rentRenewalDate && (
-                                    <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--color-border)', fontSize: '0.8rem' }}>
-                                        Scadenza: <strong>{new Date(operator.profile.rentRenewalDate).toLocaleDateString()}</strong>
+                                {/* Conditional Rent Fields */}
+                                {tempProfile.contractType === 'RENT_MONTHLY' && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+                                        <div>
+                                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Importo (€)</label>
+                                            <input type="number" value={tempProfile.rentAmount || ''} onChange={e => setTempProfile({ ...tempProfile, rentAmount: parseFloat(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Rinnovo</label>
+                                            <input type="date" value={tempProfile.rentRenewalDate || ''} onChange={e => setTempProfile({ ...tempProfile, rentRenewalDate: e.target.value })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                        </div>
                                     </div>
                                 )}
-                            </>
-                        )}
 
-                        {operator.profile?.contractType === 'RENT_PACK' && (
-                            <>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                                    {operator.profile?.rentUsedPresences || 0} / {operator.profile?.rentPackPresences || 0}
-                                </div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Presenze Utilizzate</div>
-                                {operator.profile?.rentAmount && (
-                                    <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                                        Valore Pacchetto: €{operator.profile.rentAmount}
+                                {tempProfile.contractType === 'RENT_PACK' && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+                                        <div>
+                                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Importo (€)</label>
+                                            <input type="number" value={tempProfile.rentAmount || ''} onChange={e => setTempProfile({ ...tempProfile, rentAmount: parseFloat(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Totale Pres.</label>
+                                            <input type="number" value={tempProfile.rentPackPresences || ''} onChange={e => setTempProfile({ ...tempProfile, rentPackPresences: parseInt(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Già Usate</label>
+                                            <input type="number" value={tempProfile.rentUsedPresences || 0} onChange={e => setTempProfile({ ...tempProfile, rentUsedPresences: parseInt(e.target.value) })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                                        </div>
                                     </div>
                                 )}
-                            </>
+
+                                {/* Dedicated Commission Section */}
+                                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '1rem' }}>
+                                    <label style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'block' }}>
+                                        Commissione sui Lavori
+                                    </label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={(tempProfile.commissionRate || 0) > 0}
+                                            onChange={e => setTempProfile({ ...tempProfile, commissionRate: e.target.checked ? 50 : 0 })}
+                                        />
+                                        <span style={{ fontSize: '0.875rem' }}>Attiva Commissione</span>
+                                    </div>
+                                    {((tempProfile.commissionRate || 0) > 0) && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <input
+                                                type="number"
+                                                value={tempProfile.commissionRate || ''}
+                                                onChange={(e) => setTempProfile({ ...tempProfile, commissionRate: parseInt(e.target.value) || 0 })}
+                                                style={{ width: '80px', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                                            />
+                                            <span style={{ fontSize: '0.875rem' }}>%</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            /* VIEW MODE */
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {/* Rent Card */}
+                                {(operator.profile?.contractType === 'RENT_MONTHLY' || operator.profile?.contractType === 'RENT_PACK') ? (
+                                    <div style={{ background: 'var(--color-background)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: '600', marginBottom: '0.5rem' }}>
+                                            AFFITTO POSTAZIONE
+                                        </div>
+                                        {operator.profile.contractType === 'RENT_MONTHLY' ? (
+                                            <div>
+                                                <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>€{operator.profile.rentAmount} <span style={{ fontSize: '0.8rem', fontWeight: 'normal' }}>/ mese</span></div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Prossimo rinnovo: {operator.profile.rentRenewalDate ? new Date(operator.profile.rentRenewalDate).toLocaleDateString() : 'N/D'}</div>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
+                                                        {operator.profile.rentUsedPresences || 0} <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 'normal' }}>/ {operator.profile.rentPackPresences || 0} pr.</span>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>€{operator.profile.rentAmount}</div>
+                                                </div>
+                                                <div style={{ width: '100%', height: '6px', background: 'var(--color-border)', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
+                                                    <div style={{
+                                                        width: `${Math.min(100, ((operator.profile.rentUsedPresences || 0) / (operator.profile.rentPackPresences || 1)) * 100)}%`,
+                                                        height: '100%',
+                                                        background: 'var(--color-primary)'
+                                                    }} />
+                                                </div>
+                                                <button onClick={handleAddPresence} className={classes.primaryButton} style={{ marginTop: '0.75rem', width: '100%', justifyContent: 'center', padding: '0.5rem', fontSize: '0.8rem' }}>
+                                                    <CheckCircle size={14} /> Segna Presenza
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div style={{ padding: '1rem', border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-text-muted)', textAlign: 'center', fontSize: '0.875rem' }}>
+                                        Nessun contratto di affitto attivo
+                                    </div>
+                                )}
+
+                                {/* Commission Card */}
+                                {((operator.profile?.commissionRate || 0) > 0) ? (
+                                    <div style={{ background: 'var(--color-background)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: '600', marginBottom: '0.5rem' }}>
+                                            COMMISSIONE SUI LAVORI
+                                        </div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                                            {operator.profile?.commissionRate}%
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={{ padding: '1rem', border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-text-muted)', textAlign: 'center', fontSize: '0.875rem' }}>
+                                        Nessuna commissione attiva
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>
