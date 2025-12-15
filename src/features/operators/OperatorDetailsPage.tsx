@@ -385,8 +385,8 @@ export function OperatorDetailsPage() {
                                             borderRadius: 'var(--radius-md)',
                                             border: '1px solid var(--color-border)',
                                             marginBottom: '1rem',
-                                            color: 'var(--color-text-primary)',
-                                            background: 'var(--color-surface)'
+                                            color: '#000000',
+                                            background: '#ffffff'
                                         }}
                                     >
                                         <option value="">Nessun Affitto</option>
@@ -402,7 +402,7 @@ export function OperatorDetailsPage() {
                                                     type="number"
                                                     value={tempProfile.rentAmount || ''}
                                                     onChange={e => setTempProfile({ ...tempProfile, rentAmount: e.target.value as any })}
-                                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', background: 'var(--color-surface)' }}
+                                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', color: '#000000', background: '#ffffff' }}
                                                 />
                                             </div>
                                             <div>
@@ -411,7 +411,7 @@ export function OperatorDetailsPage() {
                                                     type="date"
                                                     value={tempProfile.rentRenewalDate || ''}
                                                     onChange={e => setTempProfile({ ...tempProfile, rentRenewalDate: e.target.value })}
-                                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', background: 'var(--color-surface)' }}
+                                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', color: '#000000', background: '#ffffff' }}
                                                 />
                                             </div>
                                         </div>
@@ -425,7 +425,7 @@ export function OperatorDetailsPage() {
                                                     type="number"
                                                     value={tempProfile.rentAmount || ''}
                                                     onChange={e => setTempProfile({ ...tempProfile, rentAmount: e.target.value as any })}
-                                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', background: 'var(--color-surface)' }}
+                                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', color: '#000000', background: '#ffffff' }}
                                                 />
                                             </div>
                                             <div>
@@ -434,7 +434,7 @@ export function OperatorDetailsPage() {
                                                     type="number"
                                                     value={tempProfile.rentPackPresences || ''}
                                                     onChange={e => setTempProfile({ ...tempProfile, rentPackPresences: e.target.value as any })}
-                                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', background: 'var(--color-surface)' }}
+                                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', color: '#000000', background: '#ffffff' }}
                                                 />
                                             </div>
                                             <div>
@@ -443,7 +443,7 @@ export function OperatorDetailsPage() {
                                                     type="number"
                                                     value={tempProfile.rentUsedPresences || 0}
                                                     onChange={e => setTempProfile({ ...tempProfile, rentUsedPresences: e.target.value as any })}
-                                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', background: 'var(--color-surface)' }}
+                                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', color: '#000000', background: '#ffffff' }}
                                                 />
                                             </div>
                                         </div>
@@ -530,7 +530,7 @@ export function OperatorDetailsPage() {
                                                     type="number"
                                                     value={tempProfile.commissionRate || ''}
                                                     onChange={(e) => setTempProfile({ ...tempProfile, commissionRate: e.target.value as any })}
-                                                    style={{ width: '80px', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', background: 'var(--color-surface)' }}
+                                                    style={{ width: '80px', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', color: '#000000', background: '#ffffff' }}
                                                 />
                                                 <span style={{ fontSize: '0.875rem' }}>%</span>
                                             </div>
