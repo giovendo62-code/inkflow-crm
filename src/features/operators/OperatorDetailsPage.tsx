@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../../lib/storage';
 import { type User, type Appointment } from '../../types';
 import { useAuth } from '../auth/AuthContext';
-import { ArrowLeft, Calendar, Euro, User as UserIcon, MessageCircle, Mail, MapPin, Lock, Eye, EyeOff, FileText, CreditCard, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, Euro, User as UserIcon, MessageCircle, Mail, MapPin, Lock, Eye, EyeOff, FileText, CreditCard, CheckCircle, RotateCcw } from 'lucide-react';
 import { usePrivacy } from '../context/PrivacyContext';
 import classes from '../crm/ClientListPage.module.css';
 
@@ -188,6 +188,37 @@ export function OperatorDetailsPage() {
             } catch (e) {
                 console.error(e);
                 alert("Errore durante il salvataggio della presenza.");
+            }
+        }, 100);
+    };
+
+    const handleResetPresence = async (e?: React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        if (!operator || currentUser?.role !== 'MANAGER') return;
+
+        // Small timeout for stability
+        setTimeout(async () => {
+            if (!confirm("Sei sicuro di voler AZZERARE il contatore delle presenze?")) return;
+
+            try {
+                const updatedOp: User = {
+                    ...operator,
+                    profile: {
+                        ...operator.profile,
+                        rentUsedPresences: 0
+                    }
+                };
+
+                await storage.saveUser(updatedOp);
+                setOperator(updatedOp);
+                alert("Contatore presenze azzerato!");
+            } catch (e) {
+                console.error(e);
+                alert("Errore durante l'azzeramento.");
             }
         }, 100);
     };
@@ -463,20 +494,40 @@ export function OperatorDetailsPage() {
                                                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
                                                     {operator.profile.rentUsedPresences || 0} <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 'normal' }}>/ {operator.profile.rentPackPresences || 0} pr.</span>
                                                 </div>
-                                                <button
-                                                    onClick={handleAddPresence}
-                                                    className={classes.primaryButton}
-                                                    style={{
-                                                        padding: '0.4rem 0.8rem',
-                                                        fontSize: '0.75rem',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '6px',
-                                                        whiteSpace: 'nowrap'
-                                                    }}
-                                                >
-                                                    <CheckCircle size={14} /> Segna Presenza
-                                                </button>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    {currentUser?.role === 'MANAGER' && (
+                                                        <button
+                                                            onClick={handleResetPresence}
+                                                            className={classes.secondaryButton}
+                                                            title="Azzera Presenze"
+                                                            style={{
+                                                                padding: '0.4rem',
+                                                                fontSize: '0.75rem',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                color: 'var(--color-error)',
+                                                                borderColor: 'var(--color-error)'
+                                                            }}
+                                                        >
+                                                            <RotateCcw size={14} />
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={handleAddPresence}
+                                                        className={classes.primaryButton}
+                                                        style={{
+                                                            padding: '0.4rem 0.8rem',
+                                                            fontSize: '0.75rem',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            whiteSpace: 'nowrap'
+                                                        }}
+                                                    >
+                                                        <CheckCircle size={14} /> Segna Presenza
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>€{operator.profile.rentAmount} <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>(valore pacchetto)</span></div>
 
