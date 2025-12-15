@@ -16,6 +16,7 @@ export function OperatorDetailsPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [clients, setClients] = useState<any[]>([]); // Using any[] to avoid importing Client type if not imported yet, ideally import it
     const [loading, setLoading] = useState(true);
+    const [isProcessing, setIsProcessing] = useState(false); // Moved to top level
 
     const { showFinancials } = usePrivacy();
 
@@ -154,7 +155,7 @@ export function OperatorDetailsPage() {
         return client ? `${client.firstName} ${client.lastName}` : 'Sconosciuto';
     };
 
-    const [isProcessing, setIsProcessing] = useState(false);
+
 
     const handleAddPresence = async (e?: React.MouseEvent) => {
         if (e) {
