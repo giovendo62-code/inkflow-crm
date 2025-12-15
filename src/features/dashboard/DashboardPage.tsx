@@ -3,14 +3,14 @@ import { useAuth } from '../auth/AuthContext';
 import { usePrivacy } from '../context/PrivacyContext';
 import { storage } from '../../lib/storage';
 import { type Appointment, type Client, type TattooStyle, type Tenant } from '../../types';
-import { Calendar as CalendarIcon, User as UserIcon, MessageCircle, Bell, Eye, EyeOff, DollarSign, CreditCard, Wallet } from 'lucide-react';
+import { Calendar as CalendarIcon, User as UserIcon, MessageCircle, Bell, Eye, EyeOff, DollarSign, CreditCard, Wallet, CheckCircle } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { StudentDashboard } from '../academy/StudentDashboard';
 import { AppointmentDetailsModal } from '../calendar/AppointmentDetailsModal';
 import classes from '../crm/ClientListPage.module.css';
 
 export function DashboardPage() {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const { showFinancials, toggleFinancials } = usePrivacy();
     const isManager = user?.role === 'MANAGER';
     const isStudent = user?.role === 'STUDENT';
@@ -234,6 +234,37 @@ export function DashboardPage() {
         setDetailsModalOpen(true);
     };
 
+    // Helper for Artist Check-in
+    const handleRentalCheckIn = async () => {
+        if (!user) return;
+        if (!window.confirm("Confermi di voler segnare una presenza per oggi?")) return;
+
+        try {
+            const currentUsed = user.profile?.rentUsedPresences || 0;
+            const total = user.profile?.rentPackPresences || 0;
+
+            if (currentUsed >= total) {
+                alert("Hai esaurito le presenze del pacchetto!");
+                return;
+            }
+
+            const updatedUser = {
+                ...user,
+                profile: {
+                    ...user.profile,
+                    rentUsedPresences: currentUsed + 1
+                }
+            };
+
+            await storage.saveUser(updatedUser);
+            await refreshUser();
+            // alert("Presenza segnata!"); // Optional feedback
+        } catch (err) {
+            console.error(err);
+            alert("Errore durante l'aggiornamento.");
+        }
+    };
+
     // ARTIST VIEW: Today's appointments
     if (!isManager) {
         return (
@@ -249,7 +280,7 @@ export function DashboardPage() {
                 {/* Today's Stats */}
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
                     gap: '1rem',
                     marginBottom: '2rem'
                 }}>
@@ -261,22 +292,28 @@ export function DashboardPage() {
                             let statusText = '';
                             let mainValue = '';
                             let subText = '';
+                            let showButton = false;
 
                             if (user.profile.contractType === 'RENT_MONTHLY') {
                                 const renewalDate = user.profile.rentRenewalDate ? new Date(user.profile.rentRenewalDate) : null;
                                 if (renewalDate) {
-                                    mainValue = renewalDate.toLocaleDateString();
-                                    subText = 'Prossimo Rinnovo';
                                     const daysLeft = Math.ceil((renewalDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
                                     if (daysLeft < 0) {
                                         statusColor = 'var(--color-error)';
-                                        statusText = `Scaduto da ${Math.abs(daysLeft)} giorni`;
-                                    } else if (daysLeft <= 5) {
-                                        statusColor = '#FFD700'; // Gold/Warning
-                                        statusText = `Scade tra ${daysLeft} giorni`;
+                                        statusText = 'Scaduto';
+                                        mainValue = `${Math.abs(daysLeft)} Giorni`;
+                                        subText = `Scaduto dal ${renewalDate.toLocaleDateString()}`;
                                     } else {
-                                        statusText = 'Attivo';
+                                        mainValue = `${daysLeft} Giorni`;
+                                        subText = `al rinnovo (${renewalDate.toLocaleDateString()})`;
+                                        if (daysLeft <= 5) {
+                                            statusColor = '#FFD700'; // Warning
+                                            statusText = 'In Scadenza';
+                                        } else {
+                                            statusColor = 'var(--color-success)'; // Green for active
+                                            statusText = 'Attivo';
+                                        }
                                     }
                                 } else {
                                     mainValue = 'N/A';
@@ -289,6 +326,7 @@ export function DashboardPage() {
                                 const remaining = total - used;
                                 mainValue = `${remaining}`;
                                 subText = 'Ingressi Rimanenti';
+                                showButton = remaining > 0;
 
                                 if (remaining <= 0) {
                                     statusColor = 'var(--color-error)';
@@ -309,7 +347,10 @@ export function DashboardPage() {
                                     border: `1px solid ${statusColor === 'var(--color-border)' ? statusColor : statusColor}`,
                                     boxShadow: statusColor !== 'var(--color-border)' ? `0 0 10px ${statusColor}20` : 'none',
                                     position: 'relative',
-                                    overflow: 'hidden'
+                                    overflow: 'hidden',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between'
                                 }}>
                                     {statusColor !== 'var(--color-border)' && (
                                         <div style={{
@@ -318,21 +359,46 @@ export function DashboardPage() {
                                             background: statusColor
                                         }} />
                                     )}
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <Wallet size={20} color={statusColor !== 'var(--color-border)' ? statusColor : 'currentColor'} />
-                                            Stato Contratto
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <Wallet size={20} color={statusColor !== 'var(--color-border)' ? statusColor : 'currentColor'} />
+                                                Stato Contratto
+                                            </div>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: statusColor !== 'var(--color-border)' ? statusColor : 'var(--color-text-muted)' }}>
+                                                {statusText}
+                                            </span>
                                         </div>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: statusColor !== 'var(--color-border)' ? statusColor : 'var(--color-text-muted)' }}>
-                                            {statusText}
-                                        </span>
+                                        <div style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: '1.2', marginBottom: '0.25rem' }}>
+                                            {mainValue}
+                                        </div>
+                                        <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                                            {subText}
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
-                                        {mainValue}
-                                    </div>
-                                    <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                                        {subText}
-                                    </div>
+
+                                    {showButton && (
+                                        <button
+                                            onClick={handleRentalCheckIn}
+                                            style={{
+                                                marginTop: '1rem',
+                                                width: '100%',
+                                                padding: '0.75rem',
+                                                borderRadius: 'var(--radius-md)',
+                                                background: 'var(--color-primary)',
+                                                color: 'white',
+                                                border: 'none',
+                                                fontWeight: '600',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '0.5rem'
+                                            }}
+                                        >
+                                            <CheckCircle size={18} /> Segna Presenza
+                                        </button>
+                                    )}
                                 </div>
                             );
                         })()

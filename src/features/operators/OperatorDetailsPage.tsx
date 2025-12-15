@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../../lib/storage';
 import { type User, type Appointment } from '../../types';
 import { useAuth } from '../auth/AuthContext';
-import { ArrowLeft, Calendar, Euro, User as UserIcon, MessageCircle, Mail, MapPin, Lock, Eye, EyeOff, FileText, CreditCard } from 'lucide-react';
+import { ArrowLeft, Calendar, Euro, User as UserIcon, MessageCircle, Mail, MapPin, Lock, Eye, EyeOff, FileText, CreditCard, CheckCircle } from 'lucide-react';
 import { usePrivacy } from '../context/PrivacyContext';
 import classes from '../crm/ClientListPage.module.css';
 
@@ -145,6 +145,36 @@ export function OperatorDetailsPage() {
     const getClientName = (clientId: string) => {
         const client = clients.find(c => c.id === clientId);
         return client ? `${client.firstName} ${client.lastName}` : 'Sconosciuto';
+    };
+
+    const handleAddPresence = async () => {
+        if (!operator) return;
+        if (!confirm("Confermi di voler segnare una presenza?")) return;
+
+        const currentUsed = operator.profile?.rentUsedPresences || 0;
+        const total = operator.profile?.rentPackPresences || 0;
+
+        if (total > 0 && currentUsed >= total) {
+            alert("Attenzione: Il pacchetto di presenze è esaurito!");
+            return;
+        }
+
+        try {
+            const updatedOp = {
+                ...operator,
+                profile: {
+                    ...operator.profile,
+                    rentUsedPresences: currentUsed + 1
+                }
+            };
+
+            await storage.saveUser(updatedOp);
+            setOperator(updatedOp);
+            // alert("Presenza aggiunta con successo!");
+        } catch (e) {
+            console.error(e);
+            alert("Errore durante il salvataggio della presenza.");
+        }
     };
 
     return (
@@ -420,6 +450,26 @@ export function OperatorDetailsPage() {
                                                     <div style={{ fontWeight: '500', color: 'var(--color-text-primary)' }}>Pacchetto Presenze</div>
                                                     <div>Utilizzato: <strong>{operator.profile.rentUsedPresences || 0}</strong> / {operator.profile.rentPackPresences || 0}</div>
                                                     <div>Valore Pack: €{operator.profile.rentAmount}</div>
+                                                    <button
+                                                        onClick={handleAddPresence}
+                                                        style={{
+                                                            marginTop: '0.5rem',
+                                                            background: 'var(--color-primary)',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '4px',
+                                                            padding: '0.5rem',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: '0.5rem',
+                                                            fontSize: '0.8rem',
+                                                            fontWeight: '600'
+                                                        }}
+                                                    >
+                                                        <CheckCircle size={14} /> Segna Presenza
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
