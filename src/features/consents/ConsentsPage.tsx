@@ -3,6 +3,7 @@ import { storage } from '../../lib/storage';
 import { type Client } from '../../types';
 import { Search, FileText, CheckCircle, XCircle, PenTool, ShieldCheck, Download, HeartHandshake, Lock, Phone, Eye } from 'lucide-react';
 import { getPrivacyText, getConsentText } from '../../lib/legalText';
+import { generateConsentPDF } from '../../lib/pdfGenerator';
 import { v4 as uuidv4 } from 'uuid';
 
 export function ConsentsPage() {
@@ -17,6 +18,16 @@ export function ConsentsPage() {
     const [otpStep, setOtpStep] = useState<'REVIEW' | 'OTP_INPUT'>('REVIEW');
     const [generatedOtp, setGeneratedOtp] = useState('');
     const [inputOtp, setInputOtp] = useState('');
+
+    // PDF Download Handler
+    const handleDownloadPDF = async (client: Client, type: 'PRIVACY' | 'CONSENT') => {
+        try {
+            await generateConsentPDF(client, type);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Errore nella generazione del PDF. Riprova.');
+        }
+    };
 
     useEffect(() => {
         const loadClients = async () => {
@@ -177,6 +188,7 @@ export function ConsentsPage() {
                                         date={client.privacyPolicyDate}
                                         icon={<ShieldCheck size={18} />}
                                         onSign={() => handleSignRequest(client, 'PRIVACY')}
+                                        onDownload={client.privacyPolicyAccepted ? () => handleDownloadPDF(client, 'PRIVACY') : undefined}
                                     />
                                     {/* Consent */}
                                     <ConsentBadge
@@ -185,6 +197,7 @@ export function ConsentsPage() {
                                         date={client.informedConsentDate}
                                         icon={<FileText size={18} />}
                                         onSign={() => handleSignRequest(client, 'CONSENT')}
+                                        onDownload={client.informedConsentAccepted ? () => handleDownloadPDF(client, 'CONSENT') : undefined}
                                     />
                                 </div>
 
@@ -332,7 +345,21 @@ export function ConsentsPage() {
 }
 
 // Subcomponent for Cleaner UI
-function ConsentBadge({ title, accepted, date, icon, onSign }: { title: string, accepted?: boolean, date?: string, icon: any, onSign: () => void }) {
+function ConsentBadge({
+    title,
+    accepted,
+    date,
+    icon,
+    onSign,
+    onDownload
+}: {
+    title: string,
+    accepted?: boolean,
+    date?: string,
+    icon: any,
+    onSign: () => void,
+    onDownload?: () => void
+}) {
     return (
         <div style={{ textAlign: 'center', minWidth: '100px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem', justifyContent: 'center', color: accepted ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
@@ -340,34 +367,67 @@ function ConsentBadge({ title, accepted, date, icon, onSign }: { title: string, 
                 <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{title}</span>
             </div>
             {accepted ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
+                    <button
+                        onClick={onSign}
+                        style={{
+                            fontSize: '0.75rem',
+                            color: 'var(--color-success)',
+                            background: 'rgba(0, 200, 81, 0.05)',
+                            border: '1px solid currentColor',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            width: '100%',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <Eye size={12} />
+                        Vedi: {new Date(date!).toLocaleDateString()}
+                    </button>
+                    {onDownload && (
+                        <button
+                            onClick={onDownload}
+                            style={{
+                                fontSize: '0.75rem',
+                                color: '#4285F4',
+                                background: 'rgba(66, 133, 244, 0.1)',
+                                border: '1px solid #4285F4',
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                width: '100%',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <Download size={12} />
+                            Scarica PDF
+                        </button>
+                    )}
+                </div>
+            ) : (
                 <button
                     onClick={onSign}
                     style={{
-                        fontSize: '0.75rem',
-                        color: 'var(--color-success)',
-                        background: 'rgba(0, 200, 81, 0.05)',
-                        border: '1px solid currentColor',
+                        background: 'rgba(66, 133, 244, 0.1)', color: '#4285F4',
+                        border: '1px solid #4285F4',
                         padding: '0.25rem 0.5rem',
                         borderRadius: '4px',
                         cursor: 'pointer',
+                        fontSize: '0.75rem',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '4px',
                         margin: '0 auto'
                     }}
                 >
-                    <CheckCircle size={12} />
-                    Vedi Firma: {new Date(date!).toLocaleDateString()}
-                </button>
-            ) : (
-                <button
-                    onClick={onSign}
-                    style={{
-                        background: 'rgba(66, 133, 244, 0.1)', color: '#4285F4',
-                        border: '1px solid rgba(66, 133, 244, 0.3)',
-                        padding: '0.25rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem'
-                    }}
-                >
+                    <PenTool size={12} />
                     Firma Ora
                 </button>
             )}
