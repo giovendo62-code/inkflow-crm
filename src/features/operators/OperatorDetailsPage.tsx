@@ -154,42 +154,46 @@ export function OperatorDetailsPage() {
         return client ? `${client.firstName} ${client.lastName}` : 'Sconosciuto';
     };
 
+    const [isProcessing, setIsProcessing] = useState(false);
+
     const handleAddPresence = async (e?: React.MouseEvent) => {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
 
+        if (isProcessing) return;
         if (!operator) return;
 
-        // Small timeout to ensure UI is stable before alert
-        setTimeout(async () => {
-            if (!confirm("Confermi di voler segnare una presenza?")) return;
+        // Direct confirm without timeout to ensure browser treats it as user interaction
+        if (!window.confirm("Confermi di voler segnare una presenza?")) return;
 
-            const currentUsed = operator.profile?.rentUsedPresences || 0;
-            const total = operator.profile?.rentPackPresences || 0;
+        const currentUsed = operator.profile?.rentUsedPresences || 0;
+        const total = operator.profile?.rentPackPresences || 0;
 
-            if (total > 0 && currentUsed >= total) {
-                alert("Attenzione: Il pacchetto di presenze è esaurito!");
-                return;
-            }
+        if (total > 0 && currentUsed >= total) {
+            alert("Attenzione: Il pacchetto di presenze è esaurito!");
+            return;
+        }
 
-            try {
-                const updatedOp: User = {
-                    ...operator,
-                    profile: {
-                        ...operator.profile,
-                        rentUsedPresences: currentUsed + 1
-                    }
-                };
+        setIsProcessing(true);
+        try {
+            const updatedOp: User = {
+                ...operator,
+                profile: {
+                    ...operator.profile,
+                    rentUsedPresences: currentUsed + 1
+                }
+            };
 
-                await storage.saveUser(updatedOp);
-                setOperator(updatedOp);
-            } catch (e: any) {
-                console.error("Add Presence Error:", e);
-                alert(`Errore salvataggio: ${e.message || JSON.stringify(e)}`);
-            }
-        }, 100);
+            await storage.saveUser(updatedOp);
+            setOperator(updatedOp);
+        } catch (e: any) {
+            console.error("Add Presence Error:", e);
+            alert(`Errore salvataggio: ${e.message || JSON.stringify(e)}`);
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const handleResetPresence = async (e?: React.MouseEvent) => {
@@ -198,29 +202,30 @@ export function OperatorDetailsPage() {
             e.stopPropagation();
         }
 
+        if (isProcessing) return;
         if (!operator || currentUser?.role !== 'MANAGER') return;
 
-        // Small timeout for stability
-        setTimeout(async () => {
-            if (!confirm("Sei sicuro di voler AZZERARE il contatore delle presenze?")) return;
+        if (!window.confirm("Sei sicuro di voler AZZERARE il contatore delle presenze?")) return;
 
-            try {
-                const updatedOp: User = {
-                    ...operator,
-                    profile: {
-                        ...operator.profile,
-                        rentUsedPresences: 0
-                    }
-                };
+        setIsProcessing(true);
+        try {
+            const updatedOp: User = {
+                ...operator,
+                profile: {
+                    ...operator.profile,
+                    rentUsedPresences: 0
+                }
+            };
 
-                await storage.saveUser(updatedOp);
-                setOperator(updatedOp);
-                alert("Contatore presenze azzerato!");
-            } catch (e: any) {
-                console.error("Reset Presence Error:", e);
-                alert(`Errore reset: ${e.message || JSON.stringify(e)}`);
-            }
-        }, 100);
+            await storage.saveUser(updatedOp);
+            setOperator(updatedOp);
+            alert("Contatore presenze azzerato!");
+        } catch (e: any) {
+            console.error("Reset Presence Error:", e);
+            alert(`Errore reset: ${e.message || JSON.stringify(e)}`);
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     return (
@@ -497,9 +502,11 @@ export function OperatorDetailsPage() {
                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                     {currentUser?.role === 'MANAGER' && (
                                                         <button
+                                                            type="button"
                                                             onClick={handleResetPresence}
                                                             className={classes.secondaryButton}
                                                             title="Azzera Presenze"
+                                                            disabled={isProcessing}
                                                             style={{
                                                                 padding: '0.4rem',
                                                                 fontSize: '0.75rem',
@@ -507,22 +514,26 @@ export function OperatorDetailsPage() {
                                                                 alignItems: 'center',
                                                                 justifyContent: 'center',
                                                                 color: 'var(--color-error)',
-                                                                borderColor: 'var(--color-error)'
+                                                                borderColor: 'var(--color-error)',
+                                                                opacity: isProcessing ? 0.7 : 1
                                                             }}
                                                         >
                                                             <RotateCcw size={14} />
                                                         </button>
                                                     )}
                                                     <button
+                                                        type="button"
                                                         onClick={handleAddPresence}
                                                         className={classes.primaryButton}
+                                                        disabled={isProcessing}
                                                         style={{
                                                             padding: '0.4rem 0.8rem',
                                                             fontSize: '0.75rem',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             gap: '6px',
-                                                            whiteSpace: 'nowrap'
+                                                            whiteSpace: 'nowrap',
+                                                            opacity: isProcessing ? 0.7 : 1
                                                         }}
                                                     >
                                                         <CheckCircle size={14} /> Segna Presenza
