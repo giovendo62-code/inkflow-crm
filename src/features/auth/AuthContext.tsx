@@ -44,8 +44,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     console.log('🔄 Sessione locale ripristinata:', parsedUser.email);
 
                     // Verify and refresh from DB to get latest profile (e.g. contract changes)
+                    // Add timeout to prevent infinite loading
                     try {
-                        const users = await storage.getUsers();
+                        const timeoutPromise = new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error('DB timeout')), 5000)
+                        );
+
+                        const usersPromise = storage.getUsers();
+
+                        const users = await Promise.race([usersPromise, timeoutPromise]) as any[];
                         const freshUser = users.find(u => u.id === parsedUser.id);
                         if (freshUser) {
                             console.log('🔄 Dati utente aggiornati dal DB');
@@ -58,7 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             // setUser(null); 
                         }
                     } catch (dbError) {
-                        console.error('Errore refresh utente background:', dbError);
+                        console.error('Errore refresh utente background (usando cache locale):', dbError);
+                        // Continue with cached user data
                     }
                 }
             } catch (e) {

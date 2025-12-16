@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext';
 import { ArrowLeft, Calendar, Euro, User as UserIcon, MessageCircle, Mail, MapPin, Lock, Eye, EyeOff, FileText, CreditCard, CheckCircle, RotateCcw } from 'lucide-react';
 import { usePrivacy } from '../context/PrivacyContext';
 import classes from '../crm/ClientListPage.module.css';
+import styles from './OperatorDetailsPage.module.css';
 
 export function OperatorDetailsPage() {
     const { id } = useParams<{ id: string }>();
@@ -230,43 +231,22 @@ export function OperatorDetailsPage() {
     };
 
     return (
-        <div className={classes.container}>
+        <div className={`${classes.container} ${styles.operatorDetailsContainer}`}>
             <button
                 onClick={() => navigate('/artists')}
-                className={classes.secondaryButton}
-                style={{ marginBottom: '2rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                className={`${classes.secondaryButton} ${styles.backButton}`}
             >
-                <ArrowLeft size={16} /> Torna alla lista
+                <ArrowLeft size={20} /> Torna alla lista
             </button>
 
-            <div style={{
-                background: 'var(--color-surface)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border)',
-                overflow: 'hidden',
-                marginBottom: '2rem'
-            }}>
-                <div style={{
-                    padding: '2rem',
-                    background: `linear-gradient(to right, ${operator.profile?.color || 'var(--color-primary)'}20, transparent)`,
-                    display: 'flex',
-                    alignItems: 'flex-start', // Changed to flex-start for better alignment with multiple cards
-                    gap: '2rem',
-                    flexWrap: 'wrap'
+            <div className={styles.headerCard}>
+                <div className={styles.headerContent} style={{
+                    background: `linear-gradient(to right, ${operator.profile?.color || 'var(--color-primary)'}20, transparent)`
                 }}>
-                    {/* AVATAR & INFO (Left Column) */}
-                    <div style={{ display: 'flex', gap: '2rem', flex: 1, minWidth: '300px' }}>
-                        <div style={{
-                            width: '120px',
-                            height: '120px',
-                            borderRadius: '50%',
-                            border: `4px solid ${operator.profile?.color || 'var(--color-primary)'}`,
-                            overflow: 'hidden',
-                            background: 'var(--color-background)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
+                    {/* AVATAR & INFO */}
+                    <div className={styles.avatarInfoSection}>
+                        <div className={styles.avatar} style={{
+                            border: `4px solid ${operator.profile?.color || 'var(--color-primary)'}`
                         }}>
                             {operator.avatarUrl ? (
                                 <img src={operator.avatarUrl} alt={operator.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -275,28 +255,21 @@ export function OperatorDetailsPage() {
                             )}
                         </div>
 
-                        <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-                                <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>{operator.name}</h1>
-                                <span style={{
-                                    padding: '0.25rem 0.75rem',
-                                    borderRadius: '999px',
-                                    fontSize: '0.875rem',
-                                    fontWeight: '600',
-                                    background: 'var(--color-surface)',
-                                    border: '1px solid var(--color-border)'
-                                }}>
+                        <div className={styles.infoSection}>
+                            <div className={styles.nameRoleRow}>
+                                <h1 className={styles.operatorName}>{operator.name}</h1>
+                                <span className={styles.roleBadge}>
                                     {operator.role}
                                 </span>
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--color-text-secondary)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <Mail size={16} /> {operator.email}
+                            <div className={styles.contactInfo}>
+                                <div className={styles.contactItem}>
+                                    <Mail size={18} /> {operator.email}
                                 </div>
                                 {operator.profile?.phone && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <MessageCircle size={16} /> {operator.profile.phone}
+                                    <div className={styles.contactItem}>
+                                        <MessageCircle size={18} /> {operator.profile.phone}
                                     </div>
                                 )}
 
@@ -347,13 +320,7 @@ export function OperatorDetailsPage() {
                                             type="text"
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
-                                            style={{
-                                                width: '100%',
-                                                padding: '0.5rem',
-                                                borderRadius: 'var(--radius-md)',
-                                                border: '1px solid var(--color-primary)',
-                                                fontSize: '0.9rem'
-                                            }}
+                                            className={styles.formInput}
                                             placeholder="Nuova password..."
                                         />
                                     ) : (
@@ -363,10 +330,11 @@ export function OperatorDetailsPage() {
                                             </code>
                                             <button
                                                 onClick={() => setShowPassword(!showPassword)}
+                                                className={styles.iconButton}
                                                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
                                                 title={showPassword ? "Nascondi" : "Mostra"}
                                             >
-                                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                             </button>
                                         </div>
                                     )}
@@ -375,8 +343,8 @@ export function OperatorDetailsPage() {
                         </div>
                     </div>
 
-                    {/* CONTRACTS / SETTINGS (Right Column) */}
-                    <div style={{ flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {/* CONTRACTS / SETTINGS */}
+                    <div className={styles.settingsColumn}>
 
                         {/* HEADER & ACTIONS */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -393,8 +361,8 @@ export function OperatorDetailsPage() {
                             )}
                             {isEditingContract && (
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <button onClick={() => setIsEditingContract(false)} className={classes.secondaryButton} style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>Annulla</button>
-                                    <button onClick={handleSaveContract} className={classes.primaryButton} style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>Salva</button>
+                                    <button onClick={() => setIsEditingContract(false)} className={`${classes.secondaryButton} ${styles.actionButton}`}>Annulla</button>
+                                    <button onClick={handleSaveContract} className={`${classes.primaryButton} ${styles.actionButton}`}>Salva</button>
                                 </div>
                             )}
                         </div>
